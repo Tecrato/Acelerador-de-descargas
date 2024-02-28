@@ -1,6 +1,7 @@
 import pygame as pag, sys, os, time, requests
 from platformdirs import user_downloads_dir, user_cache_path
 from threading import Thread
+from pathlib import Path
 from pygame.locals import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN
 
 import Utilidades
@@ -10,6 +11,10 @@ from Utilidades import GUI
 from Utilidades import multithread
 
 pag.init()
+
+carpeta_cache = Path(user_cache_path('Acelerador de descargar','Edouard Sandoval'))
+carpeta_cache.mkdir(parents=True, exist_ok=True)
+carpeta_cache.joinpath('/')
 
 class My_Execption(Exception):
     """Trajo un texto"""
@@ -35,7 +40,6 @@ class Download_manager:
         self.font_simbols = './Assets/fuentes/Symbols.ttf'
         self.file_name = ''
         
-        self.num_hilos = 1
         self.num_hilos = 8
         self.hilos_listos = 0
         self.lista_hilos: list[Thread] = []
@@ -44,6 +48,10 @@ class Download_manager:
         self.peso_total = 0
         self.peso_total_formateado = [0,0]
         self.peso_descargado = 0
+
+
+        self.prepared_request = requests.Request('GET','https://www.google.com').prepare()
+        self.prepared_session = requests.session()
 
         self.nomenclaturas = {
             0: 'bytes',
@@ -124,11 +132,11 @@ class Download_manager:
         self.canceled = True
         self.Func_pool.start('descargar detalles del url')
 
-    def func_pausar(self):
+    def func_pausar(self) -> None:
         self.paused = True
         self.btn_pausar_y_reanudar_descarga.change_text('Reanudar')
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
-    def func_reanudar(self):
+    def func_reanudar(self) -> None:
         self.paused = False
         self.btn_pausar_y_reanudar_descarga.change_text('Pausar')
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
@@ -137,18 +145,23 @@ class Download_manager:
         self.can_download = False
         self.paused = True
         self.canceled = True
-        title = self.url.split('/')[-1]
+
+        title = self.url.split('/')[-1].replace('%20',' ').replace('%28','(').replace('%29',')').replace('%5B',
+        '[').replace('%5D',']').replace('%21','!')
         if len(title) > 40: title = title[:40]
+
         self.Titulo.change_text(f'{title}')
         self.text_url.change_text(self.url if len(self.url) < 40 else self.url[:40] + '...')
         self.text_estado_general.change_text('Estado: Conectando...')
-        self.peso_total = 0
+        self.peso_total = 1
+        self.peso_descargado = 0
         self.barra_progreso.set_volumen(.0)
         try:
             response = requests.get(self.url, stream=True, timeout=15)
+            self.prepared_request = response.request
+            response = self.prepared_session.send(self.prepared_request,stream=True, allow_redirects=True, timeout=15)
             print(response.headers)
-            tipo1 = response.headers.get('content-type',False)
-            tipo = response.headers.get('Content-Type',False).split(';') if not tipo1 else tipo1.split(';')
+            tipo = response.headers.get('Content-Type',False).split(';')
             if 'text/plain' in tipo or 'text/html' in tipo: 
                 raise My_Execption('Trajo un texto')
             tiempo_reanudar = 2
@@ -164,7 +177,6 @@ class Download_manager:
                     self.Titulo.change_text(response.headers.get('content-disposition').split('filename=')[1].replace('"',''))
             except Exception as e:
                 pass
-            self.division = self.peso_total // self.num_hilos
             self.text_estado_general.change_text('Estado: Disponible')
             self.can_download = True
             self.file_name = self.Titulo.get_text()
@@ -183,6 +195,10 @@ class Download_manager:
             print('URL no valida')
             self.text_estado_general.change_text('Estado: URL no valida')
             return 3
+        except requests.exceptions.ReadTimeout as err:
+            print('Tiempo de espera agotado')
+            self.text_estado_general.change_text('Estado: Tiempo de espera agotado')
+            return 3
         except requests.exceptions.ConnectTimeout:
             self.text_estado_general.change_text('Estado: Reintentando...')
             time.sleep((tiempo_reanudar*2) if tiempo_reanudar < 30 else tiempo_reanudar)
@@ -200,6 +216,7 @@ class Download_manager:
         self.downloading = True
         self.hilos_listos = 0
         self.peso_descargado = 0
+        self.division = self.peso_total // self.num_hilos
         self.btn_pausar_y_reanudar_descarga.change_text('Pausar')
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
 
@@ -207,7 +224,7 @@ class Download_manager:
         self.lista_status_hilos.clear()
         for x in range(self.num_hilos):
             try:
-                os.remove(f'parte{x}')
+                os.remove(carpeta_cache.joinpath(f'./parte{x}.tmp'))
             except:
                 pass
                 
@@ -217,7 +234,8 @@ class Download_manager:
                     target=self.download_thread,
                     args=(x,
                         self.division*x,
-                        self.division*(x+1) if x != self.num_hilos-1 else self.peso_total
+                        # self.division*(x+1) if x != self.num_hilos-1 else self.peso_total
+                        self.division*x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1
                         )
                     )
                 )
@@ -230,15 +248,17 @@ class Download_manager:
             while self.paused:
                 time.sleep(1)
         if self.canceled:
-            file_p.close()
-            os.remove(f'parte{num}')
+            os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
             return 0
         self.lista_status_hilos[num].change_text(f'hilo {num}: iniciando...')
         headers = {'Range': f'bytes={start+local_count}-{end}'}
-        file_p = open(f'parte{num}','ab')
+        # headers = {'Range': f'bytes={start}-{end}'}
         try:
             self.lista_status_hilos[num].change_text(f'hilo {num}: Conectando...')
-            response = requests.get(self.url, headers=headers, stream=True, timeout=15)
+            # response = requests.get(self.url, allow_redirects=True, headers=headers, cookies=self.detalles, stream=True, timeout=15)
+            re = self.prepared_request.copy()
+            re.prepare_headers(headers)
+            response = self.prepared_session.send(re,stream=True,allow_redirects=True,timeout=15)
 
             tipo1 = response.headers.get('content-type',False)
             tipo = response.headers.get('Content-Type',False).split(';') if not tipo1 else tipo1.split(';')
@@ -254,35 +274,37 @@ class Download_manager:
             tiempo_reset = 2
             self.lista_status_hilos[num].change_text(f'hilo {num}: Descargando...')
             
-            for data in response.iter_content(1024//8):
-                if self.paused: raise Exception('a, a volver a empezar')
-                if self.canceled: raise Exception('a, a volver a empezar')
-                local_count += len(data)
-                self.peso_descargado += len(data)
-                file_p.write(data)
+            with open(carpeta_cache.joinpath(f'./parte{num}.tmp'),'ab') as file_p:
+                for data in response.iter_content(1024//8):
+                    if self.paused: raise Exception('a, a volver a empezar')
+                    if self.canceled: raise Exception('a, a volver a empezar')
+                    if data:
+                        local_count += len(data)
+                        self.peso_descargado += len(data)
+                        file_p.write(data)
 
 
-            file_p.close()
-            self.hilos_listos += 1
             self.lista_status_hilos[num].change_text(f'hilo {num}: Finalizado')
-
+            self.hilos_listos += 1
             return 0
         except Exception as err:
+            print(err)
+            print(type(err))
 
-            file_p.close()
+
             if self.canceled:
-                os.remove(f'parte{num}')
+                os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
                 return 0
             self.lista_status_hilos[num].change_text(f'hilo {num}: Reintentando')
             t = time.time()
             while time.time()-t < tiempo_reset:
                 if self.canceled:
-                    os.remove(f'parte{num}')
+                    os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
                     return 0
                 time.sleep(.3)
             return self.download_thread(num,start,end,local_count,(tiempo_reset*2) if tiempo_reset < 30 else tiempo_reset)
 
-    def main_cycle(self):
+    def main_cycle(self) -> None:
         if self.running:
             self.cicletry = 0
         while self.running:
@@ -327,20 +349,21 @@ class Download_manager:
                 
                 with open(user_downloads_dir()+'/'+self.file_name,'wb') as file:
                     for x in range(self.num_hilos):
-                        parte = open(f'parte{x}','rb')
-                        file.write(parte.read())
-                        parte.close()
-                        os.remove(f'parte{x}')
+                        with open(carpeta_cache.joinpath(f'./parte{x}.tmp'),'rb') as parte:
+                            file.write(parte.read())
+                        os.remove(carpeta_cache.joinpath(f'./parte{x}.tmp'))
                     file.close()
                 for x in self.lista_hilos:
                     x.join()
                 self.can_download = True
                 self.hilos_listos = 0
+                self.peso_descargado = 0
                 self.text_estado_general.change_text('Estado: Finalizado')
                 self.GUI_manager.add(
                     GUI.Desicion(self.ventana_rect.center, 'Enhorabuena', 'La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?'),
                     lambda _: os.startfile(user_downloads_dir())
                 )
+
             for x in self.list_to_draw:
                 x.draw(self.ventana)
             for x in self.lista_status_hilos:
