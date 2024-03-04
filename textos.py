@@ -83,7 +83,7 @@ textos_ingles = {
     'status_hilo[pausado]': 'Thread {}: Paused',
     'status_hilo[cancelado]': 'Thread {}: Canceled',
     'status_hilo[reconectando]': 'Thread {}: Retrying...',
-    'status_hilo[descargando]': 'Thread {}: Downloading',
+    'status_hilo[descargando]': 'Thread {}: Downloading...',
     'status_hilo[finalizado]': 'Thread {}: Finalized',
 
     # Configuraciones
