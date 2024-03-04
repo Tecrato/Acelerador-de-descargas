@@ -36,12 +36,13 @@ textos_español = {
     'status_hilo[cancelado]': 'Hilo {}: Cancelado',
     'status_hilo[reconectando]': 'Hilo {}: Reintentando...',
     'status_hilo[descargando]': 'Hilo {}: Descargando...',
-    'status_hilo[finalizado]': 'Hilo: Finalizado',
+    'status_hilo[finalizado]': 'Hilo {}: Finalizado',
 
     # Configuraciones
     'title-configuraciones': 'Configuraciones',
     'config-hilos': 'Hilos: {}',
     'config-idioma': 'Idioma:',
+    'config-apagar-al-finalizar': 'Apagar al finalizar:  ',
 }
 
 
@@ -77,18 +78,19 @@ textos_ingles = {
     'btn-reanudar': 'Resume',
 
     # Estados de los hilos
-    'status_hilo[iniciando]': 'Hilo {}: Starting...',
-    'status_hilo[conectando]': 'Hilo {}: Conecting...',
-    'status_hilo[pausado]': 'Hilo {}: Paused',
-    'status_hilo[cancelado]': 'Hilo {}: Canceled',
-    'status_hilo[reconectando]': 'Hilo {}: Retrying...',
-    'status_hilo[descargando]': 'Hilo {}: Downloading',
-    'status_hilo[finalizado]': 'Estado: Finalized',
+    'status_hilo[iniciando]': 'Thread {}: Starting...',
+    'status_hilo[conectando]': 'Thread {}: Conecting...',
+    'status_hilo[pausado]': 'Thread {}: Paused',
+    'status_hilo[cancelado]': 'Thread {}: Canceled',
+    'status_hilo[reconectando]': 'Thread {}: Retrying...',
+    'status_hilo[descargando]': 'Thread {}: Downloading',
+    'status_hilo[finalizado]': 'Thread {}: Finalized',
 
     # Configuraciones
     'title-configuraciones': 'Configurations',
     'config-hilos': 'Threads: {}',
     'config-idioma': 'Lenguaje:',
+    'config-apagar-al-finalizar': 'Turn off at the end:  ',
 }
 
 idiomas = {

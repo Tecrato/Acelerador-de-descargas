@@ -1,8 +1,8 @@
-import pygame as pag, sys, os, time, requests
-from platformdirs import user_downloads_dir, user_cache_path
+import pygame as pag, sys, os, time, requests, json
+from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from threading import Thread
 from pathlib import Path
-from pygame.locals import MOUSEBUTTONDOWN, MOUSEBUTTONUP, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL
+from pygame.locals import MOUSEBUTTONDOWN, MOUSEBUTTONUP, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL, SRCALPHA
 
 import Utilidades
 
@@ -13,9 +13,10 @@ from textos import idiomas
 
 pag.init()
 
-carpeta_cache = Path(user_cache_path('Acelerador de descargar','Edouard Sandoval'))
+carpeta_cache = user_cache_path('Acelerador de descargar','Edouard Sandoval')
 carpeta_cache.mkdir(parents=True, exist_ok=True)
-carpeta_cache.joinpath('/')
+carpeta_config = user_config_path('Acelerador de descargar','Edouard Sandoval')
+carpeta_config.mkdir(parents=True, exist_ok=True)
 
 
 class My_Execption(Exception):
@@ -29,6 +30,7 @@ class Download_manager:
 
         self.ventana = pag.display.set_mode((800,600), SCALED)
         self.ventana_rect = self.ventana.get_rect()
+        pag.display.set_icon(pag.image.load('./descargas.png'))
 
         self.url = ''
         self.division = 0
@@ -46,6 +48,8 @@ class Download_manager:
         self.txts = idiomas[self.idioma]
         self.button1_mouse_time = 0
         self.button1_mouse_func = None
+        self.apagar_al_finalizar = False
+        self.reanudar_bool = False
         
         self.num_hilos = 8
         self.hilos_listos = 0
@@ -72,6 +76,9 @@ class Download_manager:
             3: 'Gb',
             4: 'Tb'
         }
+
+        self.cargar_configs()
+        self.guardar_configs()
 
         self.generate_objs()
         self.bienvenida()
@@ -116,10 +123,10 @@ class Download_manager:
         )))
 
         self.btn_iniciar_cancelar_descarga = Create_boton(self.txts['btn-iniciar'], 20, self.font_mononoki, (230,60), (20,10), 'center', 'black', 
-                                        'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.start_download)
+                                        'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_iniciar)
         
-        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['btn-pausar'], 20, self.font_mononoki, (340,60), (20,10), 'center', 'black', 
-                                        'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.start_download)
+        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['btn-reanudar'], 20, self.font_mononoki, (340,60), (20,10), 'center', 'black', 
+                                        'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_reanudar)
     
         #   Barra de progreso
         self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom-50), (360,20), 'horizontal')
@@ -129,7 +136,7 @@ class Download_manager:
         # Configuraciones
         self.title_config = Create_text(self.txts['title-configuraciones'],30, self.font_mononoki, (self.ventana_rect.centerx,50))
         self.btn_exit_config = Create_boton('', 14, self.font_simbols, (10,10), 20, 'topleft', 'white', (20,20,20), (50,50,50), 0, -1, border_width=-1, func=self.func_to_main_from_config)
-        self.config_version = Create_text('Version: 1.1',16, self.font_mononoki, (20,self.ventana_rect.h-20),'left')
+        self.config_version = Create_text('Version: 1.2',16, self.font_mononoki, (20,self.ventana_rect.h-20),'left')
 
         self.text_config_hilos = Create_text(self.txts['config-hilos'].format(self.num_hilos),16, self.font_mononoki, (20,100), 'left')
         self.btn_mas_hilos = Create_boton('',14, self.font_simbols, (self.text_config_hilos.rect.right + 10,self.text_config_hilos.rect.centery), (5,0), 'bottom', 'white', color_rect_active=(40,40,40), border_radius=0, border_width=-1, toggle_rect=True, func=lambda: self.func_change_hilos('up'))
@@ -153,6 +160,19 @@ class Download_manager:
         self.list_to_click_config = [self.btn_mas_hilos,self.btn_menos_hilos,self.btn_exit_config,self.text_config_idioma_es,
                                      self.text_config_idioma_en]
 
+    def cargar_configs(self):
+        try:
+            self.configs:dict = json.load(open(carpeta_config.joinpath('./configs.json')))
+        except:
+            self.configs = {}
+        self.num_hilos = self.configs.get('num_hilos',8)
+        self.func_change_idioma(self.configs.get('idioma', 'español'))
+    
+    def guardar_configs(self):
+        self.configs['num_hilos'] = self.num_hilos
+        self.configs['idioma'] = self.idioma
+        self.txts = idiomas[self.idioma]
+        json.dump(self.configs,open(carpeta_config.joinpath('./configs.json'),'w'))
     
     def bienvenida(self):
         self.GUI_manager.add(GUI.Info(self.ventana_rect.center, self.txts['GUI-bienvenida_title'], self.txts['GUI-bienvenida_contenido']))
@@ -171,6 +191,7 @@ class Download_manager:
     def func_to_main_from_config(self) -> None:
         self.screen_config_bool = False
         self.screen_main = True
+        self.guardar_configs()
 
     def func_change_hilos(self, dir):
         if dir == 'up' and self.num_hilos < 32:
@@ -197,6 +218,9 @@ class Download_manager:
         self.canceled = True
         self.Func_pool.start('descargar detalles del url')
 
+    def func_iniciar(self):
+        self.reanudar_bool = False
+        self.start_download()
     def func_pausar(self) -> None:
         self.paused = True
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
@@ -206,24 +230,28 @@ class Download_manager:
         self.canceled = True
         self.downloading = False
         self.can_download = True
-        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-pausar'])
-        self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
+        self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.btn_iniciar_cancelar_descarga.change_text(self.txts['btn-iniciar'])
-        self.btn_iniciar_cancelar_descarga.func = self.start_download
+        self.btn_iniciar_cancelar_descarga.func = self.func_iniciar
         for num in range(self.num_hilos):
             self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
     def func_reanudar(self) -> None:
+        if not self.can_download: return 0
         self.paused = False
+        self.canceled = False
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-pausar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
+        self.reanudar_bool = True
+        self.start_download()
 
     def func_detalles_archivo(self,tiempo_reanudar = 2) -> None:
         self.can_download = False
         self.paused = True
         self.canceled = True
 
-        title = self.url.split('/')[-1].replace('%20',' ').replace('%28','(').replace('%29',')').replace('%5B',
-        '[').replace('%5D',']').replace('%21','!')
+        title = self.url.split('/')[-1].replace('%20',' ').replace('%21','!').replace('%27','\'').replace('%28','(').replace('%29',
+            ')').replace('%5B','[').replace('%5D',']')
         if len(title) > 40: title = title[:40]
 
         self.Titulo.change_text(f'{title}')
@@ -297,10 +325,11 @@ class Download_manager:
         self.lista_hilos.clear()
         self.lista_status_hilos.clear()
         for x in range(self.num_hilos):
-            try:
-                os.remove(carpeta_cache.joinpath(f'./parte{x}.tmp'))
-            except:
-                pass
+            if not self.reanudar_bool:
+                try:
+                    os.remove(carpeta_cache.joinpath(f'./parte{x}.tmp'))
+                except:
+                    pass
                 
             self.lista_status_hilos.append(Create_text(self.txts['status_hilo[iniciando]'].format(x), 16, self.font_mononoki, (50,40*x +50), 'left'))
             if x == self.num_hilos-1:
@@ -315,8 +344,7 @@ class Download_manager:
                         )
                     )
                 )
-        for x in self.lista_hilos:
-            x.start()
+            self.lista_hilos[x].start()
         self.btn_iniciar_cancelar_descarga.change_text(self.txts['btn-cancelar'])
         self.btn_iniciar_cancelar_descarga.func = self.func_cancelar
 
@@ -326,9 +354,15 @@ class Download_manager:
             while self.paused:
                 time.sleep(1)
         if self.canceled:
-            os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
+            self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
             return 0
         self.lista_status_hilos_text[num] = self.txts['status_hilo[iniciando]'].format(num)
+        if local_count == 0 and self.reanudar_bool and Path(carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
+            local_count = os.stat(carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
+            self.peso_descargado += local_count
+            if local_count >= end-start-50:
+                self.lista_status_hilos_text[num] = self.txts['status_hilo[finalizado]'].format(num)
+                return 0
         headers = {'Range': f'bytes={start+local_count}-{end}'}
         try:
             self.lista_status_hilos_text[num] = self.txts['status_hilo[conectando]'].format(num)
@@ -362,18 +396,20 @@ class Download_manager:
             self.hilos_listos += 1
             return 0
         except Exception as err:
-            print(err)
-            print(type(err))
+            # print(err)
+            # print(type(err))
 
 
             if self.canceled:
-                os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
+                self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+                # os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
                 return 0
             self.lista_status_hilos_text[num] = self.txts['status_hilo[reconectando]'].format(num)
             t = time.time()
             while time.time()-t < tiempo_reset:
                 if self.canceled:
-                    os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
+                    self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+                    # os.remove(carpeta_cache.joinpath(f'./parte{num}.tmp'))
                     return 0
                 time.sleep(.3)
             return self.download_thread(num,start,end,local_count,(tiempo_reset*2) if tiempo_reset < 30 else tiempo_reset)
@@ -461,7 +497,7 @@ class Download_manager:
                     self.txts = idiomas[self.idioma]
                     self.generate_objs()
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
-                    if -(self.ventana_rect.h-70-self.surf_h_max) < self.surf_h_diff + evento.y*20 < 0:
+                    if -self.surf_h_max + 500 < self.surf_h_diff + evento.y*20 < 0:
                         self.surf_h_diff += evento.y*20
                         for x in self.lista_status_hilos:
                             x.move_rel((0,evento.y*20))
@@ -489,10 +525,20 @@ class Download_manager:
                 self.hilos_listos = 0
                 self.peso_descargado = 0
                 self.text_estado_general.change_text(self.txts['descripcion-state[finalizado]'])
-                self.GUI_manager.add(
-                    GUI.Desicion(self.ventana_rect.center, 'Enhorabuena', 'La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?'),
-                    lambda _: os.startfile(user_downloads_dir())
-                )
+                self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
+                self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
+                if self.apagar_al_finalizar:
+                    self.paused = False
+                    self.canceled = True
+                    self.screen_main = False
+                    os.system('shutdown /s /t 10')
+                    pag.quit()
+                    sys.exit()
+                else:
+                    self.GUI_manager.add(
+                        GUI.Desicion(self.ventana_rect.center, 'Enhorabuena', 'La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?'),
+                        lambda _: os.startfile(user_downloads_dir())
+                    )
 
             for x in self.list_to_draw:
                 x.draw(self.ventana)
@@ -500,7 +546,6 @@ class Download_manager:
             
             self.surface_hilos.fill((20,20,20))
             for i,x in enumerate(self.lista_status_hilos):
-                # if self.lista_status_hilos_text[i] != x.get_text():
                 x.change_text(self.lista_status_hilos_text[i])
                 x.draw(self.surface_hilos)
             self.ventana.blit(self.surface_hilos,(self.ventana_rect.centerx,70))

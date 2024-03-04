@@ -6,7 +6,8 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('./Assets/Fuentes/*.ttf', './Assets/fuentes/'),
+        ('./Assets/fuentes/*.ttf', './Assets/fuentes/'),
+        ('./*.ico','./')
     ],
     hiddenimports=[],
     hookspath=[],
@@ -33,6 +34,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon= './descargas.png'
 )
 coll = COLLECT(
     exe,
