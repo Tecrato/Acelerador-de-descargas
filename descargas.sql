@@ -1,0 +1,13 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "descargas" (
+	"id"	INTEGER,
+	"nombre"	TEXT NOT NULL,
+	"tipo"	TEXT,
+	"peso"	INTEGER NOT NULL,
+	"url"	TEXT NOT NULL,
+	"partes"	INTEGER NOT NULL,
+	"fecha"	TEXT,
+	"estado"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+COMMIT;

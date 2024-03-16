@@ -1,0 +1,4 @@
+- en el historial tambien guardara el tipo de archivo para que cuando decida reanudar la descarga,
+si trae otro tipo de archivo como html, indicara que es link a expirado o simplemente ya no funciona.
+
+- dentro de la ventana de descargas se podra cambiar el status y el link

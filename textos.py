@@ -2,34 +2,21 @@
 
 
 textos_español = {
-    # Ventana bienvenida
-    'GUI-bienvenida_title':'Bienvenido',
-    'GUI-bienvenida_contenido':'Bienvenido al Acelerador de descargas\n\nHecho por Edouard Sandoval',
-
-    #Titulos generales
-    'title_hilos': 'Hilos de descarga',
-
-    # Descripciones
-    'descripcion-peso': 'Peso: {}',
-    'descripcion-numero_hilos': 'Numero de hilos: {}',
-    'descripcion-state[esperando]': 'Estado: Esperando link...',
-    'descripcion-state[conectando]': 'Estado: Conectando...',
-    'descripcion-state[disponible]': 'Estado: Disponible',
-    'descripcion-state[error]': 'Estado: Error',
-    'descripcion-state[url invalida]': 'Estado: URL Invalida',
-    'descripcion-state[tiempo agotado]': 'Estado: Tiempo de espera agotado',
-    'descripcion-state[reintentando]': 'Estado: Reintentando',
-    'descripcion-state[finalizado]': 'Estado: Finalizado',
-    'descripcion-state[error internet]': 'Estado: Error al conectar',
+    # Traducciones literales
+    'eliminar': 'Eliminar',
+    'actualizar_url': 'Actualizar url',
+    
+    # Titulo principal
+    'title': 'Manejador de descargas',
 
     # Botones
-    'btn-nueva_url': 'Nueva url',
-    'btn-iniciar': 'Iniciar',
-    'btn-cancelar': 'Cancelar',
-    'btn-pausar': 'Pausar',
-    'btn-reanudar': 'Reanudar',
+    'btn-nueva_descarga': 'Nueva descarga',
+    'btn-cambiar_carpeta': 'Cambiar carpeta',
+    'btn-comprobar': 'Comprobar',
+    'btn-detalles': 'Detalles',
+    'btn-descargar': 'Descargar',
 
-    # Estados de los hilos
+    # EstaDos de los hilos
     'status_hilo[iniciando]': 'Hilo {}: Iniciando...',
     'status_hilo[conectando]': 'Hilo {}: Conectando...',
     'status_hilo[pausado]': 'Hilo {}: Pausado',
@@ -43,6 +30,35 @@ textos_español = {
     'config-hilos': 'Hilos: {}',
     'config-idioma': 'Idioma:',
     'config-apagar-al-finalizar': 'Apagar al finalizar:  ',
+
+    
+
+    # Downloader
+    
+    'title_hilos': 'Hilos de descarga',
+    
+    # Estados de los hilos
+    'descripcion-peso': 'Peso: {}',
+    'descripcion-numero_hilos': 'Numero de hilos: {}',
+    'descripcion-state[esperando]': 'Estado: Esperando link...',
+    'descripcion-state[conectando]': 'Estado: Conectando...',
+    'descripcion-state[descargando]': 'Estado: Descargando...',
+    'descripcion-state[disponible]': 'Estado: Disponible',
+    'descripcion-state[error]': 'Estado: Error',
+    'descripcion-state[url invalida]': 'Estado: URL Invalida',
+    'descripcion-state[tiempo agotado]': 'Estado: Tiempo de espera agotado',
+    'descripcion-state[reintentando]': 'Estado: Reintentando',
+    'descripcion-state[finalizado]': 'Estado: Finalizado',
+    'descripcion-state[error internet]': 'Estado: Error al conectar',
+
+    # Botones
+    'btn-iniciar': 'Iniciar',
+    'btn-cancelar': 'Cancelar',
+    'btn-aceptar': 'Aceptar',
+    'btn-pausar': 'Pausar',
+    'btn-reanudar': 'Resumir',
+
+    
 }
 
 
@@ -50,32 +66,19 @@ textos_español = {
 
 
 textos_ingles = {
-    # Ventana bienvenida
-    'GUI-bienvenida_title':'Welcome',
-    'GUI-bienvenida_contenido':'Welcome to the Downloads Acelerator\n\nCreated by Edouard Sandoval',
+    # traducciones literales
+    'eliminar': 'Delete',
+    'actualizar_url': 'Update url',
 
-    #Titulos generales
-    'title_hilos': 'Downloads threads',
-
-    # Descripciones
-    'descripcion-peso': 'Size: {}',
-    'descripcion-numero_hilos': 'number of threads: {}',
-    'descripcion-state[esperando]': 'State: Waiting...',
-    'descripcion-state[conectando]': 'State: Conecting...',
-    'descripcion-state[disponible]': 'State: Available',
-    'descripcion-state[error]': 'State: Error',
-    'descripcion-state[url invalida]': 'State: Invalid URL',
-    'descripcion-state[tiempo agotado]': 'State: Waiting time out',
-    'descripcion-state[reintentando]': 'State: Retrying',
-    'descripcion-state[finalizado]': 'State: Finalized',
-    'descripcion-state[error internet]': 'State: Connection Error',
+    # Titulo principal
+    'title': 'Downloads manager',
 
     # Botones
-    'btn-nueva_url': 'New url',
-    'btn-iniciar': 'Play',
-    'btn-cancelar': 'Cancel',
-    'btn-pausar': 'Pause',
-    'btn-reanudar': 'Resume',
+    'btn-nueva_descarga': 'New download',
+    'btn-cambiar_carpeta': 'Change dir',
+    'btn-comprobar': 'Check',
+    'btn-detalles': 'Details',
+    'btn-descargar': 'Download',
 
     # Estados de los hilos
     'status_hilo[iniciando]': 'Thread {}: Starting...',
@@ -91,6 +94,33 @@ textos_ingles = {
     'config-hilos': 'Threads: {}',
     'config-idioma': 'Lenguaje:',
     'config-apagar-al-finalizar': 'Turn off at the end:  ',
+
+
+
+    # Downloader
+
+    'title_hilos': 'Downloads threads',
+
+    # Estados de los hilos
+    'descripcion-peso': 'Size: {}',
+    'descripcion-numero_hilos': 'number of threads: {}',
+    'descripcion-state[esperando]': 'State: Waiting...',
+    'descripcion-state[conectando]': 'State: Conecting...',
+    'descripcion-state[descargando]': 'Estado: Downloading...',
+    'descripcion-state[disponible]': 'State: Available',
+    'descripcion-state[error]': 'State: Error',
+    'descripcion-state[url invalida]': 'State: Invalid URL',
+    'descripcion-state[tiempo agotado]': 'State: Waiting time out',
+    'descripcion-state[reintentando]': 'State: Retrying',
+    'descripcion-state[finalizado]': 'State: Finalized',
+    'descripcion-state[error internet]': 'State: Connection Error',
+
+    # Botones
+    'btn-iniciar': 'Play',
+    'btn-cancelar': 'Cancel',
+    'btn-aceptar': 'Accept',
+    'btn-pausar': 'Pause',
+    'btn-reanudar': 'Resume',
 }
 
 idiomas = {
