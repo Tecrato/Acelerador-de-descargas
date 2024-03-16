@@ -200,12 +200,6 @@ class Download_manager:
             self.num_hilos -= 1
         self.text_config_hilos.change_text(self.txts['config-hilos'].format(self.num_hilos))
         self.text_num_hilos.change_text(self.txts['descripcion-numero_hilos'].format(self.num_hilos))
-        # match dir:
-        #     case 'up':
-        #         self.num_hilos += 1
-        #     case 'down':
-        #         if 
-        #         self.num_hilos -= 1
 
     def func_change_idioma(self,idioma):
         self.idioma = idioma
@@ -213,6 +207,7 @@ class Download_manager:
         self.generate_objs()
 
     def func_nueva_url(self, result) -> None:
+        if not result: return 0
         self.url = result
         self.paused = True
         self.canceled = True
@@ -360,7 +355,8 @@ class Download_manager:
         if local_count == 0 and self.reanudar_bool and Path(carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
             local_count = os.stat(carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
             self.peso_descargado += local_count
-            if local_count >= end-start-50:
+            if local_count >= end-start-10:
+                self.hilos_listos += 1
                 self.lista_status_hilos_text[num] = self.txts['status_hilo[finalizado]'].format(num)
                 return 0
         headers = {'Range': f'bytes={start+local_count}-{end}'}
@@ -443,7 +439,7 @@ class Download_manager:
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for x in self.list_to_click_config:
                         if x.rect.collidepoint((mx,my)):
-                            x.click()
+                            x.click((mx,my))
                             self.button1_mouse_func = x.func
                     self.button1_mouse_time = time.time()
                 elif evento.type == MOUSEBUTTONUP and evento.button == 1:
@@ -490,8 +486,7 @@ class Download_manager:
                         sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for x in self.list_to_click:
-                        if x.rect.collidepoint((mx,my)):
-                            x.click()
+                        x.click((mx,my))
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
                     self.idioma = 'ingles'
                     self.txts = idiomas[self.idioma]
