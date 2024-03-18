@@ -8,7 +8,7 @@ from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, M
 import Utilidades
 
 from Utilidades import Create_text,Create_boton, Barra_de_progreso
-from Utilidades import GUI
+from Utilidades import GUI, mini_GUI
 from Utilidades import multithread
 from textos import idiomas
 
@@ -94,10 +94,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
 
         self.cargar_configs()
@@ -116,9 +116,9 @@ class Downloader:
         # Cosas varias
         Utilidades.GUI.configs['fuente_simbolos'] = self.font_simbols
         self.GUI_manager = GUI.GUI_admin()
+        self.mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
         self.Func_pool = multithread.Funcs_pool()
 
-        # self.Func_pool.add('descargar detalles del url', self.func_detalles_archivo)
         self.Func_pool.add('descargar', self.crear_conexion,self.start_download)
 
         self.lineas_para_separar = [
@@ -144,6 +144,8 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['reanudar'], 20, self.font_mononoki, (((800/2)/3)*2,60), (20,10), 'center', 'black', 
                                         'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_reanudar)
     
+        self.btn_more_options = Create_boton('', 20, self.font_simbols, (800/2,60), (20,10), 'right', 'white', (20,20,20), (50,50,50), 0, -1, border_width=-1, func=self.func_select_of_options)
+        
         #   Barra de progreso
         self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom-50), (360,20), 'horizontal')
         self.barra_progreso.set_volumen(.0)
@@ -151,8 +153,8 @@ class Downloader:
 
         self.list_to_draw = [self.Titulo,self.text_tamaño,self.text_url,self.text_num_hilos,self.barra_progreso,
                              self.text_porcentaje, self.text_estado_general,self.btn_cancelar_descarga,self.text_title_hilos,
-                             self.text_peso_progreso,self.btn_pausar_y_reanudar_descarga]
-        self.list_to_click = [self.btn_cancelar_descarga,self.btn_pausar_y_reanudar_descarga]
+                             self.text_peso_progreso,self.btn_pausar_y_reanudar_descarga,self.btn_more_options]
+        self.list_to_click = [self.btn_cancelar_descarga,self.btn_pausar_y_reanudar_descarga,self.btn_more_options]
 
 
     def cargar_configs(self):
@@ -202,6 +204,7 @@ class Downloader:
 
     def cerrar_todo(self,result):
         if result == 'cancelar': return 0
+        self.actualizar_porcentaje_DB()
         self.paused = False
         self.canceled = True
         pag.quit()
@@ -214,6 +217,23 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         self.reanudar_bool = True
         self.start_download()
+
+
+    def func_select_of_options(self):
+        texto = self.txts['apagar-al-finalizar']+': '+(self.txts['si'] if self.apagar_al_finalizar else 'NO')
+        self.mini_GUI_manager.add(mini_GUI.select(self.btn_more_options.rect.topright,[texto]),self.func_select_box)
+
+    def func_select_box(self,result):
+        if result['index'] == 0:
+            self.GUI_manager.add(
+                #GUI para saber si quiere apagar al finalizar la descarga
+                GUI.Desicion(self.ventana_rect.center, self.txts['apagar-al-finalizar'], self.txts['Desea_apagar']),
+                self.func_toggle_apagar
+            )
+
+    def func_toggle_apagar(self,result):
+        self.apagar_al_finalizar = True if result == 'aceptar' else False
+        
 
     def crear_conexion(self):
         self.text_estado_general.change_text(self.txts['descripcion-state[conectando]'])
@@ -257,7 +277,6 @@ class Downloader:
         self.hilos_listos = 0
         self.peso_descargado = 0
 
-        # self.lista_hilos.clear()
         self.lista_status_hilos.clear()
         for x in range(self.num_hilos):
             if not self.reanudar_bool:
@@ -360,7 +379,8 @@ class Downloader:
         
         self.pool_hilos.shutdown()
 
-        self.actualizar_porcentaje_DB()
+        self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',['Completado',self.id])
+        self.Database.commit()
         
         self.can_download = True
         self.hilos_listos = 0
@@ -406,6 +426,8 @@ class Downloader:
                             self.cerrar_todo
                         )
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    if self.mini_GUI_manager.click(evento.pos):
+                        continue
                     for x in self.list_to_click:
                         x.click((mx,my))
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
@@ -439,6 +461,8 @@ class Downloader:
                 pag.draw.line(self.ventana, 'black', x[0],x[1], width=3)
 
             self.GUI_manager.draw(self.ventana,(mx,my))
+            
+            self.mini_GUI_manager.draw(self.ventana,(mx,my))
 
             pag.display.flip()
             self.relog.tick(60)

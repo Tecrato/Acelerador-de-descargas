@@ -12,8 +12,8 @@ class Other_funcs:
         
         if respuesta['index'] == 0:
             self.descargas_adyacentes.append(
-                # Thread(target=subprocess.run,args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
-                Thread(target=subprocess.run,args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
+                Thread(target=subprocess.run,args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
+                # Thread(target=subprocess.run,args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
             )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:

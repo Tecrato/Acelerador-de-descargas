@@ -38,10 +38,10 @@ class Download_Manager(Other_funcs):
         self.relog = pag.time.Clock()
 
 
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -160,6 +160,8 @@ class Download_Manager(Other_funcs):
         self.text_extras_title = Create_text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx,30))
         self.btn_extras_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w,0), 20, 'topright', 'white', (20,20,20), (50,50,50), 0, -1, border_width=-1, func=self.func_extras_to_main)
         
+        self.text_extras_version = Create_text('Version 2.2', 26, self.font_mononoki, self.ventana_rect.bottomright,'bottomright')
+
         self.text_extras_mi_nombre = Create_text('Creado por: Edouard Sandoval', 20, self.font_mononoki, (10,100), 'left')
         self.btn_extras_link_github = Create_boton('',30,self.font_simbolos, (40,180), 20, 'bottomleft', func=lambda: os.startfile('http://github.com/Tecrato'))
         self.btn_extras_link_youtube = Create_boton('輸',30,self.font_simbolos, (100,180), 20, 'bottomleft', func=lambda: os.startfile('http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
@@ -183,7 +185,7 @@ class Download_Manager(Other_funcs):
         self.list_to_click_config = [self.btn_config_exit,self.btn_mas_hilos,self.btn_menos_hilos,self.btn_config_idioma_en,self.btn_config_idioma_es]
 
         # Pantalla de Extras
-        self.list_to_draw_extras = [self.text_extras_title,self.btn_extras_exit,self.text_extras_mi_nombre,self.btn_extras_link_github,self.btn_extras_link_youtube]
+        self.list_to_draw_extras = [self.text_extras_title,self.btn_extras_exit,self.text_extras_mi_nombre,self.btn_extras_link_github,self.btn_extras_link_youtube,self.text_extras_version]
         self.list_to_click_extras = [self.btn_extras_exit,self.btn_extras_link_github,self.btn_extras_link_youtube]
 
     def comprobar_url(self) -> None:
@@ -352,7 +354,7 @@ class Download_Manager(Other_funcs):
                         sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if self.Mini_GUI_manager.click(evento.pos):
-                        break
+                        continue
                     elif self.lista_descargas.rect.collidepoint((mx,my)):
                         self.lista_descargas.click((mx,my))
                     for x in self.list_to_click:

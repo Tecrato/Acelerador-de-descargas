@@ -3,6 +3,7 @@
 
 textos_español = {
     # Traducciones literales
+    'si': 'Si',
     'aceptar': 'Aceptar',
     'actualizar_url': 'Actualizar url',
     'cancelar': 'Cancelar',
@@ -14,6 +15,10 @@ textos_español = {
     'iniciar': 'Iniciar',
     'pausar': 'Pausar',
     'reanudar': 'Resumir',
+    'apagar-al-finalizar': 'Apagar al finalizar',
+    'Desea_apagar': 'Desea apagar al finalizar la descarga?',
+
+
     
     # Titulo principal
     'title': 'Manejador de descargas',
@@ -35,7 +40,6 @@ textos_español = {
     'title-configuraciones': 'Configuraciones',
     'config-hilos': 'Hilos: {}',
     'config-idioma': 'Idioma:',
-    'config-apagar-al-finalizar': 'Apagar al finalizar:  ',
 
     
 
@@ -65,6 +69,7 @@ textos_español = {
 
 textos_ingles = {
     # traducciones literales
+    'si': 'Yes',
     'aceptar': 'Accept',
     'actualizar_url': 'Update url',
     'cancelar': 'Cancel',
@@ -76,6 +81,8 @@ textos_ingles = {
     'iniciar': 'Play',
     'pausar': 'Pause',
     'reanudar': 'Resume',
+    'apagar-al-finalizar': 'Turn off at the end',
+    'Desea_apagar': 'Do you want to turn off at the end of the download?',
 
 
     # Titulo principal
@@ -98,7 +105,6 @@ textos_ingles = {
     'title-configuraciones': 'Configurations',
     'config-hilos': 'Threads: {}',
     'config-idioma': 'Lenguaje:',
-    'config-apagar-al-finalizar': 'Turn off at the end:  ',
 
 
 
