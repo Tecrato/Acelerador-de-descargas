@@ -12,11 +12,17 @@ class Other_funcs:
         
         if respuesta['index'] == 0:
             self.descargas_adyacentes.append(
+                # Thread(target=subprocess.run,args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
                 Thread(target=subprocess.run,args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
             )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:
-            self.del_download_DB(*self.cached_list_DB[respuesta['obj']['index']][0:2])
+            # GUI para confirmar borrar el elemento
+            self.GUI_manager.add(
+                GUI.Desicion(self.ventana_rect.center, 'Confirmar', '¿Desea borrar el elemento seleccionado!?'),
+                lambda r: (self.del_download_DB(*self.cached_list_DB[respuesta['obj']['index']][:2]) if r == 'aceptar' else None)
+            )
+            
         elif respuesta['index'] == 2:
             self.actualizar_url = True
             self.new_url_id = self.cached_list_DB[respuesta['obj']['index']][0]
@@ -93,7 +99,6 @@ class Other_funcs:
         self.thread_new_download.start()
 
     def func_change_idioma(self, idioma):
-        print(idioma)
         self.idioma = idioma
         self.txts = idiomas[self.idioma]
         self.configs['idioma'] = self.idioma

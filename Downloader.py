@@ -2,7 +2,7 @@ import pygame as pag, sys, os, time, requests, json, sqlite3
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from pygame.locals import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL
+from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL
 
 
 import Utilidades
@@ -91,14 +91,16 @@ class Downloader:
         self.prepared_session = requests.session()
         
 
-        self.cargar_configs()
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
         self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
         self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
 
+        self.cargar_configs()
         self.generate_objs()
         self.Func_pool.start('descargar')
 
@@ -136,10 +138,10 @@ class Downloader:
         self.text_title_hilos = Create_text(self.txts['title_hilos'], 20, self.font_mononoki, (600, 30), 'center')
 
 
-        self.btn_cancelar_descarga = Create_boton(self.txts['btn-cancelar'], 20, self.font_mononoki, ((800/2)/3,60), (20,10), 'center', 'black', 
+        self.btn_cancelar_descarga = Create_boton(self.txts['cancelar'], 20, self.font_mononoki, ((800/2)/3,60), (20,10), 'center', 'black', 
                                         'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_cancelar)
         
-        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['btn-reanudar'], 20, self.font_mononoki, (((800/2)/3)*2,60), (20,10), 'center', 'black', 
+        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['reanudar'], 20, self.font_mononoki, (((800/2)/3)*2,60), (20,10), 'center', 'black', 
                                         'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_reanudar)
     
         #   Barra de progreso
@@ -154,17 +156,14 @@ class Downloader:
 
 
     def cargar_configs(self):
-        
-        progreso = (self.peso_descargado/self.peso_total)
-        self.estado = f'{progreso*100:.2f}%'
-        self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[f'{progreso*100:.2f}%',self.id])
-        self.Database.commit()
+
 
         try:
             self.configs:dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
         except:
             self.configs = {}
         self.idioma = self.configs.get('idioma','español')
+        self.txts = idiomas[self.idioma]
     
     
     def format_size(self,size) -> list:
@@ -176,12 +175,9 @@ class Downloader:
 
     def func_pausar(self) -> None:
         self.paused = True
-        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
-        progreso = (self.peso_descargado/self.peso_total)
-        self.estado = f'{progreso*100:.2f}%'
-        self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[f'{progreso*100:.2f}%',self.id])
-        self.Database.commit()
+        self.actualizar_porcentaje_DB()
     def func_cancelar(self) -> None:
         if not self.downloading:
             return 0
@@ -189,16 +185,13 @@ class Downloader:
         self.canceled = True
         self.downloading = False
         self.can_download = True
-        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
-        progreso = (self.peso_descargado/self.peso_total)
-        self.estado = f'{progreso*100:.2f}%'
-        self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[f'{progreso*100:.2f}%',self.id])
-        self.Database.commit()
+        self.actualizar_porcentaje_DB()
         for num in range(self.num_hilos):
             self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
         self.GUI_manager.add(
-            GUI.Desicion(self.ventana_rect.center,'Cerrar', 'Desea cerrar la ventana de descarga?\nLa descarga se podra reanudar luego.'),
+            GUI.Desicion(self.ventana_rect.center,self.txts['cerrar'], 'Desea cerrar la ventana de descarga?\n\nLa descarga se podra reanudar luego.'),
             self.cerrar_todo
         )
         
@@ -217,7 +210,7 @@ class Downloader:
         if not self.can_download: return 0
         self.paused = False
         self.canceled = False
-        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-pausar'])
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['pausar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         self.reanudar_bool = True
         self.start_download()
@@ -233,15 +226,26 @@ class Downloader:
         except requests.exceptions.ConnectionError:
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, 'Error', 'A ocurrido un error al conectar con el servidor\n\nDesea volver a intentarlo?'),
-                self.Func_pool.start('descargar')
+                lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
+            )
+        except requests.exceptions.MissingSchema:
+            self.GUI_manager.add(
+                GUI.Info(self.ventana_rect.center, 'Error', 'El URL no funciona\n\nActualize la url en el programa principal\npara continuar con la descarga?'),
+                self.cerrar_todo
             )
         except Exception as err:
-            # print(err)
+            print(type(err))
+            print(err)
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, 'Error', 'A ocurrido un error inesperado\n\nDesea volver a intentarlo?'),
-                self.Func_pool.start('descargar')
+                lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
             )
         
+    def actualizar_porcentaje_DB(self):
+        progreso = (self.peso_descargado/self.peso_total)
+        self.estado = f'{progreso*100:.2f}%' if float(progreso) != 1.0 else 'Completado'
+        self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[f'{progreso*100:.2f}%',self.id])
+        self.Database.commit()
 
 
     def start_download(self) -> None:
@@ -262,7 +266,7 @@ class Downloader:
                 except:
                     pass
                 
-            self.lista_status_hilos.append(Create_text(self.txts['status_hilo[iniciando]'].format(x), 16, self.font_mononoki, (50,40*x +50), 'left'))
+            self.lista_status_hilos.append(Create_text(self.txts['status_hilo[iniciando]'].format(x), 16, self.font_mononoki, (50,(40*x) +10), 'left'))
             if x == self.num_hilos-1:
                 self.surf_h_max = self.lista_status_hilos[-1].rect.bottom
             self.lista_status_hilos_text.append(self.txts['status_hilo[iniciando]'].format(x))
@@ -272,7 +276,7 @@ class Downloader:
                         self.division*x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1
                         )
 
-        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-pausar'])
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['pausar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         
         self.text_estado_general.change_text(self.txts['descripcion-state[descargando]'])
@@ -343,6 +347,38 @@ class Downloader:
                 time.sleep(.3)
             return self.download_thread(num,start,end,local_count,(tiempo_reset*2) if tiempo_reset < 30 else tiempo_reset)
 
+    def finish_download(self):
+        self.downloading = False
+        
+        with open(user_downloads_dir()+'/'+self.file_name,'wb') as file:
+            for x in range(self.num_hilos):
+                with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'),'rb') as parte:
+                    file.write(parte.read())
+                os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
+            file.close()
+        os.rmdir(self.carpeta_cache)
+        
+        self.pool_hilos.shutdown()
+
+        self.actualizar_porcentaje_DB()
+        
+        self.can_download = True
+        self.hilos_listos = 0
+        self.peso_descargado = 0
+        self.text_estado_general.change_text(self.txts['descripcion-state[finalizado]'])
+        self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
+        self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
+
+        if self.apagar_al_finalizar:
+            os.system('shutdown /s /t 10')
+            self.cerrar_todo()
+            return 0
+        
+        self.GUI_manager.add(
+            GUI.Desicion(self.ventana_rect.center, 'Enhorabuena', 'La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?'),
+            self.func_abrir_carpeta_antes_de_salir
+        )
+        
 
     def main_cycle(self) -> None:
         if self.screen_main:
@@ -356,10 +392,7 @@ class Downloader:
 
             for evento in eventos:
                 if evento.type == QUIT:
-                    self.paused = False
-                    self.canceled = True
-                    pag.quit()
-                    sys.exit()
+                    self.cerrar_todo('a')
                 elif self.GUI_manager.active >= 0:
                     if evento.type == KEYDOWN and evento.key == K_ESCAPE:
                         self.GUI_manager.pop()
@@ -367,15 +400,16 @@ class Downloader:
                         self.GUI_manager.click((mx,my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
-                        self.paused = False
-                        self.canceled = True
-                        pag.quit()
-                        sys.exit()
+                        # GUI preguntando si desea salir del programa, y si acepta ejecutar la funcion self.cerrar_todo()
+                        self.GUI_manager.add(
+                            GUI.Desicion(self.ventana_rect.center, self.txts['cerrar'], '¿Desea cerrar el programa?'),
+                            self.cerrar_todo
+                        )
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for x in self.list_to_click:
                         x.click((mx,my))
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
-                    if -self.surf_h_max + 300 < self.surf_h_diff + evento.y*20 < 0:
+                    if -self.surf_h_max + 300 < self.surf_h_diff + evento.y*20 < 10:
                         self.surf_h_diff += evento.y*20
                         for x in self.lista_status_hilos:
                             x.move_rel((0,evento.y*20))
@@ -389,40 +423,7 @@ class Downloader:
                 self.barra_progreso.set_volumen(progreso)
 
             if self.hilos_listos == self.num_hilos:
-                self.downloading = False
-                
-                with open(user_downloads_dir()+'/'+self.file_name,'wb') as file:
-                    for x in range(self.num_hilos):
-                        with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'),'rb') as parte:
-                            file.write(parte.read())
-                        os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
-                    file.close()
-                os.rmdir(self.carpeta_cache)
-                
-                self.pool_hilos.shutdown()
-                
-                self.can_download = True
-                self.hilos_listos = 0
-                self.peso_descargado = 0
-                self.text_estado_general.change_text(self.txts['descripcion-state[finalizado]'])
-                self.btn_pausar_y_reanudar_descarga.change_text(self.txts['btn-reanudar'])
-                self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
-                
-                self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?',['Completado',self.id])
-                self.Database.commit()
-
-                if self.apagar_al_finalizar:
-                    self.paused = False
-                    self.canceled = True
-                    self.screen_main = False
-                    os.system('shutdown /s /t 10')
-                    pag.quit()
-                    sys.exit()
-                else:
-                    self.GUI_manager.add(
-                        GUI.Desicion(self.ventana_rect.center, 'Enhorabuena', 'La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?'),
-                        self.func_abrir_carpeta_antes_de_salir
-                    )
+                self.finish_download()
                     
 
             for x in self.list_to_draw:

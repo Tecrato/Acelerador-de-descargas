@@ -3,8 +3,17 @@
 
 textos_español = {
     # Traducciones literales
-    'eliminar': 'Eliminar',
+    'aceptar': 'Aceptar',
     'actualizar_url': 'Actualizar url',
+    'cancelar': 'Cancelar',
+    'cerrar': 'Cerrar',
+    'comprobar': 'Comprobar',
+    'descargar': 'Descargar',
+    'detalles': 'Detalles',
+    'eliminar': 'Eliminar',
+    'iniciar': 'Iniciar',
+    'pausar': 'Pausar',
+    'reanudar': 'Resumir',
     
     # Titulo principal
     'title': 'Manejador de descargas',
@@ -12,9 +21,6 @@ textos_español = {
     # Botones
     'btn-nueva_descarga': 'Nueva descarga',
     'btn-cambiar_carpeta': 'Cambiar carpeta',
-    'btn-comprobar': 'Comprobar',
-    'btn-detalles': 'Detalles',
-    'btn-descargar': 'Descargar',
 
     # EstaDos de los hilos
     'status_hilo[iniciando]': 'Hilo {}: Iniciando...',
@@ -50,14 +56,6 @@ textos_español = {
     'descripcion-state[reintentando]': 'Estado: Reintentando',
     'descripcion-state[finalizado]': 'Estado: Finalizado',
     'descripcion-state[error internet]': 'Estado: Error al conectar',
-
-    # Botones
-    'btn-iniciar': 'Iniciar',
-    'btn-cancelar': 'Cancelar',
-    'btn-aceptar': 'Aceptar',
-    'btn-pausar': 'Pausar',
-    'btn-reanudar': 'Resumir',
-
     
 }
 
@@ -67,8 +65,18 @@ textos_español = {
 
 textos_ingles = {
     # traducciones literales
-    'eliminar': 'Delete',
+    'aceptar': 'Accept',
     'actualizar_url': 'Update url',
+    'cancelar': 'Cancel',
+    'cerrar': 'Close',
+    'comprobar': 'Check',
+    'descargar': 'Download',
+    'detalles': 'Details',
+    'eliminar': 'Delete',
+    'iniciar': 'Play',
+    'pausar': 'Pause',
+    'reanudar': 'Resume',
+
 
     # Titulo principal
     'title': 'Downloads manager',
@@ -76,9 +84,6 @@ textos_ingles = {
     # Botones
     'btn-nueva_descarga': 'New download',
     'btn-cambiar_carpeta': 'Change dir',
-    'btn-comprobar': 'Check',
-    'btn-detalles': 'Details',
-    'btn-descargar': 'Download',
 
     # Estados de los hilos
     'status_hilo[iniciando]': 'Thread {}: Starting...',
@@ -98,7 +103,6 @@ textos_ingles = {
 
 
     # Downloader
-
     'title_hilos': 'Downloads threads',
 
     # Estados de los hilos
@@ -115,12 +119,6 @@ textos_ingles = {
     'descripcion-state[finalizado]': 'State: Finalized',
     'descripcion-state[error internet]': 'State: Connection Error',
 
-    # Botones
-    'btn-iniciar': 'Play',
-    'btn-cancelar': 'Cancel',
-    'btn-aceptar': 'Accept',
-    'btn-pausar': 'Pause',
-    'btn-reanudar': 'Resume',
 }
 
 idiomas = {

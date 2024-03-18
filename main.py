@@ -40,6 +40,8 @@ class Download_Manager(Other_funcs):
 
         self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
         self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -82,7 +84,7 @@ class Download_Manager(Other_funcs):
 
 
         try:
-            self.configs = json.load(open(self.carpeta_config.joinpath('./configs.json')))
+            self.configs:dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
         except:
             self.configs = {}
         self.threads = self.configs.get('hilos',8)
@@ -124,15 +126,15 @@ class Download_Manager(Other_funcs):
         self.new_download_rect = pag.Rect(0,0,500,400)
         self.new_download_rect.center = self.ventana_rect.center
         self.text_newd_title = Create_text('Agregar nueva descarga', 16, self.font_mononoki,(self.new_download_rect.centerx,self.new_download_rect.top+20))
-        self.boton_newd_cancelar = Create_boton(self.txts['btn-cancelar'], 16, self.font_mononoki, Vector2(-20,0)+self.new_download_rect.bottomright, (30,20), 'bottomright', border_radius=0, border_top_right_radius=20, func=self.func_newd_close)
-        self.boton_newd_aceptar = Create_boton(self.txts['btn-aceptar'], 16, self.font_mononoki, (self.boton_newd_cancelar.rect.left,self.new_download_rect.bottom), (30,19), 'bottomright', border_radius=0, border_top_left_radius=20,func=self.func_add_download_to_DB)
+        self.boton_newd_cancelar = Create_boton(self.txts['cancelar'], 16, self.font_mononoki, Vector2(-20,0)+self.new_download_rect.bottomright, (30,20), 'bottomright', border_radius=0, border_top_right_radius=20, func=self.func_newd_close)
+        self.boton_newd_aceptar = Create_boton(self.txts['aceptar'], 16, self.font_mononoki, (self.boton_newd_cancelar.rect.left,self.new_download_rect.bottom), (30,19), 'bottomright', border_radius=0, border_top_left_radius=20,func=self.func_add_download_to_DB)
 
-        self.input_newd_url = Input_text((self.new_download_rect.left+20,self.new_download_rect.top + 100), (12,300), self.font_mononoki,'url de la descarga',200)
+        self.input_newd_url = Input_text((self.new_download_rect.left+20,self.new_download_rect.top + 100), (12,300), self.font_mononoki,'url de la descarga',max_letter=400)
         self.input_newd_paste = Create_boton('',22,self.font_simbolos,(self.input_newd_url.text_rect.right,self.input_newd_url.pos.y), (20,10), 'left','black','lightgrey', 'darkgrey', border_width=1, border_radius=0, border_top_right_radius=20, border_bottom_right_radius=20, func=self.func_paste_url)
 
-        self.btn_comprobar_url = Create_boton(self.txts['btn-comprobar'],16,self.font_mononoki,(self.new_download_rect.right-20,self.input_newd_url.pos.y), (20,10), 'right','black','lightgrey', 'darkgrey', border_width=1, border_radius=20, func=self.func_comprobar_url)#, border_top_left_radius=20, border_bottom_left_radius=20
+        self.btn_comprobar_url = Create_boton(self.txts['comprobar'],16,self.font_mononoki,(self.new_download_rect.right-20,self.input_newd_url.pos.y), (20,10), 'right','black','lightgrey', 'darkgrey', border_width=1, border_radius=20, func=self.func_comprobar_url)#, border_top_left_radius=20, border_bottom_left_radius=20
         
-        self.text_newd_title_details = Create_text(self.txts['btn-comprobar'], 20, self.font_mononoki, (400,250))
+        self.text_newd_title_details = Create_text(self.txts['comprobar'], 20, self.font_mononoki, (400,250))
         self.text_newd_filename = Create_text('Nombre: -----', 16, self.font_mononoki, (self.new_download_rect.left+20,270),'left')
         self.text_newd_size = Create_text('Peso: -----', 16, self.font_mononoki, (self.new_download_rect.left+20,290),'left')
         self.text_newd_status = Create_text('Estado: Esperando', 16, self.font_mononoki, (self.new_download_rect.left+20,310),'left')
@@ -333,11 +335,17 @@ class Download_Manager(Other_funcs):
             self.Mini_GUI_manager.draw(self.ventana,(mx,my))
 
             eventos = pag.event.get()
+            self.GUI_manager.input_update(eventos)
 
             for evento in eventos:
                 if evento.type == QUIT:
                     pag.quit()
                     sys.exit()
+                elif self.GUI_manager.active >= 0:
+                    if evento.type == KEYDOWN and evento.key == K_ESCAPE:
+                        self.GUI_manager.pop()
+                    elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                        self.GUI_manager.click((mx,my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         pag.quit()
@@ -359,8 +367,10 @@ class Download_Manager(Other_funcs):
                     elif self.lista_descargas.rect.collidepoint((mx,my)):
                         self.lista_descargas.click((mx,my))
                     if self.lista_descargas.rect.collidepoint((mx,my)) and (result := self.lista_descargas.click((mx,my))):
-                        self.Mini_GUI_manager.add(mini_GUI.select((mx,my),[self.txts['btn-descargar'],self.txts['eliminar'],self.txts['actualizar_url']],captured=result),self.func_select_box)
+                        self.Mini_GUI_manager.add(mini_GUI.select((mx,my),[self.txts['descargar'],self.txts['eliminar'],self.txts['actualizar_url']],captured=result),self.func_select_box)
         
+            
+            self.GUI_manager.draw(self.ventana,(mx,my))
 
             pag.display.flip()
             self.relog.tick(60)
