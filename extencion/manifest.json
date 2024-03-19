@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Ejemplo de Extensión",
+  "version": "1.0",
+  "permissions": ["downloads", "tabs", "activeTab", "storage", "scripting"],
+  "action": {"default_popup": "popup.html"},
+  "background": {
+    "service_worker": "background.js"
+  }
+}

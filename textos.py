@@ -1,6 +1,4 @@
 
-
-
 textos_español = {
     # Traducciones literales
     'si': 'Si',
@@ -17,6 +15,7 @@ textos_español = {
     'reanudar': 'Resumir',
     'apagar-al-finalizar': 'Apagar al finalizar',
     'Desea_apagar': 'Desea apagar al finalizar la descarga?',
+    'enhorabuena': 'Enhorabuena',
 
 
     
@@ -46,7 +45,10 @@ textos_español = {
     # Downloader
     
     'title_hilos': 'Hilos de descarga',
-    
+    'gui-desea_abrir_la _carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
+    'gui-url no sirve': "El URL a dejado de funcionar\n\nActualize la URL o intente mas tarde",
+    "gui-error inesperado":"A ocurrido un error inesperado\n\nDesea volver a intentarlo?",
+
     # Estados de los hilos
     'descripcion-peso': 'Peso: {}',
     'descripcion-numero_hilos': 'Numero de hilos: {}',
@@ -83,6 +85,7 @@ textos_ingles = {
     'reanudar': 'Resume',
     'apagar-al-finalizar': 'Turn off at the end',
     'Desea_apagar': 'Do you want to turn off at the end of the download?',
+    'enhorabuena': 'Congratulations',
 
 
     # Titulo principal
@@ -94,7 +97,7 @@ textos_ingles = {
 
     # Estados de los hilos
     'status_hilo[iniciando]': 'Thread {}: Starting...',
-    'status_hilo[conectando]': 'Thread {}: Conecting...',
+    'status_hilo[conectando]': 'Thread {}: Connecting...',
     'status_hilo[pausado]': 'Thread {}: Paused',
     'status_hilo[cancelado]': 'Thread {}: Canceled',
     'status_hilo[reconectando]': 'Thread {}: Retrying...',
@@ -110,12 +113,15 @@ textos_ingles = {
 
     # Downloader
     'title_hilos': 'Downloads threads',
+    'gui-desea_abrir_la_carpeta': "Download Finished\n\nDo you want open the downloads dir?",
+    'gui-url no sirve': "The URL it's not working\n\nUpdate it or try again later.",
+    "gui-error inesperado": "An unexpected error has occurred\n\nDo you want to try again?",
 
     # Estados de los hilos
     'descripcion-peso': 'Size: {}',
     'descripcion-numero_hilos': 'number of threads: {}',
     'descripcion-state[esperando]': 'State: Waiting...',
-    'descripcion-state[conectando]': 'State: Conecting...',
+    'descripcion-state[conectando]': 'State: Connecting...',
     'descripcion-state[descargando]': 'Estado: Downloading...',
     'descripcion-state[disponible]': 'State: Available',
     'descripcion-state[error]': 'State: Error',
