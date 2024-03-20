@@ -12,7 +12,7 @@ datas = [
 a = Analysis(
     ['main.py'],
     datas=datas,
-    noarchive=False,
+    noarchive=True,
 )
 pyz = PYZ(a.pure)
 
@@ -39,7 +39,7 @@ exe = EXE(
 a2 = Analysis(
     ['Downloader.py'],
     datas=datas,
-    noarchive=False,
+    noarchive=True,
 )
 pyz2 = PYZ(a.pure)
 
@@ -66,6 +66,7 @@ coll = COLLECT(
     exe,
     exe2,
     a.binaries,
+    a2.binaries,
     a.datas,
     strip=False,
     upx=True,

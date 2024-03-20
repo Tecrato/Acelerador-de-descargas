@@ -1,4 +1,7 @@
-- en el historial tambien guardara el tipo de archivo para que cuando decida reanudar la descarga,
-si trae otro tipo de archivo como html, indicara que es link a expirado o simplemente ya no funciona.
 
-- dentro de la ventana de descargas se podra cambiar el status y el link
+
+Hacer un sistema para actualizar el programa
+
+Fixed El porcentaje de la descarga se colocaba en 0.00% cuando iniciaba la descarga.
+
+Ahora se puede poner la pagina principal del mediafire, la que esta antes de oprimir el boton de descargar.

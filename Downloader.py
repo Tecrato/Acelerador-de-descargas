@@ -1,7 +1,10 @@
-import pygame as pag, sys, os, time, requests, json, sqlite3
+import pygame as pag, sys, os, time, requests, json, sqlite3, shutil
+
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup as bsoup4
 from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL
 
 import Utilidades
@@ -21,7 +24,6 @@ def format_size(size) -> list:
         size /= 1024
         count += 1
     return [count, size]
-
 
 
 class Downloader:
@@ -49,6 +51,7 @@ class Downloader:
         self.num_hilos: int = self.raw_data[5]
         self.tiempo: float = float(self.raw_data[6])
         self.estado: str = self.raw_data[7]
+
 
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
 
@@ -90,10 +93,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -234,7 +237,26 @@ class Downloader:
     def crear_conexion(self):
         self.text_estado_general.change_text(self.txts['descripcion-state[conectando]'])
         try:
-            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
+            parse = urlparse(self.url)
+            
+            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
+                if os.path.exists(self.carpeta_cache.joinpath(f'./url cache.txt')):
+                    with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'r+') as file:
+                        url = file.read()
+                else:
+                    url = bsoup4(requests.get(self.url, timeout=15).text, 'html.parser').find(id='downloadButton').get('href',False)
+                    with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'w') as file:
+                        file.write(url)
+            else:
+                url = self.url
+
+            response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
+
+            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file' and int(response.headers.get('Expires',1)) == 0:
+                os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
+                return self.crear_conexion()
+
+            # response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
             self.prepared_request = response.request
             response = self.prepared_session.send(self.prepared_request, stream=True, allow_redirects=True, timeout=15)
 
@@ -269,6 +291,8 @@ class Downloader:
             )
 
     def actualizar_porcentaje_db(self):
+        if self.peso_descargado == 0:
+            return
         progreso = (self.peso_descargado / self.peso_total)
         self.estado = f'{progreso * 100:.2f}%' if float(progreso) != 1.0 else 'Completado'
         self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', [f'{progreso * 100:.2f}%', self.id])
@@ -351,7 +375,7 @@ class Downloader:
 
             self.lista_status_hilos_text[num] = self.txts['status_hilo[finalizado]'].format(num)
             self.hilos_listos += 1
-            return 0
+            return
         except (Exception, LowSizeError) as err:
             # print(err)
             # print(type(err))

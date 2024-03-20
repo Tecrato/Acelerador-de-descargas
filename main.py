@@ -1,5 +1,4 @@
 from urllib.parse import unquote
-
 import Utilidades
 import json
 import os
@@ -7,6 +6,8 @@ import pygame as pag
 import requests
 import sqlite3
 import sys
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup as bsoup4
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text
 from platformdirs import user_config_path, user_cache_path
 from pygame.constants import MOUSEBUTTONDOWN, KEYDOWN, QUIT, K_ESCAPE
@@ -14,6 +15,7 @@ from pygame import Vector2
 
 from funcs import Other_funcs
 from textos import idiomas
+from my_warnings import *
 
 pag.init()
 
@@ -51,10 +53,10 @@ class DownloadManager(Other_funcs):
         self.threads = 4
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -218,7 +220,7 @@ class DownloadManager(Other_funcs):
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_extras_to_main)
 
-        self.text_extras_version = Create_text('Version 2.2', 26, self.font_mononoki, self.ventana_rect.bottomright,
+        self.text_extras_version = Create_text('Version 2.3.1', 26, self.font_mononoki, self.ventana_rect.bottomright,
                                                'bottomright')
 
         self.text_extras_mi_nombre = Create_text('Edouard Sandoval', 30, self.font_mononoki, (400, 100),
@@ -277,7 +279,14 @@ class DownloadManager(Other_funcs):
 
         self.text_newd_status.change_text('Conectando...')
         try:
-            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
+            
+            parse = urlparse(self.url)
+            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
+                url = bsoup4(requests.get(self.url).text, 'html.parser').find(id='downloadButton').get('href',False)
+
+                response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
+            else:
+                response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
             print(response.headers)
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
@@ -294,29 +303,30 @@ class DownloadManager(Other_funcs):
             self.text_newd_status.change_text('Disponible')
 
             self.can_add_new_download = True
-            return None
+            return
         except requests.URLRequired:
-            return None
+            return
         except requests.exceptions.MissingSchema:
             self.text_newd_status.change_text('URL inválida')
-            return None
+            return
         except requests.exceptions.InvalidSchema:
             self.text_newd_status.change_text('URL inválida')
-            return None
+            return
         except requests.exceptions.ReadTimeout:
             self.text_newd_status.change_text('Tiempo agotado')
-            return None
+            return
         except requests.exceptions.ConnectTimeout:
             self.text_newd_status.change_text('Tiempo de espera agotado')
-            return None
+            return
         except requests.exceptions.ConnectionError:
-            self.text_newd_status.change_text('Compruebe su coneccion a internet')
-            return None
+            self.text_newd_status.change_text('Compruebe su conexion a internet')
+            return
         except Exception as err:
             print(err)
             print(type(err))
+            print(response)
             self.text_newd_status.change_text('Error')
-            return None
+            return
 
     def screen_configs(self):
         if self.screen_configs_bool:
@@ -448,7 +458,7 @@ class DownloadManager(Other_funcs):
                     if (self.lista_descargas.rect.collidepoint((mx, my)) and
                             (result := self.lista_descargas.click((mx, my)))):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx, my),
-                                                                  [self.txts['descargar'], self.txts['eliminar'],
+                                                                  [self.txts['descargar'] if result['result'][-1] != 'Completado' else 'Redescargar', self.txts['eliminar'],
                                                                    self.txts['actualizar_url'], 'get url'],
                                                                   captured=result),
                                                   self.func_select_box)
