@@ -1,4 +1,3 @@
-from urllib.parse import unquote
 import Utilidades
 import json
 import os
@@ -6,7 +5,11 @@ import pygame as pag
 import requests
 import sqlite3
 import sys
-from urllib.parse import urlparse
+import time
+import subprocess
+
+from threading import Thread
+from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup as bsoup4
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text
 from platformdirs import user_config_path, user_cache_path
@@ -40,24 +43,26 @@ class DownloadManager(Other_funcs):
         self.carpeta_cache = user_cache_path('Acelerador de descargas', 'Edouard Sandoval')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
+        self.data_actualizacion = {}
+        self.url_actualizacion = ''
         self.new_url: str = ''
         self.new_filename: str = ''
         self.new_file_type: str = ''
         self.new_file_size: int = 0
         self.thread_new_download = None
-        self.can_add_new_download: bool = False
         self.actualizar_url = False
 
         self.cached_list_DB = []
         self.descargas_adyacentes = []
 
-        self.threads = 4
+        self.version = '2.5.0'
+        self.threads = 8
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -72,6 +77,7 @@ class DownloadManager(Other_funcs):
         self.load_resources()
         self.generate_objs()
         self.reload_lista_descargas()
+        self.Func_pool.start('actualizacion')
 
         self.screen_main_bool = True
         self.screen_new_download_bool = True
@@ -82,7 +88,6 @@ class DownloadManager(Other_funcs):
         self.cicle_try = 0
 
         if url:
-            print(self.input_newd_url.get_text())
             self.func_paste_url(url)
             self.func_comprobar_url()
             self.screen_new_download()
@@ -124,6 +129,8 @@ class DownloadManager(Other_funcs):
         self.GUI_manager = GUI.GUI_admin()
         self.Mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
         self.Func_pool = Funcs_pool()
+        self.Func_pool.add('actualizacion', self.buscar_acualizaciones)
+        self.Func_pool.add('descargar actualizacion', self.descargar_actualizacion)
 
         # Pantalla principal
         self.txt_title = Create_text(self.txts['title'], 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
@@ -209,12 +216,10 @@ class DownloadManager(Other_funcs):
 
         self.text_config_idioma = Create_text(self.txts['config-idioma'], 16, self.font_mononoki, (20, 130), 'left')
         self.btn_config_idioma_es = Create_boton('Español', 14, self.font_mononoki, (20, 160), (20, 10), 'left',
-                                                 'black',
-                                                 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+                                                 'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('español'))
         self.btn_config_idioma_en = Create_boton('English', 14, self.font_mononoki, (110, 160), (20, 10), 'left',
-                                                 'black',
-                                                 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+                                                 'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('ingles'))
 
         # Pantalla de extras
@@ -223,7 +228,7 @@ class DownloadManager(Other_funcs):
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_extras_to_main)
 
-        self.text_extras_version = Create_text('Version 2.4.0', 26, self.font_mononoki, self.ventana_rect.bottomright,
+        self.text_extras_version = Create_text('Version '+self.version, 26, self.font_mononoki, self.ventana_rect.bottomright,
                                                'bottomright')
 
         self.text_extras_mi_nombre = Create_text('Edouard Sandoval', 30, self.font_mononoki, (400, 100),
@@ -263,10 +268,57 @@ class DownloadManager(Other_funcs):
                                     self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version]
         self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube]
 
+    def buscar_acualizaciones(self):
+        response = requests.get('https://tecrato.pythonanywhere.com/api/programs?program=acelerador+de+descargas&version=last')
+    
+        resultado = response.json()
+        comparativa = int(self.version.replace('.','')) < int(resultado['version'].replace('.',''))
+
+        if comparativa:
+
+            self.data_actualizacion['url'] = bsoup4(requests.get(resultado['url']).text, 'html.parser').find(id='downloadButton').get('href',False)
+            response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=15)
+
+            self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+            if self.data_actualizacion['file_type'] in ['text/plain', 'text/html']:
+                raise TrajoHTML('No paginas')
+            self.data_actualizacion['size'] = int(response2.headers.get('content-length'))
+            self.data_actualizacion['file_name'] = response2.headers.get('content-disposition').split('filename=')[1].replace('"', '')
+
+            self.Mini_GUI_manager.add(
+                mini_GUI.desicion_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar']),
+                lambda _: self.Func_pool.start('descargar actualizacion')
+            )
+
+    def descargar_actualizacion(self):
+
+        DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
+        DB_cursor = DB.cursor()
+
+        datos = [self.data_actualizacion['file_name'], self.data_actualizacion['file_type'], self.data_actualizacion['size'], self.data_actualizacion['url'], self.threads, time.time(),'en espera']
+        DB_cursor.execute('INSERT INTO descargas VALUES(null,?,?,?,?,?,?,?)', datos)
+        DB.commit()
+
+        self.reload_lista_descargas(DB_cursor)
+
+        DB_cursor.execute('SELECT id from descargas ORDER BY id DESC LIMIT 1')
+        id = DB_cursor.fetchone()[0]
+
+        
+        self.descargas_adyacentes.append(
+            Thread(target=subprocess.run,
+                    args=(f'Downloader.exe "{id}" 1',))
+        )
+        #     Thread(target=subprocess.run,
+        #            args=(f'python Downloader.py "{id}" 1',))
+        # )
+        self.descargas_adyacentes[-1].start()
+            
+
     def comprobar_url(self) -> None:
         if not self.url:
             return
-
+        
         self.can_add_new_download = False
 
         title: str = self.url.split('/')[-1]
@@ -280,7 +332,7 @@ class DownloadManager(Other_funcs):
 
         self.text_newd_filename.change_text(f'{title}')
 
-        self.text_newd_status.change_text('Conectando...')
+        self.text_newd_status.change_text(self.txts['descripcion-state[conectando]'])
         try:
             
             parse = urlparse(self.url)
@@ -290,7 +342,7 @@ class DownloadManager(Other_funcs):
                 response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
             else:
                 response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
-            print(response.headers)
+                
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
             self.text_newd_file_type.change_text(self.txts['tipo']+': ' + tipo)
@@ -308,6 +360,7 @@ class DownloadManager(Other_funcs):
             self.text_newd_status.change_text(self.txts['estado']+': '+self.txts['disponible'])
 
             self.can_add_new_download = True
+
             return
         except requests.URLRequired:
             return
@@ -436,6 +489,7 @@ class DownloadManager(Other_funcs):
 
             for evento in eventos:
                 if evento.type == QUIT:
+                    self.Func_pool.stop('actualizacion')
                     pag.quit()
                     sys.exit()
                 elif self.GUI_manager.active >= 0:
@@ -445,6 +499,7 @@ class DownloadManager(Other_funcs):
                         self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
+                        self.Func_pool.stop('actualizacion')
                         pag.quit()
                         sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
@@ -466,7 +521,7 @@ class DownloadManager(Other_funcs):
                     if (self.lista_descargas.rect.collidepoint((mx, my)) and
                             (result := self.lista_descargas.click((mx, my)))):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx, my),
-                                                                  [self.txts['descargar'] if result['result'][-1] != 'Completado' else 'Redescargar', self.txts['eliminar'],
+                                                                  [self.txts['descargar'] if result['result'][-1] != 'Completado' else self.txts['redescargar'], self.txts['eliminar'],
                                                                    self.txts['actualizar_url'], 'get url'],
                                                                   captured=result),
                                                   self.func_select_box)

@@ -14,17 +14,17 @@ class Other_funcs:
         if respuesta['index'] == 0:
             self.descargas_adyacentes.append(
                 # Thread(target=subprocess.run,args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
-            #     Thread(target=subprocess.run,
-            #            args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
-            # )
                 Thread(target=subprocess.run,
-                       args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}"',))
+                       args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
             )
+            #     Thread(target=subprocess.run,
+            #            args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
+            # )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:
             # GUI para confirmar borrar el elemento
             self.GUI_manager.add(
-                GUI.Desicion(self.ventana_rect.center, 'Confirmar', '¿Desea borrar el elemento seleccionado!?'),
+                GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
                 lambda r: (self.del_download_DB(
                     *self.cached_list_DB[respuesta['obj']['index']][:2]) if r == 'aceptar' else None)
             )
@@ -37,7 +37,7 @@ class Other_funcs:
             pyperclip.copy(self.cached_list_DB[respuesta['obj']['index']][4])
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Copiado',
-                                      'Copiado al portapapeles')
+                                      self.txts['copiado al portapapeles'])
             )
 
     def del_download_DB(self, id, nombre):
@@ -66,10 +66,14 @@ class Other_funcs:
         self.reload_lista_descargas()
         self.screen_new_download_bool = False
 
-    def reload_lista_descargas(self):
+    def reload_lista_descargas(self, cursor = None):
+        if cursor:
+            cursor = cursor
+        else:
+            cursor = self.DB_cursor
         self.lista_descargas.clear()
-        self.DB_cursor.execute('SELECT * FROM descargas')
-        self.cached_list_DB = self.DB_cursor.fetchall()
+        cursor.execute('SELECT * FROM descargas')
+        self.cached_list_DB = cursor.fetchall()
 
         if not self.cached_list_DB:
             self.lista_descargas.append((None, None, None))

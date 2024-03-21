@@ -1,4 +1,4 @@
-import pygame as pag, sys, os, time, requests, json, sqlite3
+import pygame as pag, sys, os, time, requests, json, sqlite3, subprocess
 
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
@@ -27,7 +27,7 @@ def format_size(size) -> list:
 
 
 class Downloader:
-    def __init__(self, id) -> None:
+    def __init__(self, id, execute = 0) -> None:
 
         self.ventana = pag.display.set_mode((700, 300), SCALED)
         self.ventana_rect = self.ventana.get_rect()
@@ -73,8 +73,10 @@ class Downloader:
         self.can_download = False
         self.downloading = False
         self.apagar_al_finalizar = False
+        self.ejecutar_al_finalizar = int(execute)
         self.last_time = 0.0
         self.last_peso = 0.0
+        self.last_vel = 0.0
         self.relog = pag.time.Clock()
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{''.join(self.file_name.split('.')[:-1])}')
@@ -104,10 +106,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -136,7 +138,7 @@ class Downloader:
 
         # ------------------------------------------- Textos y botones -----------------------------------
 
-        self.Titulo = Create_text(self.file_name, 14, self.font_mononoki, (20, 50), 'left')
+        self.Titulo = Create_text((self.file_name if len(self.file_name) < 36 else (self.file_name[:36] + '...')), 14, self.font_mononoki, (20, 50), 'left')
         self.text_tamaño = Create_text(self.txts['descripcion-peso'].format(
             f'{self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}'), 12,
             self.font_mononoki, (20, 70), 'left')
@@ -204,7 +206,7 @@ class Downloader:
         self.draw_main()
 
     def func_cancelar(self, result) -> None:
-        if not self.downloading or result == 'cancelar':
+        if result == 'cancelar':
             return
         self.paused = False
         self.canceled = True
@@ -213,10 +215,10 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.actualizar_porcentaje_db()
-        for num in range(self.num_hilos):
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+        if self.lista_status_hilos:
+            for num in range(self.num_hilos):
+                self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
         self.cerrar_todo('aceptar')
-        self.draw_main()
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
@@ -243,19 +245,25 @@ class Downloader:
         self.draw_main()
 
     def func_select_of_options(self):
-        texto = self.txts['apagar-al-finalizar'] + ': ' + (self.txts['si'] if self.apagar_al_finalizar else 'No')
-        self.mini_GUI_manager.add(mini_GUI.select(self.btn_more_options.rect.topright, [texto]), self.func_select_box)
+        texto1 = self.txts['apagar-al-finalizar'] + ': ' + (self.txts['si'] if self.apagar_al_finalizar else 'No')
+        texto2 = self.txts['ejecutar-al-finalizar'] + ': ' + (self.txts['si'] if self.ejecutar_al_finalizar else 'No')
+        self.mini_GUI_manager.add(mini_GUI.select(self.btn_more_options.rect.topright, [texto1,texto2]), self.func_select_box)
 
     def func_select_box(self, result):
         if result['index'] == 0:
-            self.GUI_manager.add(
-                # GUI para saber si quiere apagar al finalizar la descarga
-                GUI.Desicion(self.ventana_rect.center, self.txts['apagar-al-finalizar'], self.txts['Desea_apagar']),
-                self.func_toggle_apagar
-            )
+            self.func_toggle_apagar()
+        elif result['index'] == 1:
+            self.func_toggle_ejecutar()
 
-    def func_toggle_apagar(self, result):
-        self.apagar_al_finalizar = True if result == 'aceptar' else False
+
+    def func_toggle_apagar(self):
+        self.apagar_al_finalizar = not self.apagar_al_finalizar
+        if self.apagar_al_finalizar:
+            self.ejecutar_al_finalizar = False
+    def func_toggle_ejecutar(self):
+        self.ejecutar_al_finalizar = not self.ejecutar_al_finalizar
+        if self.ejecutar_al_finalizar:
+            self.apagar_al_finalizar = False
 
     def crear_conexion(self):
         self.text_estado_general.change_text(self.txts['descripcion-state[conectando]'])
@@ -383,18 +391,17 @@ class Downloader:
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if tipo != self.type:
-                # print(tipo,self.type, response.headers)
                 raise DifferentTypeError('ay')
 
             peso = response.headers.get('content-length', False)
-            if int(peso) < 1024 // 8:
+            if int(peso) < 1024 // 16:
                 raise LowSizeError('Peso muy pequeño')
 
             tiempo_reset = 2
             self.lista_status_hilos_text[num] = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
-                for data in response.iter_content(1024 // 8):
+                for data in response.iter_content(1024 // 16):
                     if self.paused or self.canceled: raise Exception('')
                     if data:
                         local_count += len(data)
@@ -447,8 +454,11 @@ class Downloader:
         if self.apagar_al_finalizar:
             os.system('shutdown /s /t 10')
             self.cerrar_todo('aceptar')
-            return 0
-
+            return
+        elif self.ejecutar_al_finalizar:
+            subprocess.run(user_downloads_dir() + '/' + self.file_name, shell=True)
+            self.cerrar_todo('')
+            return
         self.GUI_manager.add(
             GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta']),
             self.func_abrir_carpeta_antes_de_salir
@@ -488,9 +498,10 @@ class Downloader:
                         self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
-                        # GUI preguntando si desea salir del programa, y si acepta ejecutar la funcion self.cerrar_todo()
                         self.GUI_manager.add(
-                            GUI.Desicion(self.ventana_rect.center, self.txts['cerrar'], '¿Desea cerrar el programa?'),
+                            GUI.Desicion(self.ventana_rect.center, self.txts['cerrar'],
+                                        'Desea cerrar la ventana de descarga?\n\nLa descarga se podrá reanudar luego.',
+                                        (400, 200)),
                             self.cerrar_todo
                         )
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
@@ -509,32 +520,38 @@ class Downloader:
                             x.draw(self.display, (mx, my))
 
             t = time.time() - self.last_time
-            if t > 1:
-                vel = format_size(self.peso_descargado - self.last_peso)
-                vel_text = f'{vel[1]:.2f}{self.nomenclaturas[vel[0]]}/s'
+            divisor = 4
+            if t > 1/divisor:
+                vel = (self.peso_descargado-self.last_peso)*divisor
+                self.last_vel = abs(self.last_vel + ((vel - self.last_vel)/(divisor*9)))
 
+                if self.last_vel > 1024 * 1024:
+                    self.last_vel = vel
+
+                vel_format = format_size(self.last_vel)
+                vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
                 self.text_vel_descarga.change_text(self.txts['velocidad']+': '+vel_text)
 
                 self.last_time = time.time()
                 self.last_peso = self.peso_descargado
 
-            if self.peso_total > 0:
-                progreso = (self.peso_descargado / self.peso_total)
-                self.text_porcentaje.change_text(f'{progreso * 100:.2f}%')
-                descargado = format_size(self.peso_descargado)
-                descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
-                self.text_peso_progreso.change_text(self.txts['descargado']+': '+descargado_text)
-                self.barra_progreso.set_volumen(progreso)
+                if self.peso_total > 0:
+                    progreso = (self.peso_descargado / self.peso_total)
+                    self.text_porcentaje.change_text(f'{progreso * 100:.2f}%')
+                    descargado = format_size(self.peso_descargado)
+                    descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
+                    self.text_peso_progreso.change_text(self.txts['descargado']+': '+descargado_text)
+                    self.barra_progreso.set_volumen(progreso)
+
+                pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
+                self.text_peso_progreso.draw(self.display)
+                self.barra_progreso.draw(self.display)
+                self.text_porcentaje.draw(self.display)
+                self.text_vel_descarga.draw(self.display)
+                self.ventana.blit(self.display, (0, 0))
 
             if self.hilos_listos == self.num_hilos:
                 self.finish_download()
-
-            pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
-            self.text_peso_progreso.draw(self.display)
-            self.barra_progreso.draw(self.display)
-            self.text_porcentaje.draw(self.display)
-            self.text_vel_descarga.draw(self.display)
-            self.ventana.blit(self.display, (0, 0))
             self.surface_hilos.fill((254, 1, 1))
             for i, x in enumerate(self.lista_status_hilos):
                 x.change_text(self.lista_status_hilos_text[i])
