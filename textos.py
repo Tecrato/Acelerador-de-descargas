@@ -1,21 +1,27 @@
 
 textos_español = {
     # Traducciones literales
-    'si': 'Si',
     'aceptar': 'Aceptar',
+    'agregar nueva descarga': 'Agregar nueva descarga',
+    'apagar-al-finalizar': 'Apagar al finalizar',
     'actualizar_url': 'Actualizar url',
     'cancelar': 'Cancelar',
     'cerrar': 'Cerrar',
     'comprobar': 'Comprobar',
     'descargar': 'Descargar',
+    'Desea_apagar': 'Desea apagar al finalizar la descarga?',
     'detalles': 'Detalles',
+    'disponible': 'Disponible',
     'eliminar': 'Eliminar',
+    'enhorabuena': 'Enhorabuena',
+    'estado': 'Estado',
     'iniciar': 'Iniciar',
+    'nombre': 'Nombre',
     'pausar': 'Pausar',
     'reanudar': 'Resumir',
-    'apagar-al-finalizar': 'Apagar al finalizar',
-    'Desea_apagar': 'Desea apagar al finalizar la descarga?',
-    'enhorabuena': 'Enhorabuena',
+    'si': 'Si',
+    'tamaño': 'Tamaño',
+    'tipo': 'Tipo',
 
 
     
@@ -45,14 +51,14 @@ textos_español = {
     # Downloader
     
     'title_hilos': 'Hilos de descarga',
-    'gui-desea_abrir_la _carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
+    'gui-desea_abrir_la_carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
     'gui-url no sirve': "El URL a dejado de funcionar\n\nActualize la URL o intente mas tarde",
     "gui-error inesperado":"A ocurrido un error inesperado\n\nDesea volver a intentarlo?",
 
     # Estados de los hilos
     'descripcion-peso': 'Peso: {}',
     'descripcion-numero_hilos': 'Numero de hilos: {}',
-    'descripcion-state[esperando]': 'Estado: Esperando link...',
+    'descripcion-state[esperando]': 'Estado: Esperando...',
     'descripcion-state[conectando]': 'Estado: Conectando...',
     'descripcion-state[descargando]': 'Estado: Descargando...',
     'descripcion-state[disponible]': 'Estado: Disponible',
@@ -61,8 +67,9 @@ textos_español = {
     'descripcion-state[tiempo agotado]': 'Estado: Tiempo de espera agotado',
     'descripcion-state[reintentando]': 'Estado: Reintentando',
     'descripcion-state[finalizado]': 'Estado: Finalizado',
-    'descripcion-state[error internet]': 'Estado: Error al conectar',
-    
+    'descripcion-state[error internet]': 'Estado: Compruebe su conexion a internet',
+    'descripcion-state[trajo un html]': 'Estado: Capturó un HTML (Error)',
+
 }
 
 
@@ -71,21 +78,26 @@ textos_español = {
 
 textos_ingles = {
     # traducciones literales
-    'si': 'Yes',
     'aceptar': 'Accept',
+    'agregar nueva descarga': 'Add new download',
+    'apagar-al-finalizar': 'Turn off at the end',
     'actualizar_url': 'Update url',
     'cancelar': 'Cancel',
     'cerrar': 'Close',
     'comprobar': 'Check',
     'descargar': 'Download',
+    'Desea_apagar': 'Do you want to turn off at the end of the download?',
     'detalles': 'Details',
+    'disponible': 'Disponible',
     'eliminar': 'Delete',
+    'enhorabuena': 'Congratulations',
     'iniciar': 'Play',
+    'nombre': 'Name',
     'pausar': 'Pause',
     'reanudar': 'Resume',
-    'apagar-al-finalizar': 'Turn off at the end',
-    'Desea_apagar': 'Do you want to turn off at the end of the download?',
-    'enhorabuena': 'Congratulations',
+    'si': 'Yes',
+    'tamaño': 'Size',
+    'tipo': 'Type',
 
 
     # Titulo principal
@@ -130,6 +142,7 @@ textos_ingles = {
     'descripcion-state[reintentando]': 'State: Retrying',
     'descripcion-state[finalizado]': 'State: Finalized',
     'descripcion-state[error internet]': 'State: Connection Error',
+    'descripcion-state[trajo un html]': 'State: Is an HTML (Error)',
 
 }
 

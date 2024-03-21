@@ -1,11 +1,11 @@
-import pygame as pag, sys, os, time, requests, json, sqlite3, shutil
+import pygame as pag, sys, os, time, requests, json, sqlite3
 
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
-from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL
+from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL, MOUSEMOTION
 
 import Utilidades
 
@@ -29,9 +29,18 @@ def format_size(size) -> list:
 class Downloader:
     def __init__(self, id) -> None:
 
-        self.ventana = pag.display.set_mode((800, 400), SCALED)
+        self.ventana = pag.display.set_mode((700, 300), SCALED)
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
+
+        self.display = pag.Surface(self.ventana_rect.size)
+        self.display_rect = pag.Surface(self.ventana_rect.size)
+        self.display.fill((254, 1, 1))
+        self.display.set_colorkey((254, 1, 1))
+
+        self.surf_GUI = pag.Surface(self.ventana_rect.size)
+        self.surf_GUI.fill((254, 1, 1))
+        self.surf_GUI.set_colorkey((254, 1, 1))
 
         self.carpeta_cache = user_cache_path('Acelerador de descargas', 'Edouard Sandoval')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -51,7 +60,6 @@ class Downloader:
         self.num_hilos: int = self.raw_data[5]
         self.tiempo: float = float(self.raw_data[6])
         self.estado: str = self.raw_data[7]
-
 
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
 
@@ -73,8 +81,9 @@ class Downloader:
         self.hilos_listos = 0
         self.lista_status_hilos: list[Create_text] = []
         self.lista_status_hilos_text: list[str] = []
-        self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 70))
-        self.surface_hilos.fill((20, 20, 20))
+        self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 80))
+        self.surface_hilos.fill((254, 1, 1))
+        self.surface_hilos.set_colorkey((254, 1, 1))
         self.surf_h_diff = 0
         self.surf_h_max = 1
 
@@ -93,10 +102,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -125,37 +134,44 @@ class Downloader:
 
         # ------------------------------------------- Textos y botones -----------------------------------
 
-        self.Titulo = Create_text(self.file_name, 16, self.font_mononoki, (30, 100), 'left')
+        self.Titulo = Create_text(self.file_name, 14, self.font_mononoki, (20, 50), 'left')
         self.text_tamaño = Create_text(self.txts['descripcion-peso'].format(
             f'{self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}'), 12,
-            self.font_mononoki, (30, 120), 'left')
-        self.text_url = Create_text(f'url: {self.url}', 12, self.font_mononoki, (30, 140), 'left')
+            self.font_mononoki, (20, 70), 'left')
+        self.text_url = Create_text(f'url: {(self.url if len(self.url) < 37 else (self.url[:37] + '...'))}', 12,
+                                    self.font_mononoki, (20, 90), 'left')
         self.text_num_hilos = Create_text(self.txts['descripcion-numero_hilos'].format(self.num_hilos), 12,
-                                          self.font_mononoki, (30, 160), 'left')
+                                          self.font_mononoki, (20, 110), 'left')
         self.text_estado_general = Create_text(self.txts['descripcion-state[esperando]'], 12, self.font_mononoki,
-                                               (30, 180), 'left')
+                                               (20, 130), 'left')
 
-        self.text_porcentaje = Create_text('0.00%', 16, self.font_mononoki, (200, self.ventana_rect.bottom - 90),
-                                           'center')
-        self.text_peso_progreso = Create_text('0 - 0b', 16, self.font_mononoki, (200, self.ventana_rect.bottom - 70),
-                                              'center')
-        self.text_title_hilos = Create_text(self.txts['title_hilos'], 20, self.font_mononoki, (600, 30), 'center')
+        self.text_porcentaje = Create_text('0.00%', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 90),
+                                           'center', padding=(300, 5), color_rect=(20, 20, 20), with_rect=True)
+        self.text_peso_progreso = Create_text('0 - 0b', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 70),
+                                              'center', padding=(100, 10), color_rect=(20, 20, 20), with_rect=True)
+        self.text_title_hilos = Create_text(self.txts['title_hilos'], 14, self.font_mononoki, (550, 30), 'center')
 
-        self.btn_cancelar_descarga = Create_boton(self.txts['cancelar'], 20, self.font_mononoki, ((800 / 2) / 3, 60),
+        self.btn_cancelar_descarga = Create_boton(self.txts['cancelar'], 16, self.font_mononoki, ((700 / 2) / 3, 20),
                                                   (20, 10), 'center', 'black',
-                                                  'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_cancelar)
+                                                  'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=lambda:
+            self.GUI_manager.add(
+                GUI.Desicion(self.ventana_rect.center, self.txts['cerrar'],
+                             'Desea cerrar la ventana de descarga?\n\nLa descarga se podrá reanudar luego.',
+                             (400, 200)),
+                self.func_cancelar
+            ))
 
-        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['reanudar'], 20, self.font_mononoki,
-                                                           (((800 / 2) / 3) * 2, 60), (20, 10), 'center', 'black',
+        self.btn_pausar_y_reanudar_descarga = Create_boton(self.txts['reanudar'], 16, self.font_mononoki,
+                                                           (((700 / 2) / 3) * 2, 20), (20, 10), 'center', 'black',
                                                            'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                            func=self.func_reanudar)
 
-        self.btn_more_options = Create_boton('', 20, self.font_simbols, (800 / 2, 60), (20, 10), 'right', 'white',
+        self.btn_more_options = Create_boton('', 16, self.font_simbols, (700 / 2, 20), (20, 10), 'right', 'white',
                                              (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                              func=self.func_select_of_options)
 
         #   Barra de progreso
-        self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom - 50), (360, 20), 'horizontal')
+        self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom - 50), (310, 20), 'horizontal')
         self.barra_progreso.set_volumen(.0)
 
         self.list_to_draw = [self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
@@ -178,10 +194,11 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.actualizar_porcentaje_db()
+        self.draw_main()
 
-    def func_cancelar(self) -> None:
-        if not self.downloading:
-            return 0
+    def func_cancelar(self,result) -> None:
+        if not self.downloading or result == 'cancelar':
+            return
         self.paused = False
         self.canceled = True
         self.downloading = False
@@ -191,11 +208,8 @@ class Downloader:
         self.actualizar_porcentaje_db()
         for num in range(self.num_hilos):
             self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
-        self.GUI_manager.add(
-            GUI.Desicion(self.ventana_rect.center, self.txts['cerrar'],
-                         'Desea cerrar la ventana de descarga?\n\nLa descarga se podra reanudar luego.'),
-            self.cerrar_todo
-        )
+        self.cerrar_todo('aceptar')
+        self.draw_main()
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
@@ -203,7 +217,8 @@ class Downloader:
         self.cerrar_todo('a')
 
     def cerrar_todo(self, result):
-        if result == 'cancelar': return 0
+        if result == 'cancelar':
+            return
         self.actualizar_porcentaje_db()
         self.paused = False
         self.canceled = True
@@ -218,6 +233,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         self.reanudar_bool = True
         self.start_download()
+        self.draw_main()
 
     def func_select_of_options(self):
         texto = self.txts['apagar-al-finalizar'] + ': ' + (self.txts['si'] if self.apagar_al_finalizar else 'No')
@@ -238,13 +254,14 @@ class Downloader:
         self.text_estado_general.change_text(self.txts['descripcion-state[conectando]'])
         try:
             parse = urlparse(self.url)
-            
+
             if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
                 if os.path.exists(self.carpeta_cache.joinpath(f'./url cache.txt')):
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'r+') as file:
                         url = file.read()
                 else:
-                    url = bsoup4(requests.get(self.url, timeout=15).text, 'html.parser').find(id='downloadButton').get('href',False)
+                    url = bsoup4(requests.get(self.url, timeout=15).text, 'html.parser').find(id='downloadButton').get(
+                        'href', False)
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'w') as file:
                         file.write(url)
             else:
@@ -252,7 +269,8 @@ class Downloader:
 
             response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
 
-            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file' and int(response.headers.get('Expires',1)) == 0:
+            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file' and int(
+                    response.headers.get('Expires', 1)) == 0:
                 os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
                 return self.crear_conexion()
 
@@ -299,8 +317,10 @@ class Downloader:
         self.Database.commit()
 
     def start_download(self) -> None:
-        if not self.can_download: return 0
-        if self.downloading: return 0
+        if not self.can_download:
+            return
+        if self.downloading:
+            return
         self.paused = False
         self.canceled = False
         self.downloading = True
@@ -316,8 +336,8 @@ class Downloader:
                     pass
 
             self.lista_status_hilos.append(
-                Create_text(self.txts['status_hilo[iniciando]'].format(x), 16, self.font_mononoki, (50, (40 * x) + 10),
-                            'left'))
+                Create_text(self.txts['status_hilo[iniciando]'].format(x), 12, self.font_mononoki, (50, (30 * x) + 5),
+                            'left', with_rect=True, color_rect=(20, 20, 20)))
             if x == self.num_hilos - 1:
                 self.surf_h_max = self.lista_status_hilos[-1].rect.bottom
             self.lista_status_hilos_text.append(self.txts['status_hilo[iniciando]'].format(x))
@@ -329,6 +349,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
 
         self.text_estado_general.change_text(self.txts['descripcion-state[descargando]'])
+        self.draw_main()
 
     def download_thread(self, num, start, end, local_count=0, tiempo_reset=2):
         if self.paused:
@@ -426,11 +447,24 @@ class Downloader:
             self.func_abrir_carpeta_antes_de_salir
         )
 
+    def draw_main(self):
+        self.display.fill((20, 20, 20))
+
+        for x in self.list_to_draw:
+            if isinstance(x, Create_boton):
+                x.draw(self.display, (-500, -500))
+            else:
+                x.draw(self.display)
+
+        for x in self.lineas_para_separar:
+            pag.draw.line(self.display, 'black', x[0], x[1], width=3)
+
     def main_cycle(self) -> None:
         if self.screen_main:
             self.cicle_try: int = 0
+
+        self.draw_main()
         while self.screen_main:
-            self.ventana.fill((20, 20, 20))
             mx, my = pag.mouse.get_pos()
 
             eventos = pag.event.get()
@@ -457,10 +491,14 @@ class Downloader:
                     for x in self.list_to_click:
                         x.click((mx, my))
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
-                    if -self.surf_h_max + 300 < self.surf_h_diff + evento.y * 20 < 10:
+                    if -self.surf_h_max + 300 < self.surf_h_diff + evento.y * 20 < 5:
                         self.surf_h_diff += evento.y * 20
                         for x in self.lista_status_hilos:
                             x.move_rel((0, evento.y * 20))
+                elif evento.type == MOUSEMOTION:
+                    for x in self.list_to_draw:
+                        if isinstance(x, Create_boton):
+                            x.draw(self.display, (mx, my))
 
             if self.peso_total > 0:
                 progreso = (self.peso_descargado / self.peso_total)
@@ -473,20 +511,20 @@ class Downloader:
             if self.hilos_listos == self.num_hilos:
                 self.finish_download()
 
-            for x in self.list_to_draw:
-                x.draw(self.ventana)
-
-            self.surface_hilos.fill((20, 20, 20))
+            self.text_peso_progreso.draw(self.display)
+            self.barra_progreso.draw(self.display)
+            self.text_porcentaje.draw(self.display)
+            self.ventana.blit(self.display, (0, 0))
+            self.surface_hilos.fill((254, 1, 1))
             for i, x in enumerate(self.lista_status_hilos):
                 x.change_text(self.lista_status_hilos_text[i])
                 x.draw(self.surface_hilos)
-            self.ventana.blit(self.surface_hilos, (self.ventana_rect.centerx, 70))
-            for x in self.lineas_para_separar:
-                pag.draw.line(self.ventana, 'black', x[0], x[1], width=3)
+            self.ventana.blit(self.surface_hilos, (self.ventana_rect.centerx, 50))
 
-            self.GUI_manager.draw(self.ventana, (mx, my))
-
-            self.mini_GUI_manager.draw(self.ventana, (mx, my))
+            self.surf_GUI.fill((254, 1, 1))
+            self.GUI_manager.draw(self.surf_GUI, (mx, my))
+            self.mini_GUI_manager.draw(self.surf_GUI, (mx, my))
+            self.ventana.blit(self.surf_GUI, (0, 0))
 
             pag.display.flip()
             self.relog.tick(60)

@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text
 from platformdirs import user_config_path, user_cache_path
-from pygame.constants import MOUSEBUTTONDOWN, KEYDOWN, QUIT, K_ESCAPE
+from pygame.constants import MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE
 from pygame import Vector2
 
 from funcs import Other_funcs
@@ -28,6 +28,7 @@ def format_size(size) -> list:
     return [count, size]
 
 
+# noinspection PyAttributeOutsideInit
 class DownloadManager(Other_funcs):
     def __init__(self, url=False) -> None:
         self.ventana = pag.display.set_mode((800, 600))
@@ -53,10 +54,10 @@ class DownloadManager(Other_funcs):
         self.threads = 4
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -150,9 +151,9 @@ class DownloadManager(Other_funcs):
                                             func=self.reload_lista_descargas)
 
         # Cosas de la ventana de nueva descarga
-        self.new_download_rect = pag.Rect(0, 0, 500, 400)
+        self.new_download_rect = pag.Rect(0, 0, 500, 300)
         self.new_download_rect.center = self.ventana_rect.center
-        self.text_newd_title = Create_text('Agregar nueva descarga', 16, self.font_mononoki,
+        self.text_newd_title = Create_text(self.txts['agregar nueva descarga'], 16, self.font_mononoki,
                                            (self.new_download_rect.centerx, self.new_download_rect.top + 20))
         self.boton_newd_cancelar = Create_boton(self.txts['cancelar'], 16, self.font_mononoki,
                                                 Vector2(-20, 0) + self.new_download_rect.bottomright, (30, 20),
@@ -177,13 +178,15 @@ class DownloadManager(Other_funcs):
                                               border_radius=20,
                                               func=self.func_comprobar_url)
 
-        self.text_newd_title_details = Create_text(self.txts['comprobar'], 20, self.font_mononoki, (400, 250))
-        self.text_newd_filename = Create_text('Nombre: -----', 16, self.font_mononoki,
-                                              (self.new_download_rect.left + 20, 270), 'left')
-        self.text_newd_size = Create_text('Peso: -----', 16, self.font_mononoki,
-                                          (self.new_download_rect.left + 20, 290), 'left')
-        self.text_newd_status = Create_text('Estado: Esperando', 16, self.font_mononoki,
-                                            (self.new_download_rect.left + 20, 310), 'left')
+        self.text_newd_title_details = Create_text(self.txts['detalles'], 20, self.font_mononoki, (400, 300))
+        self.text_newd_filename = Create_text(self.txts['nombre']+': ----------', 16, self.font_mononoki,
+                                              (self.new_download_rect.left + 20, 320), 'left')
+        self.text_newd_file_type = Create_text(self.txts['tipo']+': ----------', 16, self.font_mononoki,
+                                              (self.new_download_rect.left + 20, 340), 'left')
+        self.text_newd_size = Create_text(self.txts['tamaño']+': -------', 16, self.font_mononoki,
+                                          (self.new_download_rect.left + 20, 360), 'left')
+        self.text_newd_status = Create_text(self.txts['descripcion-state[esperando]'], 16, self.font_mononoki,
+                                            (self.new_download_rect.left + 20, 380), 'left')
 
         # Pantalla de configuraciones
         self.text_config_title = Create_text(self.txts['title-configuraciones'], 26, self.font_mononoki,
@@ -220,7 +223,7 @@ class DownloadManager(Other_funcs):
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_extras_to_main)
 
-        self.text_extras_version = Create_text('Version 2.3.1', 26, self.font_mononoki, self.ventana_rect.bottomright,
+        self.text_extras_version = Create_text('Version 2.4.0', 26, self.font_mononoki, self.ventana_rect.bottomright,
                                                'bottomright')
 
         self.text_extras_mi_nombre = Create_text('Edouard Sandoval', 30, self.font_mononoki, (400, 100),
@@ -241,7 +244,7 @@ class DownloadManager(Other_funcs):
             self.text_newd_title, self.boton_newd_aceptar, self.boton_newd_cancelar, self.input_newd_url,
             self.input_newd_paste,
             self.btn_comprobar_url, self.text_newd_title_details, self.text_newd_filename, self.text_newd_size,
-            self.text_newd_status
+            self.text_newd_status,self.text_newd_file_type
         ]
 
         self.list_to_click_newd = [self.boton_newd_aceptar, self.boton_newd_cancelar, self.input_newd_paste,
@@ -290,8 +293,9 @@ class DownloadManager(Other_funcs):
             print(response.headers)
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
+            self.text_newd_file_type.change_text(self.txts['tipo']+': ' + tipo)
             if self.new_file_type in ['text/plain', 'text/html']:
-                raise Exception('No paginas')
+                raise TrajoHTML('No paginas')
 
             self.new_file_size = int(response.headers.get('content-length', 1))
             peso_formateado = format_size(self.new_file_size)
@@ -300,31 +304,27 @@ class DownloadManager(Other_funcs):
             if a := response.headers.get('content-disposition', False):
                 self.new_filename = a.split('filename=')[1].replace('"', '')
 
-            self.text_newd_status.change_text('Disponible')
+            self.text_newd_status.change_text(self.txts['estado']+': '+self.txts['disponible'])
 
             self.can_add_new_download = True
             return
         except requests.URLRequired:
             return
-        except requests.exceptions.MissingSchema:
-            self.text_newd_status.change_text('URL inválida')
+        except (requests.exceptions.InvalidSchema,requests.exceptions.MissingSchema):
+            self.text_newd_status.change_text(self.txts['descripcion-state[url invalida]'])
             return
-        except requests.exceptions.InvalidSchema:
-            self.text_newd_status.change_text('URL inválida')
-            return
-        except requests.exceptions.ReadTimeout:
-            self.text_newd_status.change_text('Tiempo agotado')
-            return
-        except requests.exceptions.ConnectTimeout:
-            self.text_newd_status.change_text('Tiempo de espera agotado')
+        except (requests.exceptions.ConnectTimeout,requests.exceptions.ReadTimeout):
+            self.text_newd_status.change_text(self.txts['descripcion-state[tiempo agotado]'])
             return
         except requests.exceptions.ConnectionError:
-            self.text_newd_status.change_text('Compruebe su conexion a internet')
+            self.text_newd_status.change_text(self.txts['descripcion-state[error internet]'])
+            return
+        except TrajoHTML:
+            self.text_newd_status.change_text(self.txts['descripcion-state[trajo un html]'])
             return
         except Exception as err:
             print(err)
             print(type(err))
-            print(response)
             self.text_newd_status.change_text('Error')
             return
 
@@ -374,6 +374,12 @@ class DownloadManager(Other_funcs):
             else:
                 x.draw(self.ventana)
 
+        self.input_newd_url.clear()
+        self.text_newd_filename.change_text(self.txts['nombre']+': ----------')
+        self.text_newd_size.change_text(self.txts['tamaño']+': -------')
+        self.text_newd_status.change_text(self.txts['descripcion-state[esperando]'])
+        self.text_newd_file_type.change_text(self.txts['tipo']+': -------')
+
         self.screen_new_download_bool = True
         while self.screen_new_download_bool:
             mx, my = pag.mouse.get_pos()
@@ -410,6 +416,7 @@ class DownloadManager(Other_funcs):
     def main_cycle(self) -> None:
         if self.screen_main_bool:
             self.cicle_try = 0
+
         while self.screen_main_bool:
             mx, my = pag.mouse.get_pos()
 
@@ -471,6 +478,12 @@ class DownloadManager(Other_funcs):
     def screen_extras(self):
         if self.screen_extras_bool:
             self.cicle_try = 0
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw_extras:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500,-500))
+            else:
+                x.draw(self.ventana)
         while self.screen_extras_bool:
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
@@ -487,15 +500,12 @@ class DownloadManager(Other_funcs):
                     for x in self.list_to_click_extras:
                         if x.click((mx, my)):
                             break
+                elif evento.type == MOUSEMOTION:
+                    for x in self.list_to_draw_extras:
+                        if isinstance(x, Create_boton):
+                            x.draw(self.ventana, (mx, my))
 
-            self.ventana.fill((20, 20, 20))
-            for x in self.list_to_draw_extras:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx, my))
-                else:
-                    x.draw(self.ventana)
-
-            pag.display.flip()
+                    pag.display.flip()
             self.relog.tick(60)
 
 
