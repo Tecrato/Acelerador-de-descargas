@@ -303,6 +303,7 @@ class DownloadManager(Other_funcs):
 
             if a := response.headers.get('content-disposition', False):
                 self.new_filename = a.split('filename=')[1].replace('"', '')
+                self.text_newd_filename.change_text(a.split('filename=')[1].replace('"', ''))
 
             self.text_newd_status.change_text(self.txts['estado']+': '+self.txts['disponible'])
 

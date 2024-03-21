@@ -9,6 +9,7 @@ textos_español = {
     'cerrar': 'Cerrar',
     'comprobar': 'Comprobar',
     'descargar': 'Descargar',
+    'descargado': 'Descargado',
     'Desea_apagar': 'Desea apagar al finalizar la descarga?',
     'detalles': 'Detalles',
     'disponible': 'Disponible',
@@ -22,6 +23,7 @@ textos_español = {
     'si': 'Si',
     'tamaño': 'Tamaño',
     'tipo': 'Tipo',
+    'velocidad': 'Velocidad',
 
 
     
@@ -86,6 +88,7 @@ textos_ingles = {
     'cerrar': 'Close',
     'comprobar': 'Check',
     'descargar': 'Download',
+    'descargado': 'Downloaded',
     'Desea_apagar': 'Do you want to turn off at the end of the download?',
     'detalles': 'Details',
     'disponible': 'Disponible',
@@ -98,6 +101,7 @@ textos_ingles = {
     'si': 'Yes',
     'tamaño': 'Size',
     'tipo': 'Type',
+    'velocidad': 'Velocity',
 
 
     # Titulo principal

@@ -73,6 +73,8 @@ class Downloader:
         self.can_download = False
         self.downloading = False
         self.apagar_al_finalizar = False
+        self.last_time = 0.0
+        self.last_peso = 0.0
         self.relog = pag.time.Clock()
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{''.join(self.file_name.split('.')[:-1])}')
@@ -145,10 +147,15 @@ class Downloader:
         self.text_estado_general = Create_text(self.txts['descripcion-state[esperando]'], 12, self.font_mononoki,
                                                (20, 130), 'left')
 
-        self.text_porcentaje = Create_text('0.00%', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 90),
-                                           'center', padding=(300, 5), color_rect=(20, 20, 20), with_rect=True)
-        self.text_peso_progreso = Create_text('0 - 0b', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 70),
-                                              'center', padding=(100, 10), color_rect=(20, 20, 20), with_rect=True)
+        self.text_peso_progreso = Create_text('0b', 14, self.font_mononoki, (10, self.ventana_rect.centery + 10),
+                                              'topleft', padding=(20, 10), color_rect=(20, 20, 20))
+        self.text_vel_descarga = Create_text(self.txts['velocidad'] + ': ' + '0kb/s', 14, self.font_mononoki,
+                                             (10, self.ventana_rect.centery + 30),
+                                             'topleft', padding=(20, 10))
+
+        self.text_porcentaje = Create_text('0.00%', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 50),
+                                           'center', padding=(300, 5))
+
         self.text_title_hilos = Create_text(self.txts['title_hilos'], 14, self.font_mononoki, (550, 30), 'center')
 
         self.btn_cancelar_descarga = Create_boton(self.txts['cancelar'], 16, self.font_mononoki, ((700 / 2) / 3, 20),
@@ -166,17 +173,17 @@ class Downloader:
                                                            'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                            func=self.func_reanudar)
 
-        self.btn_more_options = Create_boton('', 16, self.font_simbols, (700 / 2, 20), (20, 10), 'right', 'white',
+        self.btn_more_options = Create_boton('', 16, self.font_simbols, ((700/2)-1, 20), (20, 10), 'right', 'white',
                                              (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                              func=self.func_select_of_options)
 
         #   Barra de progreso
-        self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom - 50), (310, 20), 'horizontal')
+        self.barra_progreso = Barra_de_progreso((20, self.ventana_rect.bottom - 30), (310, 20), 'horizontal')
         self.barra_progreso.set_volumen(.0)
 
         self.list_to_draw = [self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
                              self.text_porcentaje, self.text_estado_general, self.btn_cancelar_descarga,
-                             self.text_title_hilos,
+                             self.text_title_hilos, self.text_vel_descarga,
                              self.text_peso_progreso, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
         self.list_to_click = [self.btn_cancelar_descarga, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
 
@@ -196,7 +203,7 @@ class Downloader:
         self.actualizar_porcentaje_db()
         self.draw_main()
 
-    def func_cancelar(self,result) -> None:
+    def func_cancelar(self, result) -> None:
         if not self.downloading or result == 'cancelar':
             return
         self.paused = False
@@ -467,6 +474,7 @@ class Downloader:
         while self.screen_main:
             mx, my = pag.mouse.get_pos()
 
+
             eventos = pag.event.get()
             self.GUI_manager.input_update(eventos)
 
@@ -491,7 +499,7 @@ class Downloader:
                     for x in self.list_to_click:
                         x.click((mx, my))
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
-                    if -self.surf_h_max + 300 < self.surf_h_diff + evento.y * 20 < 5:
+                    if -self.surf_h_max + 200 < self.surf_h_diff + evento.y * 20 < 5:
                         self.surf_h_diff += evento.y * 20
                         for x in self.lista_status_hilos:
                             x.move_rel((0, evento.y * 20))
@@ -500,20 +508,32 @@ class Downloader:
                         if isinstance(x, Create_boton):
                             x.draw(self.display, (mx, my))
 
+            t = time.time() - self.last_time
+            if t > 1:
+                vel = format_size(self.peso_descargado - self.last_peso)
+                vel_text = f'{vel[1]:.2f}{self.nomenclaturas[vel[0]]}/s'
+
+                self.text_vel_descarga.change_text(self.txts['velocidad']+': '+vel_text)
+
+                self.last_time = time.time()
+                self.last_peso = self.peso_descargado
+
             if self.peso_total > 0:
                 progreso = (self.peso_descargado / self.peso_total)
                 self.text_porcentaje.change_text(f'{progreso * 100:.2f}%')
                 descargado = format_size(self.peso_descargado)
-                self.text_peso_progreso.change_text(
-                    f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]} - {self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}')
+                descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
+                self.text_peso_progreso.change_text(self.txts['descargado']+': '+descargado_text)
                 self.barra_progreso.set_volumen(progreso)
 
             if self.hilos_listos == self.num_hilos:
                 self.finish_download()
 
+            pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
             self.text_peso_progreso.draw(self.display)
             self.barra_progreso.draw(self.display)
             self.text_porcentaje.draw(self.display)
+            self.text_vel_descarga.draw(self.display)
             self.ventana.blit(self.display, (0, 0))
             self.surface_hilos.fill((254, 1, 1))
             for i, x in enumerate(self.lista_status_hilos):
