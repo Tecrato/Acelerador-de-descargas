@@ -11,7 +11,7 @@ import subprocess
 from threading import Thread
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup as bsoup4
-from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text
+from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update
 from platformdirs import user_config_path, user_cache_path
 from pygame.constants import MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE
 from pygame import Vector2
@@ -22,6 +22,7 @@ from my_warnings import *
 
 pag.init()
 
+RESOLUCION = [800, 600]
 
 def format_size(size) -> list:
     count = 0
@@ -34,7 +35,7 @@ def format_size(size) -> list:
 # noinspection PyAttributeOutsideInit
 class DownloadManager(Other_funcs):
     def __init__(self, url=False) -> None:
-        self.ventana = pag.display.set_mode((800, 600))
+        self.ventana = pag.display.set_mode(RESOLUCION)
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
 
@@ -55,14 +56,14 @@ class DownloadManager(Other_funcs):
         self.cached_list_DB = []
         self.descargas_adyacentes = []
 
-        self.version = '2.5.0'
+        self.version = '2.5.1'
         self.threads = 8
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -149,11 +150,11 @@ class DownloadManager(Other_funcs):
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1)
 
-        self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 3, None, 12,
-                                          separation=10, header_text=['Nombre', 'Fecha', 'Estado'],
-                                          fonts=[self.font_mononoki for _ in range(3)])
-        self.btn_reload_list = Create_boton('', 12, self.font_simbolos, (self.ventana_rect.w - 30, 120), 15,
-                                            'topright', 'black', 'lightgrey', 'darkgrey', 0, border_width=1,
+        self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 6, None, 12,
+                                          10, header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'], self.txts['fecha']],
+                                          fonts=[self.font_mononoki for _ in range(6)], colums_witdh=[0, .3, .45, .53, .66, .8], padding_left=5, border_color=(100,100,100))
+        self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 30, 121), 17,
+                                            'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
                                             border_radius=0, border_top_right_radius=20,
                                             func=self.reload_lista_descargas)
 
@@ -269,14 +270,17 @@ class DownloadManager(Other_funcs):
         self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube]
 
     def buscar_acualizaciones(self):
-        response = requests.get('https://tecrato.pythonanywhere.com/api/programs?program=acelerador+de+descargas&version=last')
-    
-        resultado = response.json()
-        comparativa = int(self.version.replace('.','')) < int(resultado['version'].replace('.',''))
+       
+        sera = check_update('acelerador de descargas', self.version, 'last')
 
-        if comparativa:
+        if not sera:
+            return 
+        
+        self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)))
+        
 
-            self.data_actualizacion['url'] = bsoup4(requests.get(resultado['url']).text, 'html.parser').find(id='downloadButton').get('href',False)
+        try:
+            self.data_actualizacion['url'] = bsoup4(requests.get(sera['url']).text, 'html.parser').find(id='downloadButton').get('href',False)
             response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=15)
 
             self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
@@ -285,10 +289,14 @@ class DownloadManager(Other_funcs):
             self.data_actualizacion['size'] = int(response2.headers.get('content-length'))
             self.data_actualizacion['file_name'] = response2.headers.get('content-disposition').split('filename=')[1].replace('"', '')
 
+            self.Mini_GUI_manager.clear()
             self.Mini_GUI_manager.add(
                 mini_GUI.desicion_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar']),
                 lambda _: self.Func_pool.start('descargar actualizacion')
             )
+        except Exception as err:
+            self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Error al obtener actualizacion.', (250,100)))
+            print(err)
 
     def descargar_actualizacion(self):
 
@@ -303,17 +311,15 @@ class DownloadManager(Other_funcs):
 
         DB_cursor.execute('SELECT id from descargas ORDER BY id DESC LIMIT 1')
         id = DB_cursor.fetchone()[0]
-
         
         self.descargas_adyacentes.append(
+            # Thread(target=subprocess.run,
+            #         args=(f'Downloader.exe "{id}" 1',))
+            # )
             Thread(target=subprocess.run,
-                    args=(f'Downloader.exe "{id}" 1',))
-        )
-        #     Thread(target=subprocess.run,
-        #            args=(f'python Downloader.py "{id}" 1',))
-        # )
+                   args=(f'python Downloader.py "{id}" 1',))
+            )
         self.descargas_adyacentes[-1].start()
-            
 
     def comprobar_url(self) -> None:
         if not self.url:
@@ -350,6 +356,8 @@ class DownloadManager(Other_funcs):
                 raise TrajoHTML('No paginas')
 
             self.new_file_size = int(response.headers.get('content-length', 1))
+            if self.new_file_size < 1024 // (16*self.threads):
+                raise LowSizeError('Peso muy pequeño')
             peso_formateado = format_size(self.new_file_size)
             self.text_newd_size.change_text(f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}')
 
@@ -370,7 +378,7 @@ class DownloadManager(Other_funcs):
         except (requests.exceptions.ConnectTimeout,requests.exceptions.ReadTimeout):
             self.text_newd_status.change_text(self.txts['descripcion-state[tiempo agotado]'])
             return
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as err:
             self.text_newd_status.change_text(self.txts['descripcion-state[error internet]'])
             return
         except TrajoHTML:
@@ -449,7 +457,6 @@ class DownloadManager(Other_funcs):
                     sys.exit()
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
-                        # self.screen_new_download_bool = False
                         self.func_newd_close()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for x in self.list_to_click_newd:
@@ -472,24 +479,14 @@ class DownloadManager(Other_funcs):
             self.cicle_try = 0
 
         while self.screen_main_bool:
+
             mx, my = pag.mouse.get_pos()
-
-            self.ventana.fill((20, 20, 20))
-
-            for x in self.list_to_draw:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx, my))
-                else:
-                    x.draw(self.ventana)
-
-            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
 
             eventos = pag.event.get()
             self.GUI_manager.input_update(eventos)
 
             for evento in eventos:
                 if evento.type == QUIT:
-                    self.Func_pool.stop('actualizacion')
                     pag.quit()
                     sys.exit()
                 elif self.GUI_manager.active >= 0:
@@ -499,7 +496,6 @@ class DownloadManager(Other_funcs):
                         self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
-                        self.Func_pool.stop('actualizacion')
                         pag.quit()
                         sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
@@ -526,7 +522,17 @@ class DownloadManager(Other_funcs):
                                                                   captured=result),
                                                   self.func_select_box)
 
+            self.ventana.fill((20, 20, 20))
+
+            for x in self.list_to_draw:
+                if isinstance(x, Create_boton):
+                    x.draw(self.ventana, (mx,my))
+                else:
+                    x.draw(self.ventana)
+
             self.GUI_manager.draw(self.ventana, (mx, my))
+            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
+
 
             pag.display.flip()
             self.relog.tick(60)

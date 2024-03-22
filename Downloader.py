@@ -1,11 +1,11 @@
-import pygame as pag, sys, os, time, requests, json, sqlite3, subprocess
+import pygame as pag, sys, os, time, requests, json, sqlite3, subprocess, shutil
 
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
-from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, SCALED, KEYDOWN, MOUSEWHEEL, MOUSEMOTION
+from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION
 
 import Utilidades
 
@@ -29,7 +29,7 @@ def format_size(size) -> list:
 class Downloader:
     def __init__(self, id, execute = 0) -> None:
 
-        self.ventana = pag.display.set_mode((700, 300), SCALED)
+        self.ventana = pag.display.set_mode((700, 300))
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
 
@@ -106,10 +106,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -298,7 +298,7 @@ class Downloader:
                 raise DifferentTypeError('No es el tipo de archivo')
 
             peso = response.headers.get('content-length', False)
-            if int(peso) < 1024 // 8:
+            if int(peso) < 1024 // (8*self.num_hilos):
                 raise LowSizeError('Peso muy pequeño')
 
             self.can_download = True
@@ -367,6 +367,7 @@ class Downloader:
         self.draw_main()
 
     def download_thread(self, num, start, end, local_count=0, tiempo_reset=2):
+
         if self.paused:
             self.lista_status_hilos_text[num] = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
@@ -394,15 +395,16 @@ class Downloader:
                 raise DifferentTypeError('ay')
 
             peso = response.headers.get('content-length', False)
-            if int(peso) < 1024 // 16:
+            if int(peso) < 1024 // 8:
                 raise LowSizeError('Peso muy pequeño')
 
             tiempo_reset = 2
             self.lista_status_hilos_text[num] = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
-                for data in response.iter_content(1024 // 16):
-                    if self.paused or self.canceled: raise Exception('')
+                for data in response.iter_content(1024 // 8):
+                    if self.paused or self.canceled:
+                        raise Exception('')
                     if data:
                         local_count += len(data)
                         self.peso_descargado += len(data)
@@ -437,7 +439,7 @@ class Downloader:
                     file.write(parte.read())
                 os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
             file.close()
-        os.rmdir(self.carpeta_cache)
+        shutil.rmtree(self.carpeta_cache, True)
 
         self.pool_hilos.shutdown()
 
@@ -452,7 +454,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
         if self.apagar_al_finalizar:
-            os.system('shutdown /s /t 10')
+            subprocess.call('shutdown /s /t 10', shell=True)
             self.cerrar_todo('aceptar')
             return
         elif self.ejecutar_al_finalizar:
@@ -520,10 +522,10 @@ class Downloader:
                             x.draw(self.display, (mx, my))
 
             t = time.time() - self.last_time
-            divisor = 4
+            divisor = 3
             if t > 1/divisor:
                 vel = (self.peso_descargado-self.last_peso)*divisor
-                self.last_vel = abs(self.last_vel + ((vel - self.last_vel)/(divisor*9)))
+                self.last_vel = self.last_vel + ((vel - self.last_vel)/(divisor*6))
 
                 if self.last_vel > 1024 * 1024:
                     self.last_vel = vel
