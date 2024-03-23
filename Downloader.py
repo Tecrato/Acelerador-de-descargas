@@ -5,7 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
-from pygame.constants import MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION
+from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
+                              WINDOWFOCUSLOST, WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS)
 
 import Utilidades
 
@@ -27,7 +28,7 @@ def format_size(size) -> list:
 
 
 class Downloader:
-    def __init__(self, id, execute = 0) -> None:
+    def __init__(self, id, execute=0) -> None:
 
         self.ventana = pag.display.set_mode((700, 300))
         self.ventana_rect = self.ventana.get_rect()
@@ -74,6 +75,7 @@ class Downloader:
         self.downloading = False
         self.apagar_al_finalizar = False
         self.ejecutar_al_finalizar = int(execute)
+        self.drawing = True
         self.last_time = 0.0
         self.last_peso = 0.0
         self.last_vel = 0.0
@@ -358,7 +360,8 @@ class Downloader:
             self.lista_status_hilos_text.append(self.txts['status_hilo[iniciando]'].format(x))
 
             self.pool_hilos.submit(self.download_thread, x, self.division * x, (
-                self.division * x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1))
+                self.division * x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1)
+            )
 
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['pausar'])
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
@@ -371,10 +374,10 @@ class Downloader:
         if self.paused:
             self.lista_status_hilos_text[num] = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
-                time.sleep(1)
+                time.sleep(.5)
         if self.canceled:
             self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
-            return 0
+            return
         self.lista_status_hilos_text[num] = self.txts['status_hilo[iniciando]'].format(num)
         if local_count == 0 and self.reanudar_bool and Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
             local_count = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
@@ -419,13 +422,13 @@ class Downloader:
 
             if self.canceled:
                 self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
-                return 0
+                return
             self.lista_status_hilos_text[num] = self.txts['status_hilo[reconectando]'].format(num)
             t = time.time()
             while time.time() - t < tiempo_reset:
                 if self.canceled:
                     self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
-                    return 0
+                    return
                 time.sleep(.3)
             return self.download_thread(num, start, end, local_count,
                                         (tiempo_reset * 2) if tiempo_reset < 30 else tiempo_reset)
@@ -484,15 +487,21 @@ class Downloader:
 
         self.draw_main()
         while self.screen_main:
+            self.relog.tick(60)
             mx, my = pag.mouse.get_pos()
 
 
             eventos = pag.event.get()
             self.GUI_manager.input_update(eventos)
 
+
             for evento in eventos:
                 if evento.type == QUIT:
                     self.cerrar_todo('a')
+                elif evento.type in [WINDOWMINIMIZED]:
+                    self.drawing = False
+                elif evento.type in [WINDOWMAXIMIZED, WINDOWFOCUSGAINED, WINDOWTAKEFOCUS]:
+                    self.drawing = True
                 elif self.GUI_manager.active >= 0:
                     if evento.type == KEYDOWN and evento.key == K_ESCAPE:
                         self.GUI_manager.pop()
@@ -521,11 +530,18 @@ class Downloader:
                         if isinstance(x, Create_boton):
                             x.draw(self.display, (mx, my))
 
+            if self.hilos_listos == self.num_hilos:
+                self.finish_download()
+            if not self.drawing:
+                self.last_peso = self.peso_descargado
+                continue
+
             t = time.time() - self.last_time
             divisor = 3
             if t > 1/divisor:
                 vel = (self.peso_descargado-self.last_peso)*divisor
-                self.last_vel = self.last_vel + ((vel - self.last_vel)/(divisor*6))
+                paso1 = vel - self.last_vel
+                self.last_vel = self.last_vel + (paso1/((divisor*6) if paso1 > 0 else divisor))
 
                 if self.last_vel > 1024 * 1024:
                     self.last_vel = vel
@@ -552,8 +568,6 @@ class Downloader:
                 self.text_vel_descarga.draw(self.display)
                 self.ventana.blit(self.display, (0, 0))
 
-            if self.hilos_listos == self.num_hilos:
-                self.finish_download()
             self.surface_hilos.fill((254, 1, 1))
             for i, x in enumerate(self.lista_status_hilos):
                 x.change_text(self.lista_status_hilos_text[i])
@@ -566,7 +580,6 @@ class Downloader:
             self.ventana.blit(self.surf_GUI, (0, 0))
 
             pag.display.flip()
-            self.relog.tick(60)
 
 
 if __name__ == '__main__':

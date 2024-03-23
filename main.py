@@ -13,7 +13,8 @@ from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup as bsoup4
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update
 from platformdirs import user_config_path, user_cache_path
-from pygame.constants import MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE
+from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE,
+                              WINDOWFOCUSLOST, WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS)
 from pygame import Vector2
 
 from funcs import Other_funcs
@@ -44,8 +45,6 @@ class DownloadManager(Other_funcs):
         self.carpeta_cache = user_cache_path('Acelerador de descargas', 'Edouard Sandoval')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
-        self.data_actualizacion = {}
-        self.url_actualizacion = ''
         self.new_url: str = ''
         self.new_filename: str = ''
         self.new_file_type: str = ''
@@ -56,8 +55,11 @@ class DownloadManager(Other_funcs):
         self.cached_list_DB = []
         self.descargas_adyacentes = []
 
-        self.version = '2.5.1'
+        self.data_actualizacion = {}
+        self.url_actualizacion = ''
+        self.version = '2.5.2'
         self.threads = 8
+        self.drawing = True
         self.relog = pag.time.Clock()
 
         self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
@@ -152,7 +154,7 @@ class DownloadManager(Other_funcs):
 
         self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 6, None, 12,
                                           10, header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'], self.txts['fecha']],
-                                          fonts=[self.font_mononoki for _ in range(6)], colums_witdh=[0, .3, .45, .53, .66, .8], padding_left=5, border_color=(100,100,100))
+                                          fonts=[self.font_mononoki for _ in range(6)], colums_witdh=[0, .3, .45, .55, .68, .82], padding_left=5, border_color=(100,100,100))
         self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 30, 121), 17,
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
                                             border_radius=0, border_top_right_radius=20,
@@ -326,8 +328,8 @@ class DownloadManager(Other_funcs):
             return
         
         self.can_add_new_download = False
-
-        title: str = self.url.split('/')[-1]
+        title: str = urlparse(self.url).path
+        title: str = title.split('/')[-1]
         title: str = title.split('?')[0]
         title: str = title.replace('+', ' ')
         title: str = unquote(title)
@@ -479,6 +481,7 @@ class DownloadManager(Other_funcs):
             self.cicle_try = 0
 
         while self.screen_main_bool:
+            self.relog.tick(60)
 
             mx, my = pag.mouse.get_pos()
 
@@ -489,6 +492,10 @@ class DownloadManager(Other_funcs):
                 if evento.type == QUIT:
                     pag.quit()
                     sys.exit()
+                elif evento.type in [WINDOWMINIMIZED]:
+                    self.drawing = False
+                elif evento.type in [WINDOWMAXIMIZED, WINDOWFOCUSGAINED, WINDOWTAKEFOCUS]:
+                    self.drawing = True
                 elif self.GUI_manager.active >= 0:
                     if evento.type == KEYDOWN and evento.key == K_ESCAPE:
                         self.GUI_manager.pop()
@@ -517,11 +524,13 @@ class DownloadManager(Other_funcs):
                     if (self.lista_descargas.rect.collidepoint((mx, my)) and
                             (result := self.lista_descargas.click((mx, my)))):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx, my),
-                                                                  [self.txts['descargar'] if result['result'][-1] != 'Completado' else self.txts['redescargar'], self.txts['eliminar'],
+                                                                  [self.txts['descargar'] if result['result'][-2] != 'Completado' else self.txts['redescargar'], self.txts['eliminar'],
                                                                    self.txts['actualizar_url'], 'get url'],
                                                                   captured=result),
                                                   self.func_select_box)
 
+            if not self.drawing:
+                continue
             self.ventana.fill((20, 20, 20))
 
             for x in self.list_to_draw:
@@ -535,7 +544,6 @@ class DownloadManager(Other_funcs):
 
 
             pag.display.flip()
-            self.relog.tick(60)
 
     def screen_extras(self):
         if self.screen_extras_bool:
