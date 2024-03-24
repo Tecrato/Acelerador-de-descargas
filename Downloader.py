@@ -108,10 +108,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -461,8 +461,10 @@ class Downloader:
             self.cerrar_todo('aceptar')
             return
         elif self.ejecutar_al_finalizar:
+            self.actualizar_porcentaje_db()
+            pag.quit()
             subprocess.run(user_downloads_dir() + '/' + self.file_name, shell=True)
-            self.cerrar_todo('')
+            sys.exit()
             return
         self.GUI_manager.add(
             GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta']),
@@ -537,13 +539,17 @@ class Downloader:
                 continue
 
             t = time.time() - self.last_time
-            divisor = 3
+            divisor = 2
             if t > 1/divisor:
                 vel = (self.peso_descargado-self.last_peso)*divisor
-                paso1 = vel - self.last_vel
-                self.last_vel = self.last_vel + (paso1/((divisor*6) if paso1 > 0 else divisor))
+                # paso1 = vel - self.last_vel
+                # self.last_vel = (self.last_vel + (paso1/((divisor*5)))) if paso1 > 0 else vel
 
                 if self.last_vel > 1024 * 1024:
+                    self.last_vel = vel
+                elif self.last_vel > vel:
+                    self.last_vel -= (self.last_vel-vel)/5
+                else:
                     self.last_vel = vel
 
                 vel_format = format_size(self.last_vel)
@@ -553,20 +559,20 @@ class Downloader:
                 self.last_time = time.time()
                 self.last_peso = self.peso_descargado
 
-                if self.peso_total > 0:
-                    progreso = (self.peso_descargado / self.peso_total)
-                    self.text_porcentaje.change_text(f'{progreso * 100:.2f}%')
-                    descargado = format_size(self.peso_descargado)
-                    descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
-                    self.text_peso_progreso.change_text(self.txts['descargado']+': '+descargado_text)
-                    self.barra_progreso.set_volumen(progreso)
+            if self.peso_total > 0:
+                progreso = (self.peso_descargado / self.peso_total)
+                self.text_porcentaje.change_text(f'{progreso * 100:.2f}%')
+                descargado = format_size(self.peso_descargado)
+                descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
+                self.text_peso_progreso.change_text(self.txts['descargado']+': '+descargado_text)
+                self.barra_progreso.set_volumen(progreso)
 
-                pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
-                self.text_peso_progreso.draw(self.display)
-                self.barra_progreso.draw(self.display)
-                self.text_porcentaje.draw(self.display)
-                self.text_vel_descarga.draw(self.display)
-                self.ventana.blit(self.display, (0, 0))
+            pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
+            self.text_peso_progreso.draw(self.display)
+            self.barra_progreso.draw(self.display)
+            self.text_porcentaje.draw(self.display)
+            self.text_vel_descarga.draw(self.display)
+            self.ventana.blit(self.display, (0, 0))
 
             self.surface_hilos.fill((254, 1, 1))
             for i, x in enumerate(self.lista_status_hilos):

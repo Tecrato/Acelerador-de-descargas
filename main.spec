@@ -12,13 +12,21 @@ datas = [
 a = Analysis(
     ['main.py'],
     datas=datas,
-    noarchive=True,
+    pathex=[],
+    binaries=[],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
 )
 pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
+    [],
     name='Download Manager',
     exclude_binaries=True,
     debug=False,
@@ -31,7 +39,8 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon= './descargas.png'
+    contents_directory='.',
+    icon= './descargas.ico'
 )
 
 # Downloader
@@ -39,13 +48,21 @@ exe = EXE(
 a2 = Analysis(
     ['Downloader.py'],
     datas=datas,
-    noarchive=True,
+    pathex=[],
+    binaries=[],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
 )
 pyz2 = PYZ(a.pure)
 
 exe2 = EXE(
     pyz2,
     a2.scripts,
+    [],
     name='Downloader',
     exclude_binaries=True,
     debug=False,
@@ -58,7 +75,8 @@ exe2 = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon= './descargas.png'
+    contents_directory='.',
+    icon= './descargas.ico'
 )
 
 
@@ -68,6 +86,7 @@ coll = COLLECT(
     a.binaries,
     a2.binaries,
     a.datas,
+    a2.binaries,
     strip=False,
     upx=True,
     upx_exclude=[],
