@@ -8,6 +8,7 @@ textos_español = {
     'apagar-al-finalizar': 'Apagar al finalizar',
     'actualizar_url': 'Actualizar url',
     'cancelar': 'Cancelar',
+    'carpeta cambiada': 'Carpeta cambiada',
     'cerrar': 'Cerrar',
     'comprobar': 'Comprobar',
     'confirmar': 'Confirmar',
@@ -63,6 +64,7 @@ textos_español = {
     "gui-error inesperado":"A ocurrido un error inesperado\n\nDesea volver a intentarlo?",
     'gui-desea descargar la actualizacion': 'Hay una nueva actualizacion disponible\n\nDesea agregar a la lista de descargas?',
     'gui-desea borrar el elemento': '¿Desea borrar el elemento seleccionado!?',
+    'gui-carpeta cambiada con exito': 'Carpeta para guardar archivos\ncambiada con exito.',
 
     # Downloader
     
@@ -98,6 +100,7 @@ textos_ingles = {
     'apagar-al-finalizar': 'Turn off at the end',
     'actualizar_url': 'Update url',
     'cancelar': 'Cancel',
+    'carpeta cambiada': 'Folder changed',
     'cerrar': 'Close',
     'comprobar': 'Check',
     'confirmar': 'Confirm',
@@ -151,7 +154,8 @@ textos_ingles = {
     'gui-url no sirve': "The URL it's not working\n\nUpdate it or try again later.",
     "gui-error inesperado": "An unexpected error has occurred\n\nDo you want to try again?",
     'gui-desea descargar la actualizacion': 'New update available\n\nDo you want to download it?',
-    'gui-desea borrar el elemento': 'Do you want delete this download!?',
+    'gui-desea borrar el elemento': 'Do you want delete this download?!',
+    'gui-carpeta cambiada con exito': 'folder changed\nsuccessfully',
 
     # Downloader
     'title_hilos': 'Downloads threads',

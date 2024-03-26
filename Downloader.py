@@ -79,6 +79,7 @@ class Downloader:
         self.last_time = 0.0
         self.last_peso = 0.0
         self.last_vel = 0.0
+        self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{''.join(self.file_name.split('.')[:-1])}')
@@ -108,10 +109,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -200,6 +201,8 @@ class Downloader:
         self.idioma = self.configs.get('idioma', 'español')
         self.txts = idiomas[self.idioma]
 
+        self.save_dir = self.configs.get('save_dir',user_downloads_dir())
+
     def func_pausar(self) -> None:
         self.paused = True
         self.btn_pausar_y_reanudar_descarga.change_text(self.txts['reanudar'])
@@ -224,7 +227,7 @@ class Downloader:
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
-            os.startfile(user_downloads_dir())
+            os.startfile(self.save_dir)
         self.cerrar_todo('a')
 
     def cerrar_todo(self, result):
@@ -436,7 +439,7 @@ class Downloader:
     def finish_download(self):
         self.downloading = False
 
-        with open(user_downloads_dir() + '/' + self.file_name, 'wb') as file:
+        with open(self.save_dir + '/' + self.file_name, 'wb') as file:
             for x in range(self.num_hilos):
                 with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'), 'rb') as parte:
                     file.write(parte.read())
@@ -463,7 +466,7 @@ class Downloader:
         elif self.ejecutar_al_finalizar:
             self.actualizar_porcentaje_db()
             pag.quit()
-            subprocess.run(user_downloads_dir() + '/' + self.file_name, shell=True)
+            subprocess.run(self.save_dir + '/' + self.file_name, shell=True)
             sys.exit()
             return
         self.GUI_manager.add(
@@ -539,9 +542,9 @@ class Downloader:
                 continue
 
             t = time.time() - self.last_time
-            divisor = 2
+            divisor = 4
             if t > 1/divisor:
-                vel = (self.peso_descargado-self.last_peso)*divisor
+                vel = (self.peso_descargado-self.last_peso)*(divisor-0.3)
                 # paso1 = vel - self.last_vel
                 # self.last_vel = (self.last_vel + (paso1/((divisor*5)))) if paso1 > 0 else vel
 

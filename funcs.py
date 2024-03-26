@@ -21,15 +21,14 @@ class Other_funcs:
 
         if respuesta['index'] == 0:
             self.descargas_adyacentes.append(
-                Thread(target=subprocess.run,
-                       args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
-            )
             #     Thread(target=subprocess.run,
-            #            args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
+            #            args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
             # )
+                Thread(target=subprocess.run,
+                       args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
+            )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:
-            # GUI para confirmar borrar el elemento
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
                 lambda r: (self.del_download_DB(

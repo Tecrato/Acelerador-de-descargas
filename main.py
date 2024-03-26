@@ -11,11 +11,12 @@ import subprocess
 from threading import Thread
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup as bsoup4
-from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update
-from platformdirs import user_config_path, user_cache_path
+from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
+from platformdirs import user_config_path, user_cache_path, user_downloads_dir
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE,
                               WINDOWFOCUSLOST, WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS)
 from pygame import Vector2
+from tkinter.filedialog import askdirectory
 
 from funcs import Other_funcs
 from textos import idiomas
@@ -57,15 +58,16 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.5.3'
+        self.version = '2.5.4'
+        self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -116,6 +118,7 @@ class DownloadManager(Other_funcs):
             self.configs = {}
         self.threads = self.configs.get('hilos', 8)
         self.idioma = self.configs.get('idioma', 'español')
+        self.save_dir = self.configs.get('save_dir', self.save_dir)
         self.txts = idiomas[self.idioma]
 
         self.save_json()
@@ -123,6 +126,7 @@ class DownloadManager(Other_funcs):
     def save_json(self):
         self.configs['hilos'] = self.threads
         self.configs['idioma'] = self.idioma
+        self.configs['save_dir'] = self.save_dir
 
         json.dump(self.configs, open(self.carpeta_config.joinpath('./configs.json'), 'w'))
 
@@ -150,7 +154,7 @@ class DownloadManager(Other_funcs):
         self.btn_change_dir = Create_boton(self.txts['btn-cambiar_carpeta'], 16, self.font_mononoki,
                                            (self.btn_new_descarga.rect.right, 80), 20, 'topleft', 'white', (50, 50, 50),
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
-                                           border_width=-1)
+                                           border_width=-1, func=self.func_preguntar_carpeta)
 
         self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 6, None, 12,
                                           10, header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'], self.txts['fecha']],
@@ -245,7 +249,8 @@ class DownloadManager(Other_funcs):
         # Pantalla principal
         self.list_to_draw = [self.txt_title, self.btn_extras, self.btn_configs, self.btn_new_descarga,
                              self.btn_change_dir, self.lista_descargas, self.btn_reload_list]
-        self.list_to_click = [self.btn_new_descarga, self.btn_configs, self.btn_reload_list, self.btn_extras]
+        self.list_to_click = [self.btn_new_descarga, self.btn_configs, self.btn_reload_list, self.btn_extras,
+                              self.btn_change_dir]
 
         # Ventana de nueva descarga
         self.list_to_draw_new_download = [
@@ -282,7 +287,7 @@ class DownloadManager(Other_funcs):
         
 
         try:
-            self.data_actualizacion['url'] = bsoup4(requests.get(sera['url']).text, 'html.parser').find(id='downloadButton').get('href',False)
+            self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
             response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=15)
 
             self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
@@ -315,13 +320,26 @@ class DownloadManager(Other_funcs):
         id = DB_cursor.fetchone()[0]
         
         self.descargas_adyacentes.append(
-            Thread(target=subprocess.run,
-                    args=(f'Downloader.exe "{id}" 1',))
-            )
             # Thread(target=subprocess.run,
-            #        args=(f'python Downloader.py "{id}" 1',))
+            #         args=(f'Downloader.exe "{id}" 1',))
             # )
+            Thread(target=subprocess.run,
+                   args=(f'python Downloader.py "{id}" 1',))
+            )
         self.descargas_adyacentes[-1].start()
+
+    def func_preguntar_carpeta(self):
+        try:
+            self.save_dir = askdirectory(initialdir=self.save_dir, title='Select dir')
+            self.Mini_GUI_manager.add(
+                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
+            )
+            self.save_json()
+        except:
+            self.Mini_GUI_manager.add(
+                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
+            )
+
 
     def comprobar_url(self) -> None:
         if not self.url:
@@ -345,9 +363,13 @@ class DownloadManager(Other_funcs):
             
             parse = urlparse(self.url)
             if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
-                url = bsoup4(requests.get(self.url).text, 'html.parser').find(id='downloadButton').get('href',False)
+                try:
+                    url = get_mediafire_url(self.url)
+                except:
+                    raise LinkCaido('nt')
 
                 response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
+
             else:
                 response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
                 
@@ -364,8 +386,13 @@ class DownloadManager(Other_funcs):
             self.text_newd_size.change_text(f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}')
 
             if a := response.headers.get('content-disposition', False):
-                self.new_filename = a.split('filename=')[1].replace('"', '')
-                self.text_newd_filename.change_text(a.split('filename=')[1].replace('"', ''))
+                self.new_filename = a.split(';')
+                print(self.new_filename)
+                for x in self.new_filename:
+                    if 'filename=' in x:
+                        self.new_filename = x[10:].replace('"','')
+                print(self.new_filename)
+                self.text_newd_filename.change_text(self.new_filename)
 
             self.text_newd_status.change_text(self.txts['estado']+': '+self.txts['disponible'])
 
@@ -387,10 +414,12 @@ class DownloadManager(Other_funcs):
             self.text_newd_status.change_text(self.txts['descripcion-state[trajo un html]'])
             print(response.content)
             return
+        except LinkCaido as err:
+            self.text_newd_status.change_text('Link Caido')
+            return
         except Exception as err:
             print(err)
             print(type(err))
-            print(response.headers)
             self.text_newd_status.change_text('Error')
             return
 
