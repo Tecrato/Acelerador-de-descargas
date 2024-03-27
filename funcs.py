@@ -1,8 +1,10 @@
-import pyperclip, datetime, time, subprocess, shutil
+import pyperclip, datetime, time, subprocess, shutil, win32gui
 from threading import Thread
 from pygame import Vector2
+from tkinter.filedialog import askdirectory
 
 from Utilidades import GUI, mini_GUI
+from Utilidades import win32_tools
 
 from textos import idiomas
 
@@ -15,32 +17,47 @@ def format_size(size) -> list:
     return [count, size]
 
 
+def windowEnumerationHandler(hwnd, windows):
+    windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+    
+
+def front2(win_name):
+    windows = []
+    win32gui.EnumWindows(windowEnumerationHandler, windows)
+    for i in windows:
+        if i[1] == win_name:
+            win32_tools.front(win_name)
+            return True
 class Other_funcs:
     def func_select_box(self, respuesta):
         if not self.cached_list_DB: return 0
+        obj_cached = self.cached_list_DB[respuesta['obj']['index']]
 
         if respuesta['index'] == 0:
+            if front2(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
+                return
             self.descargas_adyacentes.append(
             #     Thread(target=subprocess.run,
-            #            args=(f'Downloader.exe "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
+            #            args=(f'Downloader.exe "{obj_cached[0]}" 0',))
             # )
+
                 Thread(target=subprocess.run,
-                       args=(f'python Downloader.py "{self.cached_list_DB[respuesta['obj']['index']][0]}" 0',))
+                       args=(f'python Downloader.py "{obj_cached[0]}" 0',))
             )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
                 lambda r: (self.del_download_DB(
-                    *self.cached_list_DB[respuesta['obj']['index']][:2]) if r == 'aceptar' else None)
+                    *obj_cached[:2]) if r == 'aceptar' else None)
             )
 
         elif respuesta['index'] == 2:
             self.actualizar_url = True
-            self.new_url_id = self.cached_list_DB[respuesta['obj']['index']][0]
+            self.new_url_id = obj_cached[0]
             self.screen_new_download()
         elif respuesta['index'] == 3:
-            pyperclip.copy(self.cached_list_DB[respuesta['obj']['index']][4])
+            pyperclip.copy(obj_cached[4])
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Copiado',
                                       self.txts['copiado al portapapeles'])
@@ -71,6 +88,20 @@ class Other_funcs:
 
         self.reload_lista_descargas()
         self.screen_new_download_bool = False
+
+    def func_preguntar_carpeta(self):
+        try:
+            self.save_dir = askdirectory(initialdir=self.save_dir, title='Select dir')
+            if not self.save_dir: 
+                return
+            self.Mini_GUI_manager.add(
+                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
+            )
+            self.save_json()
+        except:
+            self.Mini_GUI_manager.add(
+                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
+            )
 
     def reload_lista_descargas(self, cursor = None):
         if cursor:

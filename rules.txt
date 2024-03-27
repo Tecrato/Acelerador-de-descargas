@@ -1,7 +1,1 @@
 
-
-Hacer un sistema para actualizar el programa
-
-Fixed El porcentaje de la descarga se colocaba en 0.00% cuando iniciaba la descarga.
-
-Ahora se puede poner la pagina principal del mediafire, la que esta antes de oprimir el boton de descargar.

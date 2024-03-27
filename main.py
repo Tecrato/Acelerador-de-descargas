@@ -1,26 +1,40 @@
+import win32gui
+import sys
+from Utilidades import win32_tools
+
+def windowEnumerationHandler(hwnd, windows):
+    windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+
+windows = []
+win32gui.EnumWindows(windowEnumerationHandler, windows)
+
+def front2(win_name):
+    for i in windows:
+        if i[1] == win_name:
+            win32_tools.front(win_name)
+            sys.exit()
+front2('Download Manager by Edouard Sandoval')
 import Utilidades
 import json
 import os
 import pygame as pag
 import requests
 import sqlite3
-import sys
 import time
 import subprocess
 
 from threading import Thread
 from urllib.parse import urlparse, unquote
-from bs4 import BeautifulSoup as bsoup4
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
 from platformdirs import user_config_path, user_cache_path, user_downloads_dir
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE,
-                              WINDOWFOCUSLOST, WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS)
+                              WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
-from tkinter.filedialog import askdirectory
 
 from funcs import Other_funcs
 from textos import idiomas
 from my_warnings import *
+
 
 pag.init()
 
@@ -40,6 +54,7 @@ class DownloadManager(Other_funcs):
         self.ventana = pag.display.set_mode(RESOLUCION)
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
+        pag.display.set_caption('Download Manager by Edouard Sandoval')
 
         self.carpeta_config = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
         self.carpeta_config.mkdir(parents=True, exist_ok=True)
@@ -62,6 +77,7 @@ class DownloadManager(Other_funcs):
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
+        self.framerate = 60
         self.relog = pag.time.Clock()
 
         self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
@@ -82,6 +98,9 @@ class DownloadManager(Other_funcs):
         self.load_resources()
         self.generate_objs()
         self.reload_lista_descargas()
+        
+            
+            
         self.Func_pool.start('actualizacion')
 
         self.screen_main_bool = True
@@ -96,6 +115,8 @@ class DownloadManager(Other_funcs):
             self.func_paste_url(url)
             self.func_comprobar_url()
             self.screen_new_download()
+
+        
 
         while self.cicle_try < 5:
             self.cicle_try += 1
@@ -204,24 +225,24 @@ class DownloadManager(Other_funcs):
 
         # Pantalla de configuraciones
         self.text_config_title = Create_text(self.txts['title-configuraciones'], 26, self.font_mononoki,
-                                             (self.ventana_rect.centerx, 30))
+                                             (self.ventana_rect.centerx, 30), with_rect=True, color_rect=(20,20,20))
         self.btn_config_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 20, 'topright',
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_exit_configs)
 
         self.text_config_hilos = Create_text(self.txts['config-hilos'].format(self.threads), 16, self.font_mononoki,
-                                             (20, 100), 'left')
+                                             (20, 100), 'left', with_rect=True, color_rect=(20,20,20))
         self.btn_mas_hilos = Create_boton('', 14, self.font_simbolos,
                                           (self.text_config_hilos.rect.right + 10, self.text_config_hilos.rect.centery),
-                                          (5, 0), 'bottom', 'white', color_rect_active=(40, 40, 40), border_radius=0,
-                                          border_width=-1, toggle_rect=True, func=lambda: self.func_change_hilos('up'))
+                                          (5, 0), 'bottom', 'white', color_rect_active=(40, 40, 40), border_radius=0, color_rect=(20,20,20),
+                                          border_width=-1, func=lambda: self.func_change_hilos('up'))
         self.btn_menos_hilos = Create_boton('', 14, self.font_simbolos,
                                             (self.text_config_hilos.rect.right + 10,
-                                             self.text_config_hilos.rect.centery), (5, 0), 'top', 'white',
+                                             self.text_config_hilos.rect.centery), (5, 0), 'top', 'white', color_rect=(20,20,20),
                                             color_rect_active=(40, 40, 40), border_radius=0, border_width=-1,
-                                            toggle_rect=True, func=lambda: self.func_change_hilos('down'))
+                                            func=lambda: self.func_change_hilos('down'))
 
-        self.text_config_idioma = Create_text(self.txts['config-idioma'], 16, self.font_mononoki, (20, 130), 'left')
+        self.text_config_idioma = Create_text(self.txts['config-idioma'], 16, self.font_mononoki, (20, 130), 'left',with_rect=True, color_rect=(20,20,20))
         self.btn_config_idioma_es = Create_boton('Español', 14, self.font_mononoki, (20, 160), (20, 10), 'left',
                                                  'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('español'))
@@ -328,18 +349,6 @@ class DownloadManager(Other_funcs):
             )
         self.descargas_adyacentes[-1].start()
 
-    def func_preguntar_carpeta(self):
-        try:
-            self.save_dir = askdirectory(initialdir=self.save_dir, title='Select dir')
-            self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
-            )
-            self.save_json()
-        except:
-            self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
-            )
-
 
     def comprobar_url(self) -> None:
         if not self.url:
@@ -380,7 +389,7 @@ class DownloadManager(Other_funcs):
                 raise TrajoHTML('No paginas')
 
             self.new_file_size = int(response.headers.get('content-length', 1))
-            if self.new_file_size < 1024 // (16*self.threads):
+            if self.new_file_size < 1024 // (8*self.threads):
                 raise LowSizeError('Peso muy pequeño')
             peso_formateado = format_size(self.new_file_size)
             self.text_newd_size.change_text(f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}')
@@ -423,12 +432,36 @@ class DownloadManager(Other_funcs):
             self.text_newd_status.change_text('Error')
             return
 
+    def eventos_en_comun(self,evento):
+        if evento.type == QUIT:
+            pag.quit()
+            sys.exit()
+            return True
+        elif evento.type == WINDOWMINIMIZED:
+            self.drawing = False
+            return True
+        elif evento.type == WINDOWFOCUSLOST:
+            self.framerate = 30
+            return True
+        elif evento.type in [WINDOWTAKEFOCUS, WINDOWFOCUSGAINED, WINDOWMAXIMIZED]:
+            self.framerate = 60
+            self.drawing = True
+            return True
+        return False
+
     def screen_configs(self):
         if self.screen_configs_bool:
             self.cicle_try = 0
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw_config:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500,-500))
+            else:
+                x.draw(self.ventana)
         while self.screen_configs_bool:
-            mx, my = pag.mouse.get_pos()
+            self.relog.tick(self.framerate)
 
+            mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
             for evento in eventos:
                 if evento.type == QUIT:
@@ -447,47 +480,49 @@ class DownloadManager(Other_funcs):
                     for x in self.list_to_click_config:
                         if x.click((mx, my)):
                             break
+                    for x in self.list_to_draw_config:
+                        if isinstance(x, Create_text):
+                            x.draw(self.ventana)
+                elif evento.type == MOUSEMOTION:
+                    for x in self.list_to_draw_config:
+                        if isinstance(x, Create_boton):
+                            x.draw(self.ventana, (mx, my))
+                        else:
+                            x.draw(self.ventana)
 
-            self.ventana.fill((20, 20, 20))
-            for x in self.list_to_draw_config:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx, my))
-                else:
-                    x.draw(self.ventana)
-
-            self.GUI_manager.draw(self.ventana, (mx, my))
+                    self.GUI_manager.draw(self.ventana, (mx, my))
 
             pag.display.flip()
-            self.relog.tick(60)
 
     def screen_new_download(self):
         """La funcion para dibujar los textos y botones de la ventana de agregar una nueva descarga"""
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500, -500))
-            else:
-                x.draw(self.ventana)
 
         self.input_newd_url.clear()
         self.text_newd_filename.change_text(self.txts['nombre']+': ----------')
         self.text_newd_size.change_text(self.txts['tamaño']+': -------')
         self.text_newd_status.change_text(self.txts['descripcion-state[esperando]'])
         self.text_newd_file_type.change_text(self.txts['tipo']+': -------')
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500, -500))
+            else:
+                x.draw(self.ventana)
+        pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
 
         self.screen_new_download_bool = True
         while self.screen_new_download_bool:
-            mx, my = pag.mouse.get_pos()
+            self.relog.tick(self.framerate)
 
+            mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
 
             for x in self.list_inputs_newd:
                 if isinstance(x, Input_text):
                     x.eventos_teclado(eventos)
             for evento in eventos:
-                if evento.type == QUIT:
-                    pag.quit()
-                    sys.exit()
+                if self.eventos_en_comun(evento):
+                    continue
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.func_newd_close()
@@ -495,38 +530,43 @@ class DownloadManager(Other_funcs):
                     for x in self.list_to_click_newd:
                         if x.click((mx, my)):
                             break
-
+                elif evento.type == MOUSEMOTION:
+                    pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
+                    for x in self.list_to_draw_new_download:
+                        if isinstance(x, Create_boton):
+                            x.draw(self.ventana, (mx, my))
+                        else:
+                            x.draw(self.ventana)
+            
+            if not self.drawing:
+                continue
             pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
-
             for x in self.list_to_draw_new_download:
                 if isinstance(x, Create_boton):
                     x.draw(self.ventana, (mx, my))
                 else:
                     x.draw(self.ventana)
 
+            self.GUI_manager.draw(self.ventana, (mx, my))
+            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
+
             pag.display.flip()
-            self.relog.tick(60)
 
     def main_cycle(self) -> None:
         if self.screen_main_bool:
             self.cicle_try = 0
+        
 
         while self.screen_main_bool:
-            self.relog.tick(60)
+            self.relog.tick(self.framerate)
 
             mx, my = pag.mouse.get_pos()
-
             eventos = pag.event.get()
             self.GUI_manager.input_update(eventos)
 
             for evento in eventos:
-                if evento.type == QUIT:
-                    pag.quit()
-                    sys.exit()
-                elif evento.type in [WINDOWMINIMIZED]:
-                    self.drawing = False
-                elif evento.type in [WINDOWMAXIMIZED, WINDOWFOCUSGAINED, WINDOWTAKEFOCUS]:
-                    self.drawing = True
+                if self.eventos_en_comun(evento):
+                    continue
                 elif self.GUI_manager.active >= 0:
                     if evento.type == KEYDOWN and evento.key == K_ESCAPE:
                         self.GUI_manager.pop()
@@ -585,14 +625,17 @@ class DownloadManager(Other_funcs):
                 x.draw(self.ventana, (-500,-500))
             else:
                 x.draw(self.ventana)
+        pag.display.flip()
+
         while self.screen_extras_bool:
+            self.relog.tick(self.framerate)
+
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
 
             for evento in eventos:
-                if evento.type == QUIT:
-                    pag.quit()
-                    sys.exit()
+                if self.eventos_en_comun(evento):
+                    continue
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.screen_extras_bool = False
@@ -607,7 +650,6 @@ class DownloadManager(Other_funcs):
                             x.draw(self.ventana, (mx, my))
 
                     pag.display.flip()
-            self.relog.tick(60)
 
 
 if __name__ == '__main__':

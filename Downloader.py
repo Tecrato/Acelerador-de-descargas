@@ -6,13 +6,15 @@ from pathlib import Path
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
-                              WINDOWFOCUSLOST, WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS)
+                              WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 
 import Utilidades
 
 from Utilidades import Create_text, Create_boton, Barra_de_progreso
 from Utilidades import GUI, mini_GUI
 from Utilidades import multithread
+from Utilidades import win32_tools
+
 from textos import idiomas
 from my_warnings import *
 
@@ -63,6 +65,7 @@ class Downloader:
         self.estado: str = self.raw_data[7]
 
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
+        pag.display.set_caption(f'Downloader {self.id}_{self.file_name}')
 
         self.division = self.peso_total // self.num_hilos
         self.peso_total_formateado = format_size(self.peso_total)
@@ -79,6 +82,7 @@ class Downloader:
         self.last_time = 0.0
         self.last_peso = 0.0
         self.last_vel = 0.0
+        self.framerate = 60
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
 
@@ -323,8 +327,7 @@ class Downloader:
             print(type(err))
             print(err)
             self.GUI_manager.add(
-                GUI.Desicion(self.ventana_rect.center, 'Error',
-                             self.txts['gui-error inesperado']),
+                GUI.Desicion(self.ventana_rect.center, 'Error', self.txts['gui-error inesperado'], (400, 200)),
                 lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
             )
 
@@ -453,6 +456,7 @@ class Downloader:
         self.Database.commit()
 
         self.can_download = True
+        self.drawing = True
         self.hilos_listos = 0
         self.peso_descargado = 0
         self.text_estado_general.change_text(self.txts['descripcion-state[finalizado]'])
@@ -470,9 +474,11 @@ class Downloader:
             sys.exit()
             return
         self.GUI_manager.add(
-            GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta']),
+            GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta'], (400, 200)),
             self.func_abrir_carpeta_antes_de_salir
         )
+        
+        win32_tools.front(f'Downloader {self.id}_{self.file_name}')
 
     def draw_main(self):
         self.display.fill((20, 20, 20))
@@ -492,7 +498,7 @@ class Downloader:
 
         self.draw_main()
         while self.screen_main:
-            self.relog.tick(60)
+            self.relog.tick(self.framerate)
             mx, my = pag.mouse.get_pos()
 
 
@@ -503,9 +509,12 @@ class Downloader:
             for evento in eventos:
                 if evento.type == QUIT:
                     self.cerrar_todo('a')
-                elif evento.type in [WINDOWMINIMIZED]:
+                elif evento.type == WINDOWMINIMIZED:
                     self.drawing = False
-                elif evento.type in [WINDOWMAXIMIZED, WINDOWFOCUSGAINED, WINDOWTAKEFOCUS]:
+                elif evento.type == WINDOWFOCUSLOST:
+                    self.framerate = 30
+                elif evento.type in [WINDOWTAKEFOCUS, WINDOWFOCUSGAINED, WINDOWMAXIMIZED]:
+                    self.framerate = 60
                     self.drawing = True
                 elif self.GUI_manager.active >= 0:
                     if evento.type == KEYDOWN and evento.key == K_ESCAPE:
