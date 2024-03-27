@@ -37,13 +37,13 @@ class Other_funcs:
             if front2(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
                 return
             self.descargas_adyacentes.append(
-            #     Thread(target=subprocess.run,
-            #            args=(f'Downloader.exe "{obj_cached[0]}" 0',))
-            # )
-
                 Thread(target=subprocess.run,
-                       args=(f'python Downloader.py "{obj_cached[0]}" 0',))
+                       args=(f'Downloader.exe "{obj_cached[0]}" 0',))
             )
+
+            #     Thread(target=subprocess.run,
+            #            args=(f'python Downloader.py "{obj_cached[0]}" 0',))
+            # )
             self.descargas_adyacentes[-1].start()
         elif respuesta['index'] == 1:
             self.GUI_manager.add(

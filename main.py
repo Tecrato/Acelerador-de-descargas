@@ -73,17 +73,17 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.5.4'
+        self.version = '2.6.0'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -341,12 +341,12 @@ class DownloadManager(Other_funcs):
         id = DB_cursor.fetchone()[0]
         
         self.descargas_adyacentes.append(
-            # Thread(target=subprocess.run,
-            #         args=(f'Downloader.exe "{id}" 1',))
-            # )
             Thread(target=subprocess.run,
-                   args=(f'python Downloader.py "{id}" 1',))
+                    args=(f'Downloader.exe "{id}" 1',))
             )
+            # Thread(target=subprocess.run,
+            #        args=(f'python Downloader.py "{id}" 1',))
+            # )
         self.descargas_adyacentes[-1].start()
 
 
