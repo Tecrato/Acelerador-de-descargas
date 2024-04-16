@@ -1,19 +1,10 @@
-import win32gui
 import sys
 from Utilidades import win32_tools
 
-def windowEnumerationHandler(hwnd, windows):
-    windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+if win32_tools.check_win('Download Manager by Edouard Sandoval'):
+    win32_tools.front('Download Manager by Edouard Sandoval')
+    sys.exit()
 
-windows = []
-win32gui.EnumWindows(windowEnumerationHandler, windows)
-
-def front2(win_name):
-    for i in windows:
-        if i[1] == win_name:
-            win32_tools.front(win_name)
-            sys.exit()
-front2('Download Manager by Edouard Sandoval')
 import Utilidades
 import json
 import os
@@ -21,9 +12,7 @@ import pygame as pag
 import requests
 import sqlite3
 import time
-import subprocess
 
-from threading import Thread
 from urllib.parse import urlparse, unquote
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
 from platformdirs import user_config_path, user_cache_path, user_downloads_dir
@@ -69,21 +58,21 @@ class DownloadManager(Other_funcs):
         self.actualizar_url = False
 
         self.cached_list_DB = []
-        self.descargas_adyacentes = []
+        self.cola = []
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.6.0'
+        self.version = '2.7.0'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -140,6 +129,7 @@ class DownloadManager(Other_funcs):
         self.threads = self.configs.get('hilos', 8)
         self.idioma = self.configs.get('idioma', 'español')
         self.save_dir = self.configs.get('save_dir', self.save_dir)
+        self.apagar_al_finalizar_cola = self.configs.get('apagar al finalizar cola', False)
         self.txts = idiomas[self.idioma]
 
         self.save_json()
@@ -148,6 +138,7 @@ class DownloadManager(Other_funcs):
         self.configs['hilos'] = self.threads
         self.configs['idioma'] = self.idioma
         self.configs['save_dir'] = self.save_dir
+        self.configs['apagar al finalizar cola'] = self.apagar_al_finalizar_cola
 
         json.dump(self.configs, open(self.carpeta_config.joinpath('./configs.json'), 'w'))
 
@@ -162,27 +153,27 @@ class DownloadManager(Other_funcs):
 
         # Pantalla principal
         self.txt_title = Create_text(self.txts['title'], 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
-        self.btn_extras = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 20, 'topright', 'white',
+        self.btn_extras = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright', 'white',
                                        (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                        func=self.func_main_to_extras)
-        self.btn_configs = Create_boton('', 26, self.font_simbolos, (0, 0), 20, 'topleft', 'white', (20, 20, 20),
+        self.btn_configs = Create_boton('', 26, self.font_simbolos, (0, 0), 10, 'topleft', 'white', (20, 20, 20),
                                         (50, 50, 50), 0, -1, border_width=-1, func=self.func_main_to_config)
 
         self.btn_new_descarga = Create_boton(self.txts['btn-nueva_descarga'], 16, self.font_mononoki, (30, 80), 20,
                                              'topleft', 'white', (50, 50, 50), (90, 90, 90), 0, 20,
                                              border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,
-                                             func=self.screen_new_download)
+                                             func=lambda: self.screen_new_download(False))
         self.btn_change_dir = Create_boton(self.txts['btn-cambiar_carpeta'], 16, self.font_mononoki,
                                            (self.btn_new_descarga.rect.right, 80), 20, 'topleft', 'white', (50, 50, 50),
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
-        self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 6, None, 12,
-                                          10, header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'], self.txts['fecha']],
-                                          fonts=[self.font_mononoki for _ in range(6)], colums_witdh=[0, .3, .45, .55, .68, .82], padding_left=5, border_color=(100,100,100))
-        self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 30, 121), 17,
+        self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
+                                          10, (20,20,20), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],'cola', self.txts['fecha']],
+                                          fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100))
+        self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 31, 120), 16,
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
-                                            border_radius=0, border_top_right_radius=20,
+                                            border_radius=0, border_top_right_radius=20, border_color=(100,100,100),
                                             func=self.reload_lista_descargas)
 
         # Cosas de la ventana de nueva descarga
@@ -202,7 +193,7 @@ class DownloadManager(Other_funcs):
         self.input_newd_url = Input_text((self.new_download_rect.left + 20, self.new_download_rect.top + 100),
                                          (12, 300), self.font_mononoki, 'url de la descarga', max_letter=400)
         self.input_newd_paste = Create_boton('', 22, self.font_simbolos,
-                                             (self.input_newd_url.text_rect.right, self.input_newd_url.pos.y), (20, 10),
+                                             (self.input_newd_url.rect2.right, self.input_newd_url.pos.y), (20, 10),
                                              'left', 'black', 'lightgrey', 'darkgrey', border_width=1, border_radius=0,
                                              border_top_right_radius=20, border_bottom_right_radius=20,
                                              func=self.func_paste_url)
@@ -226,7 +217,7 @@ class DownloadManager(Other_funcs):
         # Pantalla de configuraciones
         self.text_config_title = Create_text(self.txts['title-configuraciones'], 26, self.font_mononoki,
                                              (self.ventana_rect.centerx, 30), with_rect=True, color_rect=(20,20,20))
-        self.btn_config_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 20, 'topright',
+        self.btn_config_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_exit_configs)
 
@@ -249,10 +240,16 @@ class DownloadManager(Other_funcs):
         self.btn_config_idioma_en = Create_boton('English', 14, self.font_mononoki, (110, 160), (20, 10), 'left',
                                                  'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('ingles'))
+        
+        self.text_config_apagar_al_finalizar_cola = Create_text('apagar al finalizar la cola: ', 16, self.font_mononoki, (20, 190), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20))
+        self.btn_config_apagar_al_finalizar_cola = Create_boton('' if self.apagar_al_finalizar_cola else '', 16, self.font_simbolos, (self.text_config_apagar_al_finalizar_cola.right, 190), 10, 'left', 'white',with_rect=True,
+                                                                color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1,
+                                                                 func=self.toggle_apagar_al_finalizar_cola)
 
         # Pantalla de extras
         self.text_extras_title = Create_text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
-        self.btn_extras_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 20, 'topright',
+        self.btn_extras_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_extras_to_main)
 
@@ -288,9 +285,11 @@ class DownloadManager(Other_funcs):
         # Pantalla de configuraciones
         self.list_to_draw_config = [self.text_config_title, self.btn_config_exit, self.text_config_hilos,
                                     self.btn_mas_hilos, self.btn_menos_hilos, self.text_config_idioma,
-                                    self.btn_config_idioma_en, self.btn_config_idioma_es]
+                                    self.btn_config_idioma_en, self.btn_config_idioma_es,
+                                    self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola]
         self.list_to_click_config = [self.btn_config_exit, self.btn_mas_hilos, self.btn_menos_hilos,
-                                     self.btn_config_idioma_en, self.btn_config_idioma_es]
+                                     self.btn_config_idioma_en, self.btn_config_idioma_es,
+                                     self.btn_config_apagar_al_finalizar_cola]
 
         # Pantalla de Extras
         self.list_to_draw_extras = [self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
@@ -340,14 +339,7 @@ class DownloadManager(Other_funcs):
         DB_cursor.execute('SELECT id from descargas ORDER BY id DESC LIMIT 1')
         id = DB_cursor.fetchone()[0]
         
-        self.descargas_adyacentes.append(
-            Thread(target=subprocess.run,
-                    args=(f'Downloader.exe "{id}" 1',))
-            )
-            # Thread(target=subprocess.run,
-            #        args=(f'python Downloader.py "{id}" 1',))
-            # )
-        self.descargas_adyacentes[-1].start()
+        self.init_download(id,1)
 
 
     def comprobar_url(self) -> None:
@@ -365,9 +357,9 @@ class DownloadManager(Other_funcs):
         if len(title) > 40:
             title = title[:40] + '...'
 
-        self.text_newd_filename.change_text(f'{title}')
+        self.text_newd_filename.text = f'{title}'
 
-        self.text_newd_status.change_text(self.txts['descripcion-state[conectando]'])
+        self.text_newd_status.text = self.txts['descripcion-state[conectando]']
         try:
             
             parse = urlparse(self.url)
@@ -384,15 +376,16 @@ class DownloadManager(Other_funcs):
                 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
-            self.text_newd_file_type.change_text(self.txts['tipo']+': ' + tipo)
+            self.text_newd_file_type.text = self.txts['tipo']+': ' + tipo
             if self.new_file_type in ['text/plain', 'text/html']:
                 raise TrajoHTML('No paginas')
 
             self.new_file_size = int(response.headers.get('content-length', 1))
-            if self.new_file_size < 1024 // (8*self.threads):
+            if self.new_file_size < (1024 //8) *self.threads:
+                print(response.headers)
                 raise LowSizeError('Peso muy pequeño')
             peso_formateado = format_size(self.new_file_size)
-            self.text_newd_size.change_text(f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}')
+            self.text_newd_size.text = f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}'
 
             if a := response.headers.get('content-disposition', False):
                 self.new_filename = a.split(';')
@@ -401,9 +394,9 @@ class DownloadManager(Other_funcs):
                     if 'filename=' in x:
                         self.new_filename = x[10:].replace('"','')
                 print(self.new_filename)
-                self.text_newd_filename.change_text(self.new_filename)
+                self.text_newd_filename.text = self.new_filename
 
-            self.text_newd_status.change_text(self.txts['estado']+': '+self.txts['disponible'])
+            self.text_newd_status.text = self.txts['estado']+': '+self.txts['disponible']
 
             self.can_add_new_download = True
 
@@ -411,25 +404,25 @@ class DownloadManager(Other_funcs):
         except requests.URLRequired:
             return
         except (requests.exceptions.InvalidSchema,requests.exceptions.MissingSchema):
-            self.text_newd_status.change_text(self.txts['descripcion-state[url invalida]'])
+            self.text_newd_status.text = self.txts['descripcion-state[url invalida]']
             return
         except (requests.exceptions.ConnectTimeout,requests.exceptions.ReadTimeout):
-            self.text_newd_status.change_text(self.txts['descripcion-state[tiempo agotado]'])
+            self.text_newd_status.text = self.txts['descripcion-state[tiempo agotado]']
             return
         except requests.exceptions.ConnectionError as err:
-            self.text_newd_status.change_text(self.txts['descripcion-state[error internet]'])
+            self.text_newd_status.text = self.txts['descripcion-state[error internet]']
             return
         except TrajoHTML:
-            self.text_newd_status.change_text(self.txts['descripcion-state[trajo un html]'])
+            self.text_newd_status.text = self.txts['descripcion-state[trajo un html]']
             print(response.content)
             return
         except LinkCaido as err:
-            self.text_newd_status.change_text('Link Caido')
+            self.text_newd_status.text = 'Link Caido'
             return
         except Exception as err:
             print(err)
             print(type(err))
-            self.text_newd_status.change_text('Error')
+            self.text_newd_status.text = 'Error'
             return
 
     def eventos_en_comun(self,evento):
@@ -481,8 +474,11 @@ class DownloadManager(Other_funcs):
                         if x.click((mx, my)):
                             break
                     for x in self.list_to_draw_config:
-                        if isinstance(x, Create_text):
+                        if isinstance(x, Create_boton):
+                            x.draw(self.ventana, (mx, my))
+                        else:
                             x.draw(self.ventana)
+                    pag.display.flip()
                 elif evento.type == MOUSEMOTION:
                     for x in self.list_to_draw_config:
                         if isinstance(x, Create_boton):
@@ -492,16 +488,20 @@ class DownloadManager(Other_funcs):
 
                     self.GUI_manager.draw(self.ventana, (mx, my))
 
-            pag.display.flip()
+                    pag.display.flip()
 
-    def screen_new_download(self):
+    def screen_new_download(self,actualizar_url= 0):
         """La funcion para dibujar los textos y botones de la ventana de agregar una nueva descarga"""
+        if actualizar_url:
+            self.actualizar_url = True
+        else:
+            self.actualizar_url = False
 
         self.input_newd_url.clear()
-        self.text_newd_filename.change_text(self.txts['nombre']+': ----------')
-        self.text_newd_size.change_text(self.txts['tamaño']+': -------')
-        self.text_newd_status.change_text(self.txts['descripcion-state[esperando]'])
-        self.text_newd_file_type.change_text(self.txts['tipo']+': -------')
+        self.text_newd_filename.text = self.txts['nombre']+': ----------'
+        self.text_newd_size.text = self.txts['tamaño']+': -------'
+        self.text_newd_status.text = self.txts['descripcion-state[esperando]']
+        self.text_newd_file_type.text = self.txts['tipo']+': -------'
         self.ventana.fill((20, 20, 20))
         for x in self.list_to_draw:
             if isinstance(x, Create_boton):
@@ -527,9 +527,14 @@ class DownloadManager(Other_funcs):
                     if evento.key == K_ESCAPE:
                         self.func_newd_close()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    if self.Mini_GUI_manager.click(evento.pos):
+                        continue
                     for x in self.list_to_click_newd:
                         if x.click((mx, my)):
                             break
+                elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
+                    if self.Mini_GUI_manager.click(evento.pos):
+                        continue
                 elif evento.type == MOUSEMOTION:
                     pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
                     for x in self.list_to_draw_new_download:
@@ -572,10 +577,9 @@ class DownloadManager(Other_funcs):
                         self.GUI_manager.pop()
                     elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                         self.GUI_manager.click((mx, my))
-                elif evento.type == KEYDOWN:
-                    if evento.key == K_ESCAPE:
-                        pag.quit()
-                        sys.exit()
+                elif evento.type == KEYDOWN and evento.key == K_ESCAPE:
+                    pag.quit()
+                    sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if self.Mini_GUI_manager.click(evento.pos):
                         continue
@@ -585,18 +589,18 @@ class DownloadManager(Other_funcs):
                         if x.click((mx, my)):
                             break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
+                    if self.Mini_GUI_manager.click(evento.pos):
+                        continue
                     for x in self.list_to_click:
                         x.click((mx, my))
                         break
-                    if self.Mini_GUI_manager.click(evento.pos):
-                        break
-                    elif self.lista_descargas.rect.collidepoint((mx, my)):
+                    if self.lista_descargas.rect.collidepoint((mx, my)):
                         self.lista_descargas.click((mx, my))
                     if (self.lista_descargas.rect.collidepoint((mx, my)) and
                             (result := self.lista_descargas.click((mx, my)))):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx, my),
                                                                   [self.txts['descargar'] if result['result'][-2] != 'Completado' else self.txts['redescargar'], self.txts['eliminar'],
-                                                                   self.txts['actualizar_url'], 'get url'],
+                                                                   self.txts['actualizar_url'], 'get url', self.txts['añadir a la cola'], self.txts['remover de la cola'], self.txts['limpiar cola']],
                                                                   captured=result),
                                                   self.func_select_box)
 

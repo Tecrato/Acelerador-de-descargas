@@ -1,9 +1,9 @@
-import pyperclip, datetime, time, subprocess, shutil, win32gui
+import pyperclip, datetime, time, subprocess, shutil, sqlite3, pygame as pag, sys
 from threading import Thread
 from pygame import Vector2
 from tkinter.filedialog import askdirectory
 
-from Utilidades import GUI, mini_GUI
+from Utilidades import GUI, mini_GUI, Create_boton
 from Utilidades import win32_tools
 
 from textos import idiomas
@@ -17,34 +17,39 @@ def format_size(size) -> list:
     return [count, size]
 
 
-def windowEnumerationHandler(hwnd, windows):
-    windows.append((hwnd, win32gui.GetWindowText(hwnd)))
-    
-
-def front2(win_name):
-    windows = []
-    win32gui.EnumWindows(windowEnumerationHandler, windows)
-    for i in windows:
-        if i[1] == win_name:
-            win32_tools.front(win_name)
-            return True
 class Other_funcs:
-    def func_select_box(self, respuesta):
-        if not self.cached_list_DB: return 0
+    def download(self,id,mod):
+            proceso = subprocess.run(f'python Downloader.py "{id}" {mod}', shell=True)
+            # proceso = subprocess.run(f'Downloader.exe "{id}" {mod}', shell=True)
+            if proceso.returncode == 1 and id in self.cola:
+                self.cola.remove(id)
+                if len(self.cola) > 0:
+                    self.init_download(self.cola[0],2)
+                elif self.apagar_al_finalizar_cola:
+                    subprocess.call('shutdown /s /t 20 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
+                    
+                    DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
+                    DB_cursor = DB.cursor()
+                    self.reload_lista_descargas(DB_cursor)
+                    pag.quit()
+                    sys.exit()
+            else:
+                print('NT Bro')
+            DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
+            DB_cursor = DB.cursor()
+            self.reload_lista_descargas(DB_cursor)
+    def init_download(self,id,mod=0):
+            Thread(target=self.download, args=(id,mod)).start()
+
+    def func_select_box(self, respuesta) -> None:
+        if not self.cached_list_DB: return
         obj_cached = self.cached_list_DB[respuesta['obj']['index']]
 
         if respuesta['index'] == 0:
-            if front2(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
+            if win32_tools.check_win(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
+                win32_tools.front(f'Downloader {obj_cached[0]}_{obj_cached[1]}')
                 return
-            self.descargas_adyacentes.append(
-                Thread(target=subprocess.run,
-                       args=(f'Downloader.exe "{obj_cached[0]}" 0',))
-            )
-
-            #     Thread(target=subprocess.run,
-            #            args=(f'python Downloader.py "{obj_cached[0]}" 0',))
-            # )
-            self.descargas_adyacentes[-1].start()
+            self.init_download(obj_cached[0],2 if obj_cached[0] in self.cola else 0)
         elif respuesta['index'] == 1:
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
@@ -53,17 +58,35 @@ class Other_funcs:
             )
 
         elif respuesta['index'] == 2:
-            self.actualizar_url = True
             self.new_url_id = obj_cached[0]
-            self.screen_new_download()
+            self.screen_new_download(1)
         elif respuesta['index'] == 3:
             pyperclip.copy(obj_cached[4])
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Copiado',
                                       self.txts['copiado al portapapeles'])
             )
+        elif respuesta['index'] == 4:
+            if obj_cached[0] in self.cola:
+                return
+            self.cola.append(obj_cached[0])
+            self.reload_lista_descargas()
+        elif respuesta['index'] == 5:
+            if not obj_cached[0] in self.cola:
+                return
+            self.cola.remove(obj_cached[0])
+            self.reload_lista_descargas()
+        elif respuesta['index'] == 6:
+            self.cola.clear()
+            self.reload_lista_descargas()
 
     def del_download_DB(self, id, nombre):
+        if win32_tools.check_win(f'Downloader {id}_{nombre}'):
+            self.Mini_GUI_manager.add(
+                mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                                      self.txts['gui-descarga en curso'])
+            )
+            return
         shutil.rmtree(self.carpeta_cache.joinpath(f'./{id}_{''.join(nombre.split('.')[:-1])}'), True)
         self.DB_cursor.execute('DELETE FROM descargas WHERE id=?', [id])
         self.DB.commit()
@@ -79,10 +102,9 @@ class Other_funcs:
 
             self.DB_cursor.execute('UPDATE descargas SET url=? WHERE id=?', [url, self.new_url_id])
             self.DB.commit()
-            self.actualizar_url = False
         else:
             datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads, time.time(),
-                     'en espera']
+                     'esperando']
             self.DB_cursor.execute('INSERT INTO descargas VALUES(null,?,?,?,?,?,?,?)', datos)
             self.DB.commit()
 
@@ -102,20 +124,19 @@ class Other_funcs:
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
             )
-
+    
     def reload_lista_descargas(self, cursor = None):
+        self.lista_descargas.clear()
         if cursor:
             cursor = cursor
         else:
             cursor = self.DB_cursor
-        self.lista_descargas.clear()
         cursor.execute('SELECT * FROM descargas')
         self.cached_list_DB = cursor.fetchall()
 
         if not self.cached_list_DB:
             self.lista_descargas.append((None, None, None))
             return 0
-
         for row in self.cached_list_DB:
             nombre = row[1]
             tipo = row[2].split('/')[0]
@@ -125,9 +146,9 @@ class Other_funcs:
             fecha = datetime.datetime.fromtimestamp(float(row[6]))
             # txt_fecha = f'{fecha.hour}:{fecha.minute}:{fecha.second} - {fecha.day}/{fecha.month}/{fecha.year}'
             txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
-            estado = row[7]
-            self.lista_descargas.append([nombre, tipo, hilos, peso, estado, txt_fecha])
-        # self.lista_descargas = sorted(self.lista_descargas, key=lambda x: x[5], reverse=True)
+            estado = self.txts[f'{row[7]}'.lower()] if f'{row[7]}'.lower() in self.txts else row[7]
+            cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
+            self.lista_descargas.append([nombre, tipo, hilos, peso, estado, cola, txt_fecha])
 
     def func_paste_url(self, url=False):
         'Pegar la url en el input'
@@ -143,8 +164,17 @@ class Other_funcs:
             self.threads -= 1
         elif isinstance(dir, int):
             self.threads = dir
-        self.text_config_hilos.change_text(self.txts['config-hilos'].format(self.threads))
+        self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw_config:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500,-500))
+            else:
+                x.draw(self.ventana)
 
+    def toggle_apagar_al_finalizar_cola(self):
+        self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
+        self.btn_config_apagar_al_finalizar_cola.text = ''if self.apagar_al_finalizar_cola else ''
 
     def func_comprobar_url(self):
         self.url = self.input_newd_url.get_text()
@@ -158,6 +188,12 @@ class Other_funcs:
 
         self.generate_objs()
         self.reload_lista_descargas()
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw_config:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500,-500))
+            else:
+                x.draw(self.ventana)
 
     def func_newd_close(self):
         self.screen_new_download_bool = False
