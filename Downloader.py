@@ -3,6 +3,7 @@ import pygame as pag, sys, os, time, requests, json, sqlite3, subprocess, shutil
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from numpy import mean
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as bsoup4
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
@@ -87,6 +88,8 @@ class Downloader:
         self.last_vel = 0.0
         self.framerate = 60
         self.intentos = 0
+        self.divisor = 6
+        self.list_vels: list[dict[str|int]] = []
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
 
@@ -117,10 +120,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -572,25 +575,23 @@ class Downloader:
                 continue
 
             t = time.time() - self.last_time
-            divisor = 4
-            if t > 1/divisor:
-                vel = (self.peso_descargado-self.last_peso)*(divisor-0.3)
-                # paso1 = vel - self.last_vel
-                # self.last_vel = (self.last_vel + (paso1/((divisor*5)))) if paso1 > 0 else vel
-
-                if self.last_vel > 1024 * 1024:
-                    self.last_vel = vel
-                elif self.last_vel > vel:
-                    self.last_vel -= (self.last_vel-vel)/5
-                else:
-                    self.last_vel = vel
-
-                vel_format = format_size(self.last_vel)
+            
+            if t > 1/self.divisor:
+                for i,x in sorted(enumerate(self.list_vels),reverse=True):
+                    if time.time() - x['time'] > 1:
+                        self.list_vels.pop(i)
+                
+                vel = (self.peso_descargado-self.last_peso)*(self.divisor+0.3)
+                self.list_vels.append({'time':time.time(),'vel':vel})
+                
+                vel_format = format_size(mean([x['vel'] for x in self.list_vels]))
                 vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
                 self.text_vel_descarga.text = self.txts['velocidad']+': '+vel_text
 
+                
                 self.last_time = time.time()
                 self.last_peso = self.peso_descargado
+                
 
             if self.peso_total > 0:
                 progreso = (self.peso_descargado / self.peso_total)

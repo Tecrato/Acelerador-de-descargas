@@ -80,13 +80,18 @@ exe2 = EXE(
 )
 
 
+build_options = {
+    'build': {
+        'optimize': 2,
+        'include_msvcr': False,
+    },
+}
 coll = COLLECT(
     exe,
     exe2,
     a.binaries,
     a2.binaries,
     a.datas,
-    a2.binaries,
     strip=False,
     upx=True,
     upx_exclude=[],

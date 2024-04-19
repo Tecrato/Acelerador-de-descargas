@@ -1,1 +1,11 @@
 
+que haya una lista que tenga en un dict: vel y time.
+se van a  argregar elementos siempre, el punto es, cada que se agregue un elemento, se revisa que los primeros
+elementos aun esten dentro del segundo, si no lo estan se eliminan.
+
+for i,x in sorted(enumerate(lista),reverse=True):
+    if time.time() - x['time'] > 1:
+        lista.pop(i)
+
+Opcion que permita activar y desactivar el enfoque en la venta
+Opcion para enfocar al terminar la cola

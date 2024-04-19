@@ -19,14 +19,14 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod):
-            proceso = subprocess.run(f'python Downloader.py "{id}" {mod}', shell=True)
-            # proceso = subprocess.run(f'Downloader.exe "{id}" {mod}', shell=True)
+            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
+            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
                     self.init_download(self.cola[0],2)
                 elif self.apagar_al_finalizar_cola:
-                    subprocess.call('shutdown /s /t 20 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
+                    subprocess.call('shutdown /s /t 10 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
                     
                     DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
                     DB_cursor = DB.cursor()
@@ -126,17 +126,16 @@ class Other_funcs:
             )
     
     def reload_lista_descargas(self, cursor = None):
-        self.lista_descargas.clear()
-        if cursor:
-            cursor = cursor
-        else:
+        if not cursor:
             cursor = self.DB_cursor
         cursor.execute('SELECT * FROM descargas')
         self.cached_list_DB = cursor.fetchall()
 
         if not self.cached_list_DB:
+            self.lista_descargas.clear()
             self.lista_descargas.append((None, None, None))
             return 0
+        self.lista_descargas.clear()
         for row in self.cached_list_DB:
             nombre = row[1]
             tipo = row[2].split('/')[0]

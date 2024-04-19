@@ -16,7 +16,7 @@ import time
 from urllib.parse import urlparse, unquote
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
 from platformdirs import user_config_path, user_cache_path, user_downloads_dir
-from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE,
+from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
 
@@ -62,17 +62,17 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.7.0'
+        self.version = '2.7.1'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -168,7 +168,7 @@ class DownloadManager(Other_funcs):
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
-        self.lista_descargas = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
+        self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
                                           10, (20,20,20), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],'cola', self.txts['fecha']],
                                           fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100))
         self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 31, 120), 16,
@@ -241,7 +241,7 @@ class DownloadManager(Other_funcs):
                                                  'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('ingles'))
         
-        self.text_config_apagar_al_finalizar_cola = Create_text('apagar al finalizar la cola: ', 16, self.font_mononoki, (20, 190), 'left', 'white', 
+        self.text_config_apagar_al_finalizar_cola = Create_text(self.txts['apagar-al-finalizar']+' ('+self.txts['la']+' '+self.txts['cola']+')', 16, self.font_mononoki, (20, 190), 'left', 'white', 
                                                                  with_rect=True, color_rect=(20,20,20))
         self.btn_config_apagar_al_finalizar_cola = Create_boton('' if self.apagar_al_finalizar_cola else '', 16, self.font_simbolos, (self.text_config_apagar_al_finalizar_cola.right, 190), 10, 'left', 'white',with_rect=True,
                                                                 color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1,
@@ -603,6 +603,12 @@ class DownloadManager(Other_funcs):
                                                                    self.txts['actualizar_url'], 'get url', self.txts['añadir a la cola'], self.txts['remover de la cola'], self.txts['limpiar cola']],
                                                                   captured=result),
                                                   self.func_select_box)
+                elif evento.type == MOUSEBUTTONUP:
+                    # self.lista_descargas.scroll = False
+                    self.lista_descargas.detener_scroll()
+                elif evento.type == MOUSEWHEEL and self.lista_descargas.rect.collidepoint((mx,my)):
+                    self.lista_descargas.rodar(evento.y*15)
+                    
 
             if not self.drawing:
                 continue
@@ -611,6 +617,9 @@ class DownloadManager(Other_funcs):
             for x in self.list_to_draw:
                 if isinstance(x, Create_boton):
                     x.draw(self.ventana, (mx,my))
+                elif isinstance(x, Multi_list):
+                    if self.lista_descargas.listas[0].lista_palabras:
+                        x.draw(self.ventana)
                 else:
                     x.draw(self.ventana)
 
