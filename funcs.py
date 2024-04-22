@@ -19,8 +19,8 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
-            # proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
+            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:

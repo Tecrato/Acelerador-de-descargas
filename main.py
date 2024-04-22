@@ -70,10 +70,10 @@ class DownloadManager(Other_funcs):
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -251,7 +251,7 @@ class DownloadManager(Other_funcs):
                                                                 color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1,
                                                                  func=self.toggle_apagar_al_finalizar_cola)
         
-        self.text_config_LDM = Create_text('LDM: ', 16, self.font_mononoki, (20, 230), 'left', 'white', 
+        self.text_config_LDM = Create_text('Low Power Mode: ', 16, self.font_mononoki, (20, 230), 'left', 'white', 
                                                                  with_rect=True, color_rect=(20,20,20))
         self.btn_config_LDM = Create_boton('' if self.low_detail_mode else '', 16, self.font_simbolos, (self.text_config_LDM.right, 230), 10,
                                            'left', 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
@@ -444,7 +444,7 @@ class DownloadManager(Other_funcs):
             self.drawing = False
             return True
         elif evento.type == WINDOWFOCUSLOST:
-            self.framerate = 15 if not self.low_detail_mode else 5
+            self.framerate = 30 if not self.low_detail_mode else 5
             return True
         elif evento.type in [WINDOWTAKEFOCUS, WINDOWFOCUSGAINED, WINDOWMAXIMIZED]:
             self.framerate = 60 if not self.low_detail_mode else 30
