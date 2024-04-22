@@ -15,6 +15,7 @@ from Utilidades import Create_text, Create_boton, Barra_de_progreso
 from Utilidades import GUI, mini_GUI
 from Utilidades import multithread
 from Utilidades import win32_tools
+from Utilidades import format_date
 
 from textos import idiomas
 from my_warnings import *
@@ -120,10 +121,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -152,22 +153,25 @@ class Downloader:
 
         # ------------------------------------------- Textos y botones -----------------------------------
 
-        self.Titulo = Create_text((self.file_name if len(self.file_name) < 36 else (self.file_name[:36] + '...')), 14, self.font_mononoki, (20, 50), 'left')
+        self.Titulo = Create_text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, self.font_mononoki, (10, 50), 'left')
         self.text_tamaño = Create_text(self.txts['descripcion-peso'].format(
             f'{self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}'), 12,
-            self.font_mononoki, (20, 70), 'left')
-        self.text_url = Create_text(f'url: {(self.url if len(self.url) < 37 else (self.url[:37] + '...'))}', 12,
-                                    self.font_mononoki, (20, 90), 'left')
+            self.font_mononoki, (10, 70), 'left')
+        self.text_url = Create_text(f'url: {(self.url if len(self.url) < 37 else (self.url[:39] + '...'))}', 12,
+                                    self.font_mononoki, (10, 90), 'left')
         self.text_num_hilos = Create_text(self.txts['descripcion-numero_hilos'].format(self.num_hilos), 12,
-                                          self.font_mononoki, (20, 110), 'left')
+                                          self.font_mononoki, (10, 110), 'left')
         self.text_estado_general = Create_text(self.txts['descripcion-state[esperando]'], 12, self.font_mononoki,
-                                               (20, 130), 'left')
+                                               (10, 130), 'left')
 
         self.text_peso_progreso = Create_text('0b', 14, self.font_mononoki, (10, self.ventana_rect.centery + 10),
-                                              'topleft', padding=(20, 10), color_rect=(20, 20, 20))
+                                              'topleft', padding=(20,10), color_rect=(20, 20, 20))
         self.text_vel_descarga = Create_text(self.txts['velocidad'] + ': ' + '0kb/s', 14, self.font_mononoki,
-                                             (10, self.ventana_rect.centery + 30),
-                                             'topleft', padding=(20, 10))
+                                             (10, self.ventana_rect.centery + 34),
+                                             'topleft', padding=(20,10))
+        self.text_tiempo_restante = Create_text(self.txts['tiempo restante'] + ': 0Seg', 14, self.font_mononoki,
+                                             (10, self.ventana_rect.centery + 58),
+                                             'topleft', padding=(20,10))
 
         self.text_porcentaje = Create_text('0.00%', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 50),
                                            'center', padding=(300, 5))
@@ -199,8 +203,8 @@ class Downloader:
 
         self.list_to_draw = [self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
                              self.text_porcentaje, self.text_estado_general, self.btn_cancelar_descarga,
-                             self.text_title_hilos, self.text_vel_descarga,
-                             self.text_peso_progreso, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
+                             self.text_title_hilos, self.text_vel_descarga,self.text_peso_progreso,
+                             self.text_tiempo_restante, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
         self.list_to_click = [self.btn_cancelar_descarga, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
 
     def cargar_configs(self):
@@ -226,14 +230,7 @@ class Downloader:
             return
         self.paused = False
         self.canceled = True
-        self.downloading = False
-        self.can_download = True
-        self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
-        self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.actualizar_porcentaje_db()
-        if self.lista_status_hilos:
-            for num in range(self.num_hilos):
-                self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
         self.cerrar_todo('aceptar')
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
@@ -247,6 +244,7 @@ class Downloader:
         self.actualizar_porcentaje_db()
         self.paused = False
         self.canceled = True
+        self.pool_hilos.shutdown(False,cancel_futures=True)
         pag.quit()
         if self.finished:
             sys.exit(1)
@@ -471,7 +469,7 @@ class Downloader:
             file.close()
         shutil.rmtree(self.carpeta_cache, True)
 
-        self.pool_hilos.shutdown()
+        self.pool_hilos.shutdown(False,cancel_futures=True)
 
         self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['Completado', self.id])
         self.Database.commit()
@@ -481,6 +479,7 @@ class Downloader:
         self.finished = True
         self.hilos_listos = 0
         self.peso_descargado = 0
+        self.list_vels.clear()
         self.text_estado_general.text = self.txts['descripcion-state[finalizado]']
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
@@ -578,15 +577,21 @@ class Downloader:
             
             if t > 1/self.divisor:
                 for i,x in sorted(enumerate(self.list_vels),reverse=True):
-                    if time.time() - x['time'] > 1:
+                    if time.time() - x['time'] > 5:
                         self.list_vels.pop(i)
                 
-                vel = (self.peso_descargado-self.last_peso)*(self.divisor+0.3)
+                vel = (self.peso_descargado-self.last_peso)*(self.divisor)
                 self.list_vels.append({'time':time.time(),'vel':vel})
                 
                 vel_format = format_size(mean([x['vel'] for x in self.list_vels]))
                 vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
                 self.text_vel_descarga.text = self.txts['velocidad']+': '+vel_text
+                
+                if (t := mean([x['vel'] for x in self.list_vels])) > 0:
+                    delta_date = format_date((self.peso_total-self.peso_descargado)/int(t),3)
+                else:
+                    delta_date = format_date(0,2)
+                self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {delta_date['hour']:02.0f}:{delta_date['min']:02.0f}:{delta_date['seg']:02.0f}seg'
 
                 
                 self.last_time = time.time()
@@ -606,6 +611,7 @@ class Downloader:
             self.barra_progreso.draw(self.display)
             self.text_porcentaje.draw(self.display)
             self.text_vel_descarga.draw(self.display)
+            self.text_tiempo_restante.draw(self.display)
             self.ventana.blit(self.display, (0, 0))
 
             self.surface_hilos.fill((254, 1, 1))

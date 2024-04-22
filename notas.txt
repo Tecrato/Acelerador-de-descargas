@@ -1,0 +1,3 @@
+
+Opcion que permita activar y desactivar los enfoques en el programa
+Opcion para enfocar al terminar la cola

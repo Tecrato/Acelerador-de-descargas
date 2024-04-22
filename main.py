@@ -62,17 +62,18 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.7.1'
+        self.version = '2.7.2'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
+        self.low_detail_mode = False
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -128,6 +129,7 @@ class DownloadManager(Other_funcs):
             self.configs = {}
         self.threads = self.configs.get('hilos', 8)
         self.idioma = self.configs.get('idioma', 'español')
+        self.low_detail_mode = self.configs.get('ldm', False)
         self.save_dir = self.configs.get('save_dir', self.save_dir)
         self.apagar_al_finalizar_cola = self.configs.get('apagar al finalizar cola', False)
         self.txts = idiomas[self.idioma]
@@ -137,6 +139,7 @@ class DownloadManager(Other_funcs):
     def save_json(self):
         self.configs['hilos'] = self.threads
         self.configs['idioma'] = self.idioma
+        self.configs['ldm'] = self.low_detail_mode
         self.configs['save_dir'] = self.save_dir
         self.configs['apagar al finalizar cola'] = self.apagar_al_finalizar_cola
 
@@ -169,8 +172,9 @@ class DownloadManager(Other_funcs):
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
         self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
-                                          10, (20,20,20), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],'cola', self.txts['fecha']],
-                                          fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100))
+                                          10, (10,10,10), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],'cola', self.txts['fecha']],
+                                          fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100),
+                                          smothscroll=True if not self.low_detail_mode else False)
         self.btn_reload_list = Create_boton('', 13, self.font_simbolos, (self.ventana_rect.w - 31, 120), 16,
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
                                             border_radius=0, border_top_right_radius=20, border_color=(100,100,100),
@@ -246,6 +250,12 @@ class DownloadManager(Other_funcs):
         self.btn_config_apagar_al_finalizar_cola = Create_boton('' if self.apagar_al_finalizar_cola else '', 16, self.font_simbolos, (self.text_config_apagar_al_finalizar_cola.right, 190), 10, 'left', 'white',with_rect=True,
                                                                 color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1,
                                                                  func=self.toggle_apagar_al_finalizar_cola)
+        
+        self.text_config_LDM = Create_text('LDM: ', 16, self.font_mononoki, (20, 230), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20))
+        self.btn_config_LDM = Create_boton('' if self.low_detail_mode else '', 16, self.font_simbolos, (self.text_config_LDM.right, 230), 10,
+                                           'left', 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
+                                           border_width=-1, func=self.toggle_LDM)
 
         # Pantalla de extras
         self.text_extras_title = Create_text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
@@ -286,10 +296,11 @@ class DownloadManager(Other_funcs):
         self.list_to_draw_config = [self.text_config_title, self.btn_config_exit, self.text_config_hilos,
                                     self.btn_mas_hilos, self.btn_menos_hilos, self.text_config_idioma,
                                     self.btn_config_idioma_en, self.btn_config_idioma_es,
-                                    self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola]
+                                    self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola,
+                                    self.text_config_LDM,self.btn_config_LDM]
         self.list_to_click_config = [self.btn_config_exit, self.btn_mas_hilos, self.btn_menos_hilos,
                                      self.btn_config_idioma_en, self.btn_config_idioma_es,
-                                     self.btn_config_apagar_al_finalizar_cola]
+                                     self.btn_config_apagar_al_finalizar_cola,self.btn_config_LDM]
 
         # Pantalla de Extras
         self.list_to_draw_extras = [self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
@@ -389,11 +400,10 @@ class DownloadManager(Other_funcs):
 
             if a := response.headers.get('content-disposition', False):
                 self.new_filename = a.split(';')
-                print(self.new_filename)
                 for x in self.new_filename:
                     if 'filename=' in x:
                         self.new_filename = x[10:].replace('"','')
-                print(self.new_filename)
+                        break
                 self.text_newd_filename.text = self.new_filename
 
             self.text_newd_status.text = self.txts['estado']+': '+self.txts['disponible']
@@ -434,10 +444,10 @@ class DownloadManager(Other_funcs):
             self.drawing = False
             return True
         elif evento.type == WINDOWFOCUSLOST:
-            self.framerate = 30
+            self.framerate = 15 if not self.low_detail_mode else 5
             return True
         elif evento.type in [WINDOWTAKEFOCUS, WINDOWFOCUSGAINED, WINDOWMAXIMIZED]:
-            self.framerate = 60
+            self.framerate = 60 if not self.low_detail_mode else 30
             self.drawing = True
             return True
         return False
@@ -445,12 +455,12 @@ class DownloadManager(Other_funcs):
     def screen_configs(self):
         if self.screen_configs_bool:
             self.cicle_try = 0
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw_config:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500,-500))
-            else:
-                x.draw(self.ventana)
+            self.ventana.fill((20, 20, 20))
+            for x in self.list_to_draw_config:
+                if isinstance(x, Create_boton):
+                    x.draw(self.ventana, (-500,-500))
+                else:
+                    x.draw(self.ventana)
         while self.screen_configs_bool:
             self.relog.tick(self.framerate)
 
@@ -488,7 +498,7 @@ class DownloadManager(Other_funcs):
 
                     self.GUI_manager.draw(self.ventana, (mx, my))
 
-                    pag.display.flip()
+            pag.display.flip()
 
     def screen_new_download(self,actualizar_url= 0):
         """La funcion para dibujar los textos y botones de la ventana de agregar una nueva descarga"""
@@ -604,11 +614,11 @@ class DownloadManager(Other_funcs):
                                                                   captured=result),
                                                   self.func_select_box)
                 elif evento.type == MOUSEBUTTONUP:
-                    # self.lista_descargas.scroll = False
                     self.lista_descargas.detener_scroll()
                 elif evento.type == MOUSEWHEEL and self.lista_descargas.rect.collidepoint((mx,my)):
                     self.lista_descargas.rodar(evento.y*15)
-                    
+                elif evento.type == MOUSEMOTION and self.lista_descargas.scroll:
+                    self.lista_descargas.rodar(-evento.rel[1])
 
             if not self.drawing:
                 continue
@@ -632,13 +642,12 @@ class DownloadManager(Other_funcs):
     def screen_extras(self):
         if self.screen_extras_bool:
             self.cicle_try = 0
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw_extras:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500,-500))
-            else:
-                x.draw(self.ventana)
-        pag.display.flip()
+            self.ventana.fill((20, 20, 20))
+            for x in self.list_to_draw_extras:
+                if isinstance(x, Create_boton):
+                    x.draw(self.ventana, (-500,-500))
+                else:
+                    x.draw(self.ventana)
 
         while self.screen_extras_bool:
             self.relog.tick(self.framerate)
@@ -662,7 +671,7 @@ class DownloadManager(Other_funcs):
                         if isinstance(x, Create_boton):
                             x.draw(self.ventana, (mx, my))
 
-                    pag.display.flip()
+            pag.display.flip()
 
 
 if __name__ == '__main__':

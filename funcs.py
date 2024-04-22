@@ -18,9 +18,9 @@ def format_size(size) -> list:
 
 
 class Other_funcs:
-    def download(self,id,mod):
-            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
-            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+    def download(self,id,mod) -> None:
+            proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
@@ -33,6 +33,8 @@ class Other_funcs:
                     self.reload_lista_descargas(DB_cursor)
                     pag.quit()
                     sys.exit()
+                else:
+                    win32_tools.front('Download Manager by Edouard Sandoval')
             else:
                 print('NT Bro')
             DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
@@ -174,6 +176,11 @@ class Other_funcs:
     def toggle_apagar_al_finalizar_cola(self):
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
         self.btn_config_apagar_al_finalizar_cola.text = ''if self.apagar_al_finalizar_cola else ''
+    def toggle_LDM(self):
+        self.low_detail_mode = not self.low_detail_mode
+        self.btn_config_LDM.text = ''if self.low_detail_mode else ''
+        self.framerate = 60 if not self.low_detail_mode else 30
+        self.lista_descargas.smothscroll = not self.low_detail_mode
 
     def func_comprobar_url(self):
         self.url = self.input_newd_url.get_text()

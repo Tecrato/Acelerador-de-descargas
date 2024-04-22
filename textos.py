@@ -40,6 +40,7 @@ textos_español = {
     'remover de la cola': 'Remover de la cola',
     'si': 'Si',
     'tamaño': 'Tamaño',
+    'tiempo restante': 'Tiempo restante',
     'tipo': 'Tipo',
     'velocidad': 'Velocidad',
 
@@ -140,6 +141,7 @@ textos_ingles = {
     'redescargar': 'Re-download',
     'remover de la cola': 'Remove of the Queue',
     'si': 'Yes',
+    'tiempo restante': 'Remaining time',
     'tamaño': 'Size',
     'tipo': 'Type',
     'velocidad': 'Velocity',
