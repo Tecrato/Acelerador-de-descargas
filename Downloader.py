@@ -11,7 +11,7 @@ from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHE
 
 import Utilidades
 
-from Utilidades import Create_text, Create_boton, Barra_de_progreso
+from Utilidades import Create_text, Create_boton, Barra_de_progreso, get_mediafire_url
 from Utilidades import GUI, mini_GUI
 from Utilidades import multithread
 from Utilidades import win32_tools
@@ -287,23 +287,22 @@ class Downloader:
         try:
             parse = urlparse(self.url)
 
-            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
+            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path:
                 if os.path.exists(self.carpeta_cache.joinpath(f'./url cache.txt')):
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'r+') as file:
                         url = file.read()
                 else:
-                    url = bsoup4(requests.get(self.url, timeout=15).text, 'html.parser').find(id='downloadButton').get(
-                        'href', False)
+                    url = get_mediafire_url(self.url)
+                    if not url: raise Exception('no cargo xD')
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'w') as file:
                         file.write(url)
             else:
                 url = self.url
-
             response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
 
-            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file' and int(
-                    response.headers.get('Expires', 1)) == 0:
+            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path and int(response.headers.get('Expires', 123123)) == 0:
                 os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
+                print(response.headers)
                 return self.crear_conexion()
 
             # response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)

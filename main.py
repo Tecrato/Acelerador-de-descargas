@@ -62,7 +62,7 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.7.2'
+        self.version = '2.7.2.3'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
@@ -194,10 +194,10 @@ class DownloadManager(Other_funcs):
                                                (30, 19), 'bottomright', border_radius=0, border_top_left_radius=20,
                                                func=self.func_add_download_to_DB)
 
-        self.input_newd_url = Input_text((self.new_download_rect.left + 20, self.new_download_rect.top + 100),
-                                         (12, 300), self.font_mononoki, 'url de la descarga', max_letter=400)
+        self.input_newd_url = Input_text((self.new_download_rect.left + 20, self.new_download_rect.top + 100), 12,
+                                         width=300, height= 20, font=self.font_mononoki, text_value='url de la descarga', max_letter=400)
         self.input_newd_paste = Create_boton('', 22, self.font_simbolos,
-                                             (self.input_newd_url.rect2.right, self.input_newd_url.pos.y), (20, 10),
+                                             (self.input_newd_url.right, self.input_newd_url.pos.y), (20, 10),
                                              'left', 'black', 'lightgrey', 'darkgrey', border_width=1, border_radius=0,
                                              border_top_right_radius=20, border_bottom_right_radius=20,
                                              func=self.func_paste_url)
@@ -329,11 +329,12 @@ class DownloadManager(Other_funcs):
 
             self.Mini_GUI_manager.clear()
             self.Mini_GUI_manager.add(
-                mini_GUI.desicion_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar']),
+                mini_GUI.desicion_popup(self.ventana_rect.bottomright, self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar'], 'bottomright'),
                 lambda _: self.Func_pool.start('descargar actualizacion')
             )
         except Exception as err:
             self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Error al obtener actualizacion.', (250,100)))
+            print(type(err))
             print(err)
 
     def descargar_actualizacion(self):
@@ -374,8 +375,14 @@ class DownloadManager(Other_funcs):
         try:
             
             parse = urlparse(self.url)
-            if parse.netloc == "www.mediafire.com" and parse.path[1:].split('/')[0] == 'file':
+            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path:
                 try:
+                    for x in parse.path[1:].split('/'):
+                        print(x)
+                        if '.' in x:
+                            self.new_filename = x
+                            self.text_newd_filename.text = self.new_filename
+                            break
                     url = get_mediafire_url(self.url)
                 except:
                     raise LinkCaido('nt')
@@ -389,6 +396,7 @@ class DownloadManager(Other_funcs):
             self.new_file_type = tipo
             self.text_newd_file_type.text = self.txts['tipo']+': ' + tipo
             if self.new_file_type in ['text/plain', 'text/html']:
+                print(response.headers)
                 raise TrajoHTML('No paginas')
 
             self.new_file_size = int(response.headers.get('content-length', 1))
@@ -424,7 +432,7 @@ class DownloadManager(Other_funcs):
             return
         except TrajoHTML:
             self.text_newd_status.text = self.txts['descripcion-state[trajo un html]']
-            print(response.content)
+            # print(response.content)
             return
         except LinkCaido as err:
             self.text_newd_status.text = 'Link Caido'
