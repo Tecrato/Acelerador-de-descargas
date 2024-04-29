@@ -59,10 +59,11 @@ class DownloadManager(Other_funcs):
 
         self.cached_list_DB = []
         self.cola = []
+        self.descargando: list[int] = []
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.7.2.3'
+        self.version = '2.7.3'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
@@ -70,10 +71,10 @@ class DownloadManager(Other_funcs):
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -351,6 +352,7 @@ class DownloadManager(Other_funcs):
         DB_cursor.execute('SELECT id from descargas ORDER BY id DESC LIMIT 1')
         id = DB_cursor.fetchone()[0]
         
+        self.descargando.append(id)
         self.init_download(id,1)
 
 
@@ -447,7 +449,6 @@ class DownloadManager(Other_funcs):
         if evento.type == QUIT:
             pag.quit()
             sys.exit()
-            return True
         elif evento.type == WINDOWMINIMIZED:
             self.drawing = False
             return True

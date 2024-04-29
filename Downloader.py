@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from numpy import mean
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup as bsoup4
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 
@@ -21,7 +20,6 @@ from textos import idiomas
 from my_warnings import *
 
 pag.init()
-
 
 def format_size(size) -> list:
     count = 0
@@ -98,8 +96,8 @@ class Downloader:
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
         self.hilos_listos = 0
-        self.lista_status_hilos: list[Create_text] = []
-        self.lista_status_hilos_text: list[str] = []
+        self.lista_status_hilos: list[dict] = []
+        self.lista_status_hilos_text: list[Create_text] = []
         self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 80))
         self.surface_hilos.fill((254, 1, 1))
         self.surface_hilos.set_colorkey((254, 1, 1))
@@ -121,10 +119,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -222,6 +220,9 @@ class Downloader:
         self.paused = True
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
+        self.list_vels.clear()
+        self.last_peso = self.peso_descargado
+        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['pausado']}'
         self.actualizar_porcentaje_db()
         self.draw_main()
 
@@ -258,6 +259,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         self.reanudar_bool = True
+        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['pausado']}'
         self.start_download()
         self.draw_main()
 
@@ -305,9 +307,7 @@ class Downloader:
                 print(response.headers)
                 return self.crear_conexion()
 
-            # response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
             self.prepared_request = response.request
-            response = self.prepared_session.send(self.prepared_request, stream=True, allow_redirects=True, timeout=15)
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if tipo != self.type:
@@ -363,6 +363,7 @@ class Downloader:
         self.peso_descargado = 0
 
         self.lista_status_hilos.clear()
+        self.lista_status_hilos_text.clear()
         for x in range(self.num_hilos):
             if not self.reanudar_bool:
                 try:
@@ -370,43 +371,54 @@ class Downloader:
                 except:
                     pass
 
-            self.lista_status_hilos.append(
+            self.lista_status_hilos_text.append(
                 Create_text(self.txts['status_hilo[iniciando]'].format(x), 12, self.font_mononoki, (50, (30 * x) + 5),
                             'left', with_rect=True, color_rect=(20, 20, 20)))
             if x == self.num_hilos - 1:
-                self.surf_h_max = self.lista_status_hilos[-1].rect.bottom
-            self.lista_status_hilos_text.append(self.txts['status_hilo[iniciando]'].format(x))
+                self.surf_h_max = self.lista_status_hilos_text[-1].rect.bottom
 
-            self.pool_hilos.submit(self.download_thread, x, self.division * x, (
-                self.division * x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1)
-            )
+            self.lista_status_hilos.append({
+                'status':0,
+                'num':x,
+                'start':self.division * x,
+                'end':(self.division * x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1),
+                'local_count':0,
+                'tiempo_reset':2
+                })
+            self.pool_hilos.submit(self.init_download_thread,x)
 
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
 
-        self.text_estado_general.text = self.txts['descripcion-state[descargando]']
+        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['descargando']}'
         self.draw_main()
 
-    def download_thread(self, num, start, end, local_count=0, tiempo_reset=2):
+    def init_download_thread(self,num):
+        while self.lista_status_hilos[num]['status'] == 0:
+            self.download_thread(**self.lista_status_hilos[num])
+
+    def download_thread(self, num, start, end, local_count=0, tiempo_reset=2,status='relleno'):
 
         if self.paused:
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[pausado]'].format(num)
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
                 time.sleep(.5)
         if self.canceled:
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
+            self.lista_status_hilos[num]['status'] = 2
             return
-        self.lista_status_hilos_text[num] = self.txts['status_hilo[iniciando]'].format(num)
+        self.lista_status_hilos_text[num].text = self.txts['status_hilo[iniciando]'].format(num)
         if local_count == 0 and self.reanudar_bool and Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
             local_count = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
             self.peso_descargado += local_count
             if local_count >= end - start - 10:
                 self.hilos_listos += 1
-                self.lista_status_hilos_text[num] = self.txts['status_hilo[finalizado]'].format(num)
+                self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
+                self.lista_status_hilos[num]['status'] = 1
                 return 0
         headers = {'Range': f'bytes={start + local_count}-{end}'}
         try:
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[conectando]'].format(num)
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[conectando]'].format(num)
             re = self.prepared_request.copy()
             re.prepare_headers(headers)
             response = self.prepared_session.send(re, stream=True, allow_redirects=True, timeout=15)
@@ -420,24 +432,26 @@ class Downloader:
                 raise LowSizeError('Peso muy pequeño')
 
             tiempo_reset = 2
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[descargando]'].format(num)
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
                 for data in response.iter_content(1024 // 16):
                     if self.paused or self.canceled:
                         raise Exception('')
-                    if data:
-                        if local_count + len(data) > end-start+1:
-                            d = data[:(end-start)-local_count+1]
-                            local_count += len(d)
-                            self.peso_descargado += len(d)
-                            file_p.write(d)
-                            break
-                        local_count += len(data)
-                        self.peso_descargado += len(data)
-                        file_p.write(data)
+                    if not data:
+                        continue
+                    if local_count + len(data) > end-start+1:
+                        d = data[:(end-start)-local_count+1]
+                        local_count += len(d)
+                        self.peso_descargado += len(d)
+                        file_p.write(d)
+                        break
+                    local_count += len(data)
+                    self.peso_descargado += len(data)
+                    file_p.write(data)
 
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[finalizado]'].format(num)
+            self.lista_status_hilos[num]['status'] = 1
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
             self.hilos_listos += 1
             return
         except (Exception, LowSizeError) as err:
@@ -445,17 +459,19 @@ class Downloader:
             # print(type(err))
 
             if self.canceled:
-                self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+                self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
+                self.lista_status_hilos[num]['status'] = 2
                 return
-            self.lista_status_hilos_text[num] = self.txts['status_hilo[reconectando]'].format(num)
+            self.lista_status_hilos_text[num].text = self.txts['status_hilo[reconectando]'].format(num)
             t = time.time()
             while time.time() - t < tiempo_reset:
                 if self.canceled:
-                    self.lista_status_hilos_text[num] = self.txts['status_hilo[cancelado]'].format(num)
+                    self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
+                    self.lista_status_hilos[num]['status'] = 2
                     return
                 time.sleep(.3)
-            return self.download_thread(num, start, end, local_count,
-                                        (tiempo_reset * 2) if tiempo_reset < 30 else tiempo_reset)
+            self.lista_status_hilos[num]['local_count'] = local_count
+            self.lista_status_hilos[num]['tiempo_reset'] = (tiempo_reset * 2) if tiempo_reset < 30 else tiempo_reset
 
     def finish_download(self):
         self.downloading = False
@@ -477,9 +493,10 @@ class Downloader:
         self.drawing = True
         self.finished = True
         self.hilos_listos = 0
-        self.peso_descargado = 0
         self.list_vels.clear()
-        self.text_estado_general.text = self.txts['descripcion-state[finalizado]']
+        self.last_peso = 0
+        self.peso_descargado = 0
+        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['finalizado']}'
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
@@ -559,7 +576,7 @@ class Downloader:
                 elif evento.type == MOUSEWHEEL and mx > self.ventana_rect.centerx:
                     if -self.surf_h_max + 200 < self.surf_h_diff + evento.y * 20 < 5:
                         self.surf_h_diff += evento.y * 20
-                        for x in self.lista_status_hilos:
+                        for x in self.lista_status_hilos_text:
                             x.pos += (0, evento.y * 20)
                 elif evento.type == MOUSEMOTION:
                     for x in self.list_to_draw:
@@ -568,29 +585,43 @@ class Downloader:
 
             if self.hilos_listos == self.num_hilos:
                 self.finish_download()
-            if not self.drawing:
-                self.last_peso = self.peso_descargado
-                continue
 
             t = time.time() - self.last_time
             
             if t > 1/self.divisor:
                 for i,x in sorted(enumerate(self.list_vels),reverse=True):
-                    if time.time() - x['time'] > 5:
+                    if time.time() - x['time'] > 10:
                         self.list_vels.pop(i)
+
                 
                 vel = (self.peso_descargado-self.last_peso)*(self.divisor)
                 self.list_vels.append({'time':time.time(),'vel':vel})
                 
-                vel_format = format_size(mean([x['vel'] for x in self.list_vels]))
+                media = mean([x['vel'] for x in self.list_vels])
+
+                vel_format = format_size(media)
                 vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
                 self.text_vel_descarga.text = self.txts['velocidad']+': '+vel_text
                 
-                if (t := mean([x['vel'] for x in self.list_vels])) > 0:
+                if (t := media) > 0:
                     delta_date = format_date((self.peso_total-self.peso_descargado)/int(t),3)
+                    print(delta_date)
+                    if delta_date['year']>0:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['year']}{self.txts['año']}s {delta_date['day']}{self.txts['dia']}s'
+                    elif delta_date['day']>0:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['day']}{self.txts['dia']}s {delta_date['hour']}{self.txts['hora']}s'
+                    elif delta_date['hour']>0:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['hour']}{self.txts['hora']}s {delta_date['min']}{self.txts['minuto']}s'
+                    elif delta_date['min']>0:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['min']}{self.txts['minuto']}s {delta_date['seg']}{self.txts['segundo']}s'
+                    elif delta_date['seg']>5:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}:{delta_date['seg']}{self.txts['segundo']}s ~'
+                    else:
+                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {self.txts['casi termina']}...'
                 else:
                     delta_date = format_date(0,2)
-                self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {delta_date['hour']:02.0f}:{delta_date['min']:02.0f}:{delta_date['seg']:02.0f}seg'
+                    # self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {delta_date['hour']:02.0f}:{delta_date['min']:02.0f}:{delta_date['seg']:02.0f}seg'
+                    self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {self.txts['calculando']}...'
 
                 
                 self.last_time = time.time()
@@ -604,6 +635,10 @@ class Downloader:
                 descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
                 self.text_peso_progreso.text = self.txts['descargado']+': '+descargado_text
                 self.barra_progreso.set_volumen(progreso)
+                
+            if not self.drawing:
+                self.last_peso = self.peso_descargado
+                continue
 
             pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
             self.text_peso_progreso.draw(self.display)
@@ -614,8 +649,7 @@ class Downloader:
             self.ventana.blit(self.display, (0, 0))
 
             self.surface_hilos.fill((254, 1, 1))
-            for i, x in enumerate(self.lista_status_hilos):
-                x.text = self.lista_status_hilos_text[i]
+            for i, x in enumerate(self.lista_status_hilos_text):
                 x.draw(self.surface_hilos)
             self.ventana.blit(self.surface_hilos, (self.ventana_rect.centerx, 50))
 

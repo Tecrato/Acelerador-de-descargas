@@ -19,8 +19,8 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
-            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+            proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
@@ -35,7 +35,12 @@ class Other_funcs:
                     sys.exit()
                 else:
                     win32_tools.front('Download Manager by Edouard Sandoval')
+                    self.GUI_manager.add(
+                        GUI.Info(self.ventana_rect.center, self.txts['completao'], 
+                                 self.txts['gui-cola de descarga completada']),(400,200))
+                    self.descargando.remove(id)
             else:
+                self.descargando.remove(id)
                 print('NT Bro')
             DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
             DB_cursor = DB.cursor()
@@ -51,13 +56,23 @@ class Other_funcs:
             if win32_tools.check_win(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
                 win32_tools.front(f'Downloader {obj_cached[0]}_{obj_cached[1]}')
                 return
-            self.init_download(obj_cached[0],2 if obj_cached[0] in self.cola else 0)
+            elif obj_cached[0] in self.descargando:
+                return
+            else:
+                self.init_download(obj_cached[0],2 if obj_cached[0] in self.cola else 0)
+                self.descargando.append(obj_cached[0])
         elif respuesta['index'] == 1:
-            self.GUI_manager.add(
-                GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
-                lambda r: (self.del_download_DB(
-                    *obj_cached[:2]) if r == 'aceptar' else None)
-            )
+            if obj_cached[0] in self.descargando:
+                self.Mini_GUI_manager.add(
+                    mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                                        self.txts['gui-descarga en curso'])
+                )
+            else:
+                self.GUI_manager.add(
+                    GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
+                    lambda r: (self.del_download_DB(
+                        *obj_cached[:2]) if r == 'aceptar' else None)
+                )
 
         elif respuesta['index'] == 2:
             self.new_url_id = obj_cached[0]
