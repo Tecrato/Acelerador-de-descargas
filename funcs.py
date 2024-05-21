@@ -25,6 +25,7 @@ class Other_funcs:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
                     self.init_download(self.cola[0],2)
+                    self.descargando.append(self.cola[0])
                 elif self.apagar_al_finalizar_cola:
                     subprocess.call('shutdown /s /t 10 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
                     
@@ -34,14 +35,14 @@ class Other_funcs:
                     pag.quit()
                     sys.exit()
                 else:
-                    win32_tools.front('Download Manager by Edouard Sandoval')
+                    if self.enfoques:
+                        win32_tools.front2(pag.display.get_wm_info()['window'])
                     self.GUI_manager.add(
-                        GUI.Info(self.ventana_rect.center, self.txts['completao'], 
-                                 self.txts['gui-cola de descarga completada']),(400,200))
-                    self.descargando.remove(id)
+                        GUI.Info(self.ventana_rect.center, self.txts['completado'], 
+                                 self.txts['gui-cola de descarga completada'],(400,200)))
             else:
-                self.descargando.remove(id)
                 print('NT Bro')
+            self.descargando.remove(id)
             DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
             DB_cursor = DB.cursor()
             self.reload_lista_descargas(DB_cursor)
@@ -54,9 +55,10 @@ class Other_funcs:
 
         if respuesta['index'] == 0:
             if win32_tools.check_win(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
-                win32_tools.front(f'Downloader {obj_cached[0]}_{obj_cached[1]}')
+                if self.enfoques:
+                    win32_tools.front(f'Downloader {obj_cached[0]}_{obj_cached[1]}')
                 return
-            elif obj_cached[0] in self.descargando:
+            if obj_cached[0] in self.descargando:
                 return
             else:
                 self.init_download(obj_cached[0],2 if obj_cached[0] in self.cola else 0)
@@ -87,7 +89,8 @@ class Other_funcs:
             if obj_cached[0] in self.cola:
                 return
             self.cola.append(obj_cached[0])
-            self.reload_lista_descargas()
+            self.lista_descargas[5][respuesta['obj']['index']] = f'[{self.cola.index(obj_cached[0])}]'
+            
         elif respuesta['index'] == 5:
             if not obj_cached[0] in self.cola:
                 return
@@ -96,7 +99,29 @@ class Other_funcs:
         elif respuesta['index'] == 6:
             self.cola.clear()
             self.reload_lista_descargas()
+        elif respuesta['index'] == 7:
+            if obj_cached[0] in self.descargando:
+                self.Mini_GUI_manager.add(
+                    mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                                        self.txts['gui-descarga en curso'])
+                )
+                return
+            self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', [self.txts['esperando'].capitalize(), obj_cached[0]])
+            self.lista_descargas[4][respuesta['obj']['index']] = f'esperando'
+            shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{''.join(obj_cached[1].split('.')[:-1])}'), True)
+            self.DB.commit()
 
+    def func_select_box_hilos(self, respuesta) -> None:
+        # if respuesta['index'] == 0:
+        self.threads = 2**respuesta['index']
+
+        self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
+        self.ventana.fill((20, 20, 20))
+        for x in self.list_to_draw_config:
+            if isinstance(x, Create_boton):
+                x.draw(self.ventana, (-500,-500))
+            else:
+                x.draw(self.ventana)
     def del_download_DB(self, id, nombre):
         if win32_tools.check_win(f'Downloader {id}_{nombre}'):
             self.Mini_GUI_manager.add(
@@ -118,12 +143,12 @@ class Other_funcs:
             url = self.input_newd_url.get_text()
 
             self.DB_cursor.execute('UPDATE descargas SET url=? WHERE id=?', [url, self.new_url_id])
-            self.DB.commit()
         else:
             datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads, time.time(),
                      'esperando']
             self.DB_cursor.execute('INSERT INTO descargas VALUES(null,?,?,?,?,?,?,?)', datos)
-            self.DB.commit()
+
+        self.DB.commit()
 
         self.reload_lista_descargas()
         self.screen_new_download_bool = False
@@ -173,29 +198,22 @@ class Other_funcs:
         else:
             self.input_newd_url.set(pyperclip.paste())
 
-    def func_change_hilos(self, dir):
-        if dir == 'up' and self.threads < 32:
-            self.threads += 1
-        elif dir == 'down' and self.threads > 1:
-            self.threads -= 1
-        elif isinstance(dir, int):
-            self.threads = dir
-        self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw_config:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500,-500))
-            else:
-                x.draw(self.ventana)
-
     def toggle_apagar_al_finalizar_cola(self):
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
         self.btn_config_apagar_al_finalizar_cola.text = ''if self.apagar_al_finalizar_cola else ''
+
     def toggle_LDM(self):
         self.low_detail_mode = not self.low_detail_mode
         self.btn_config_LDM.text = ''if self.low_detail_mode else ''
         self.framerate = 60 if not self.low_detail_mode else 30
         self.lista_descargas.smothscroll = not self.low_detail_mode
+    
+    def toggle_enfoques(self):
+        self.enfoques = not self.enfoques
+        self.btn_config_enfoques.text = ''if self.low_detail_mode else ''
+    def toggle_detener_5min(self):
+        self.detener_5min = not self.detener_5min
+        self.btn_config_detener_5min.text = ''if self.detener_5min else ''
 
     def func_comprobar_url(self):
         self.url = self.input_newd_url.get_text()

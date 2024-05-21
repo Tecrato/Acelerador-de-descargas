@@ -82,9 +82,11 @@ class Downloader:
         self.cerrar_al_finalizar = False if self.modificador != 2 else True
         self.drawing = True
         self.finished = False
+        self.detener_5min = True
         self.last_time = 0.0
         self.last_peso = 0.0
         self.last_vel = 0.0
+        self.last_change = time.time()
         self.framerate = 60
         self.intentos = 0
         self.divisor = 6
@@ -92,13 +94,13 @@ class Downloader:
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
 
-        self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{''.join(self.file_name.split('.')[:-1])}')
+        self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{"".join(self.file_name.split(".")[:-1])}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
         self.hilos_listos = 0
         self.lista_status_hilos: list[dict] = []
         self.lista_status_hilos_text: list[Create_text] = []
-        self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 80))
+        self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 70))
         self.surface_hilos.fill((254, 1, 1))
         self.surface_hilos.set_colorkey((254, 1, 1))
         self.surf_h_diff = 0
@@ -155,7 +157,7 @@ class Downloader:
         self.text_tamaño = Create_text(self.txts['descripcion-peso'].format(
             f'{self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}'), 12,
             self.font_mononoki, (10, 70), 'left')
-        self.text_url = Create_text(f'url: {(self.url if len(self.url) < 37 else (self.url[:39] + '...'))}', 12,
+        self.text_url = Create_text(f'url: {(self.url if len(self.url) < 37 else (self.url[:39] + "..."))}', 12,
                                     self.font_mononoki, (10, 90), 'left')
         self.text_num_hilos = Create_text(self.txts['descripcion-numero_hilos'].format(self.num_hilos), 12,
                                           self.font_mononoki, (10, 110), 'left')
@@ -212,12 +214,16 @@ class Downloader:
         except:
             self.configs = {}
         self.idioma = self.configs.get('idioma', 'español')
+        self.enfoques = self.configs.get('enfoques', True)
+        self.detener_5min = self.configs.get('enfoques', True)
         self.txts = idiomas[self.idioma]
 
         self.save_dir = self.configs.get('save_dir',user_downloads_dir())
 
     def func_pausar(self) -> None:
         self.paused = True
+        self.last_change = time.time()
+        self.downloading = False
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.list_vels.clear()
@@ -285,6 +291,8 @@ class Downloader:
             self.apagar_al_finalizar = False
 
     def crear_conexion(self):
+        self.can_download = False
+        self.downloading = False
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
             parse = urlparse(self.url)
@@ -313,11 +321,12 @@ class Downloader:
             if tipo != self.type:
                 raise DifferentTypeError('No es el tipo de archivo')
 
-            peso = response.headers.get('content-length', False)
-            if int(peso) < 1024 // (8*self.num_hilos):
+            peso = int(response.headers.get('content-length', False))
+            if peso < 1024 // (8*self.num_hilos) or peso != self.peso_total:
                 raise LowSizeError('Peso muy pequeño')
 
             self.can_download = True
+            self.last_change = time.time()
         except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout):
             if self.modificador == 2:
                 self.intentos += 1
@@ -358,7 +367,6 @@ class Downloader:
             return
         self.paused = False
         self.canceled = False
-        self.downloading = True
         self.hilos_listos = 0
         self.peso_descargado = 0
 
@@ -386,6 +394,8 @@ class Downloader:
                 'tiempo_reset':2
                 })
             self.pool_hilos.submit(self.init_download_thread,x)
+        self.last_change = time.time()
+        self.downloading = True
 
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
@@ -516,8 +526,8 @@ class Downloader:
             GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta'], (400, 200)),
             self.func_abrir_carpeta_antes_de_salir
         )
-        
-        win32_tools.front(f'Downloader {self.id}_{self.file_name}')
+        if self.enfoques:
+            win32_tools.front2(pag.display.get_wm_info()['window'])
 
     def draw_main(self):
         self.display.fill((20, 20, 20))
@@ -598,6 +608,16 @@ class Downloader:
                 self.list_vels.append({'time':time.time(),'vel':vel})
                 
                 media = mean([x['vel'] for x in self.list_vels])
+                if media > 0:
+                    self.last_change = time.time()
+                elif time.time() - self.last_change > 300 and self.downloading and self.detener_5min:
+                    # self.func_cancelar('ies (osea yes)')
+                    self.func_pausar()
+                    self.GUI_manager.add(
+                        GUI.Desicion(self.ventana_rect.center, 'Error',
+                                    'El servidor no responde\n\nDesea volver a intentarlo?'),
+                        lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
+                    )
 
                 vel_format = format_size(media)
                 vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
@@ -605,7 +625,6 @@ class Downloader:
                 
                 if (t := media) > 0:
                     delta_date = format_date((self.peso_total-self.peso_descargado)/int(t),3)
-                    print(delta_date)
                     if delta_date['year']>0:
                         self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['year']}{self.txts['año']}s {delta_date['day']}{self.txts['dia']}s'
                     elif delta_date['day']>0:
