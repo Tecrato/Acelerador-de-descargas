@@ -210,7 +210,7 @@ class Other_funcs:
     
     def toggle_enfoques(self):
         self.enfoques = not self.enfoques
-        self.btn_config_enfoques.text = ''if self.low_detail_mode else ''
+        self.btn_config_enfoques.text = ''if self.enfoques else ''
     def toggle_detener_5min(self):
         self.detener_5min = not self.detener_5min
         self.btn_config_detener_5min.text = ''if self.detener_5min else ''

@@ -269,15 +269,15 @@ class DownloadManager(Other_funcs):
         
         self.text_config_enfoques = Create_text('Enfocar aplicacion: ', 16, self.font_mononoki, (20, 260), 'left', 'white', 
                                                                  with_rect=True, color_rect=(20,20,20))
-        self.btn_config_enfoques = Create_boton('' if self.low_detail_mode else '', 16, self.font_simbolos, 
+        self.btn_config_enfoques = Create_boton('' if self.enfoques else '', 16, self.font_simbolos, 
                                                 (self.text_config_enfoques.right, 260), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_enfoques)
         
-        self.text_config_detener_5min = Create_text('Detener a los 5min sin cambio: ', 16, self.font_mononoki, (20, 260), 'left', 'white', 
+        self.text_config_detener_5min = Create_text('Detener a los 5min sin cambio: ', 16, self.font_mononoki, (20, 295), 'left', 'white', 
                                                                  with_rect=True, color_rect=(20,20,20))
         self.btn_config_detener_5min = Create_boton('' if self.detener_5min else '', 16, self.font_simbolos, 
-                                                (self.text_config_detener_5min.right, 260), 10,'left',
+                                                (self.text_config_detener_5min.right, 295), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_detener_5min)
 

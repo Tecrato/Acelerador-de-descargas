@@ -1,1 +1,3 @@
 Cambiar el nombre del archivo final y la cantidad de hilos
+
+impedir eliminar si la descarga esta en cola
