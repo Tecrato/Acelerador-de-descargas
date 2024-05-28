@@ -66,8 +66,13 @@ class Other_funcs:
         elif respuesta['index'] == 1:
             if obj_cached[0] in self.descargando:
                 self.Mini_GUI_manager.add(
-                    mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                    mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
                                         self.txts['gui-descarga en curso'])
+                )
+            elif obj_cached[0] in self.cola:
+                self.Mini_GUI_manager.add(
+                    mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
+                                        self.txts['gui-descarga en cola'])
                 )
             else:
                 self.GUI_manager.add(
@@ -82,7 +87,7 @@ class Other_funcs:
         elif respuesta['index'] == 3:
             pyperclip.copy(obj_cached[4])
             self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Copiado',
+                mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Copiado',
                                       self.txts['copiado al portapapeles'])
             )
         elif respuesta['index'] == 4:
@@ -102,13 +107,13 @@ class Other_funcs:
         elif respuesta['index'] == 7:
             if obj_cached[0] in self.descargando:
                 self.Mini_GUI_manager.add(
-                    mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                    mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
                                         self.txts['gui-descarga en curso'])
                 )
                 return
-            self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', [self.txts['esperando'].capitalize(), obj_cached[0]])
-            self.lista_descargas[4][respuesta['obj']['index']] = f'esperando'
-            shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{''.join(obj_cached[1].split('.')[:-1])}'), True)
+            self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['esperando', obj_cached[0]])
+            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
+            shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
             self.DB.commit()
 
     def func_select_box_hilos(self, respuesta) -> None:
@@ -125,11 +130,11 @@ class Other_funcs:
     def del_download_DB(self, id, nombre):
         if win32_tools.check_win(f'Downloader {id}_{nombre}'):
             self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(Vector2(self.ventana_rect.bottomright) - (10, 10), 'botomright', 'Error',
+                mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
                                       self.txts['gui-descarga en curso'])
             )
             return
-        shutil.rmtree(self.carpeta_cache.joinpath(f'./{id}_{''.join(nombre.split('.')[:-1])}'), True)
+        shutil.rmtree(self.carpeta_cache.joinpath(f'./{id}_{"".join(nombre.split(".")[:-1])}'), True)
         self.DB_cursor.execute('DELETE FROM descargas WHERE id=?', [id])
         self.DB.commit()
         self.reload_lista_descargas()
@@ -159,12 +164,12 @@ class Other_funcs:
             if not self.save_dir: 
                 return
             self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
+                mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
             )
             self.save_json()
         except:
             self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
+                mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
             )
     
     def reload_lista_descargas(self, cursor = None):

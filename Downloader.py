@@ -228,7 +228,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
         self.list_vels.clear()
         self.last_peso = self.peso_descargado
-        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['pausado']}'
+        self.text_estado_general.text = f'{self.txts["estado"]}: {self.txts["pausado"]}'
         self.actualizar_porcentaje_db()
         self.draw_main()
 
@@ -251,7 +251,7 @@ class Downloader:
         self.actualizar_porcentaje_db()
         self.paused = False
         self.canceled = True
-        self.pool_hilos.shutdown(False,cancel_futures=True)
+        self.pool_hilos.shutdown(False)
         pag.quit()
         if self.finished:
             sys.exit(1)
@@ -265,7 +265,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
         self.reanudar_bool = True
-        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['pausado']}'
+        self.text_estado_general.text = f"{self.txts['estado']}: {self.txts['pausado']}"
         self.start_download()
         self.draw_main()
 
@@ -368,7 +368,6 @@ class Downloader:
         self.paused = False
         self.canceled = False
         self.hilos_listos = 0
-        self.peso_descargado = 0
 
         self.lista_status_hilos.clear()
         self.lista_status_hilos_text.clear()
@@ -400,7 +399,7 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
 
-        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['descargando']}'
+        self.text_estado_general.text = f"{self.txts['estado']}: {self.txts['descargando']}"
         self.draw_main()
 
     def init_download_thread(self,num):
@@ -421,7 +420,7 @@ class Downloader:
         if local_count == 0 and self.reanudar_bool and Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
             local_count = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
             self.peso_descargado += local_count
-            if local_count >= end - start - 10:
+            if local_count >= end - start-1:
                 self.hilos_listos += 1
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 1
@@ -506,7 +505,7 @@ class Downloader:
         self.list_vels.clear()
         self.last_peso = 0
         self.peso_descargado = 0
-        self.text_estado_general.text = f'{self.txts['estado']}: {self.txts['finalizado']}'
+        self.text_estado_general.text = f'{self.txts["estado"]}: {self.txts["finalizado"]}'
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
@@ -626,21 +625,21 @@ class Downloader:
                 if (t := media) > 0:
                     delta_date = format_date((self.peso_total-self.peso_descargado)/int(t),3)
                     if delta_date['year']>0:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['year']}{self.txts['año']}s {delta_date['day']}{self.txts['dia']}s'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {delta_date['year']}{self.txts['año']}s {delta_date['day']}{self.txts['dia']}s"
                     elif delta_date['day']>0:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['day']}{self.txts['dia']}s {delta_date['hour']}{self.txts['hora']}s'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {delta_date['day']}{self.txts['dia']}s {delta_date['hour']}{self.txts['hora']}s"
                     elif delta_date['hour']>0:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['hour']}{self.txts['hora']}s {delta_date['min']}{self.txts['minuto']}s'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {delta_date['hour']}{self.txts['hora']}s {delta_date['min']}{self.txts['minuto']}s"
                     elif delta_date['min']>0:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {delta_date['min']}{self.txts['minuto']}s {delta_date['seg']}{self.txts['segundo']}s'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {delta_date['min']}{self.txts['minuto']}s {delta_date['seg']}{self.txts['segundo']}s"
                     elif delta_date['seg']>5:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}:{delta_date['seg']}{self.txts['segundo']}s ~'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}:{delta_date['seg']}{self.txts['segundo']}s ~"
                     else:
-                        self.text_tiempo_restante.text = f'{self.txts['tiempo restante']}: {self.txts['casi termina']}...'
+                        self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {self.txts['casi termina']}..."
                 else:
                     delta_date = format_date(0,2)
                     # self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {delta_date['hour']:02.0f}:{delta_date['min']:02.0f}:{delta_date['seg']:02.0f}seg'
-                    self.text_tiempo_restante.text = self.txts['tiempo restante'] + f': {self.txts['calculando']}...'
+                    self.text_tiempo_restante.text = self.txts['tiempo restante'] + f": {self.txts['calculando']}..."
 
                 
                 self.last_time = time.time()

@@ -27,7 +27,7 @@ from my_warnings import LinkCaido, LowSizeError, TrajoHTML
 
 pag.init()
 
-RESOLUCION = [800, 600]
+RESOLUCION = [800, 550]
 
 def format_size(size) -> list:
     count = 0
@@ -243,7 +243,7 @@ class DownloadManager(Other_funcs):
                                              (20,10),color='white', color_rect=(20,20,20), color_rect_active=(40, 40, 40),
                                              border_radius=0, border_width=3,
                                              func=lambda: self.Mini_GUI_manager.add(mini_GUI.select(pag.mouse.get_pos(),
-                                                                ['1           ',2,4,8,16,32]),
+                                                                [1,2,4,8,16,32],min_width=50),
                                                                 self.func_select_box_hilos)
         )
 
@@ -333,6 +333,8 @@ class DownloadManager(Other_funcs):
         self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube]
 
     def move_objs(self):
+        self.Mini_GUI_manager.limit = self.ventana_rect
+
         self.txt_title.pos = (self.ventana_rect.centerx, 30)
         self.btn_extras.pos = (self.ventana_rect.w, 0)
 
@@ -372,11 +374,11 @@ class DownloadManager(Other_funcs):
 
             self.Mini_GUI_manager.clear()
             self.Mini_GUI_manager.add(
-                mini_GUI.desicion_popup(self.ventana_rect.bottomright, self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar'], 'bottomright'),
+                mini_GUI.desicion_popup(Vector2(50000,50000), self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar'], 'bottomright'),
                 lambda _: self.Func_pool.start('descargar actualizacion')
             )
         except Exception as err:
-            self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Error al obtener actualizacion.', (250,100)))
+            self.Mini_GUI_manager.add(mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', self.txts['actualizacion'], 'Error al obtener actualizacion.', (250,100)))
             print(type(err))
             print(err)
 

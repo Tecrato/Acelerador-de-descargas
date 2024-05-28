@@ -87,6 +87,7 @@ textos_español = {
     'gui-desea borrar el elemento': '¿Desea borrar el elemento seleccionado!?',
     'gui-carpeta cambiada con exito': 'Carpeta para guardar archivos\ncambiada con exito.',
     'gui-descarga en curso':'La descarga esta en curso',
+    'gui-descarga en cola':'La descarga esta en la cola',
     'gui-cola de descarga completada':'La cola de descargas ha finalizado',
 
     # Downloader
@@ -201,6 +202,7 @@ textos_ingles = {
     'gui-desea borrar el elemento': 'Do you want delete this download?!',
     'gui-carpeta cambiada con exito': 'folder changed\nsuccessfully',
     'gui-descarga en curso':'Download in progress',
+    'gui-descarga en cola':'Download in the Queue',
     'gui-cola de descarga completada':'The download Queue it\'s finished',
 
     # Downloader
