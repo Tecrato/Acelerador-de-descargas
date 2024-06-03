@@ -60,9 +60,9 @@ class Downloader:
         self.type: str = self.raw_data[2]
         self.peso_total: int = self.raw_data[3]
         self.url: str = self.raw_data[4]
-        self.num_hilos: int = self.raw_data[5]
-        self.tiempo: float = float(self.raw_data[6])
-        self.estado: str = self.raw_data[7]
+        self.num_hilos: int = self.raw_data[6]
+        self.tiempo: float = float(self.raw_data[7])
+        self.estado: str = self.raw_data[8]
         self.modificador = int(modificador)
 
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
@@ -87,6 +87,7 @@ class Downloader:
         self.last_peso = 0.0
         self.last_vel = 0.0
         self.last_change = time.time()
+        self.db_update = time.time()
         self.framerate = 60
         self.intentos = 0
         self.divisor = 6
@@ -121,10 +122,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -264,7 +265,6 @@ class Downloader:
         self.canceled = False
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
-        self.reanudar_bool = True
         self.text_estado_general.text = f"{self.txts['estado']}: {self.txts['pausado']}"
         self.start_download()
         self.draw_main()
@@ -312,17 +312,17 @@ class Downloader:
 
             if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path and int(response.headers.get('Expires', 123123)) == 0:
                 os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
-                print(response.headers)
                 return self.crear_conexion()
 
+            print(response.headers)
             self.prepared_request = response.request
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if tipo != self.type:
                 raise DifferentTypeError('No es el tipo de archivo')
 
-            peso = int(response.headers.get('content-length', False))
-            if peso < 1024 // (8*self.num_hilos) or peso != self.peso_total:
+            peso = int(response.headers.get('content-length', 0))
+            if peso < (1024 //8) *self.num_hilos or peso != self.peso_total:
                 raise LowSizeError('Peso muy pequeño')
 
             self.can_download = True
@@ -368,16 +368,14 @@ class Downloader:
         self.paused = False
         self.canceled = False
         self.hilos_listos = 0
+        self.peso_descargado = 0
+        self.can_download = False
 
         self.lista_status_hilos.clear()
         self.lista_status_hilos_text.clear()
+        self.pool_hilos.shutdown(True, cancel_futures=True)
+        self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
         for x in range(self.num_hilos):
-            if not self.reanudar_bool:
-                try:
-                    os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
-                except:
-                    pass
-
             self.lista_status_hilos_text.append(
                 Create_text(self.txts['status_hilo[iniciando]'].format(x), 12, self.font_mononoki, (50, (30 * x) + 5),
                             'left', with_rect=True, color_rect=(20, 20, 20)))
@@ -395,6 +393,7 @@ class Downloader:
             self.pool_hilos.submit(self.init_download_thread,x)
         self.last_change = time.time()
         self.downloading = True
+        self.can_download = True
 
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_pausar
@@ -404,23 +403,25 @@ class Downloader:
 
     def init_download_thread(self,num):
         while self.lista_status_hilos[num]['status'] == 0:
+            self.peso_descargado -= self.lista_status_hilos[num]['local_count']
             self.download_thread(**self.lista_status_hilos[num])
 
     def download_thread(self, num, start, end, local_count=0, tiempo_reset=2,status='relleno'):
-
+        
         if self.paused:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
-                time.sleep(.5)
+                time.sleep(.1)
         if self.canceled:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
             self.lista_status_hilos[num]['status'] = 2
             return
         self.lista_status_hilos_text[num].text = self.txts['status_hilo[iniciando]'].format(num)
-        if local_count == 0 and self.reanudar_bool and Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
+        if Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
             local_count = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
+            self.lista_status_hilos[num]['local_count'] = local_count
             self.peso_descargado += local_count
-            if local_count >= end - start-1:
+            if local_count >= end - start:
                 self.hilos_listos += 1
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 1
@@ -437,8 +438,8 @@ class Downloader:
                 raise DifferentTypeError('ay')
 
             peso = response.headers.get('content-length', False)
-            if int(peso) < 1024 // 16:
-                raise LowSizeError('Peso muy pequeño')
+            # if int(peso) < 1024 // 16:
+            #     raise LowSizeError('Peso muy pequeño')
 
             tiempo_reset = 2
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[descargando]'].format(num)
@@ -475,12 +476,15 @@ class Downloader:
             t = time.time()
             while time.time() - t < tiempo_reset:
                 if self.canceled:
-                    self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
-                    self.lista_status_hilos[num]['status'] = 2
-                    return
-                time.sleep(.3)
+                    break
+                time.sleep(.1)
+            if self.canceled:
+                self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
+                self.lista_status_hilos[num]['status'] = 2
+                return
             self.lista_status_hilos[num]['local_count'] = local_count
             self.lista_status_hilos[num]['tiempo_reset'] = (tiempo_reset * 2) if tiempo_reset < 30 else tiempo_reset
+            return
 
     def finish_download(self):
         self.downloading = False
@@ -493,7 +497,7 @@ class Downloader:
             file.close()
         shutil.rmtree(self.carpeta_cache, True)
 
-        self.pool_hilos.shutdown(False,cancel_futures=True)
+        self.pool_hilos.shutdown(True,cancel_futures=True)
 
         self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['Completado', self.id])
         self.Database.commit()
@@ -653,6 +657,9 @@ class Downloader:
                 descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
                 self.text_peso_progreso.text = self.txts['descargado']+': '+descargado_text
                 self.barra_progreso.set_volumen(progreso)
+            
+            if time.time()-self.db_update > 10:
+                self.actualizar_porcentaje_db()
                 
             if not self.drawing:
                 self.last_peso = self.peso_descargado

@@ -1,4 +1,4 @@
-import pyperclip, datetime, time, subprocess, shutil, sqlite3, pygame as pag, sys
+import pyperclip, datetime, subprocess, shutil, sqlite3, pygame as pag, sys
 from threading import Thread
 from pygame import Vector2
 from tkinter.filedialog import askdirectory
@@ -19,8 +19,8 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
-            # proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{id}" "{mod}"', shell=True)
+            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
@@ -111,10 +111,10 @@ class Other_funcs:
                                         self.txts['gui-descarga en curso'])
                 )
                 return
-            self.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['esperando', obj_cached[0]])
-            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
+            self.DB.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['esperando', obj_cached[0]])
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
             self.DB.commit()
+            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
 
     def func_select_box_hilos(self, respuesta) -> None:
         # if respuesta['index'] == 0:
@@ -135,8 +135,7 @@ class Other_funcs:
             )
             return
         shutil.rmtree(self.carpeta_cache.joinpath(f'./{id}_{"".join(nombre.split(".")[:-1])}'), True)
-        self.DB_cursor.execute('DELETE FROM descargas WHERE id=?', [id])
-        self.DB.commit()
+        self.DB.eliminar_descarga(id)
         self.reload_lista_descargas()
 
     def func_add_download_to_DB(self):
@@ -147,13 +146,13 @@ class Other_funcs:
         if self.actualizar_url:
             url = self.input_newd_url.get_text()
 
-            self.DB_cursor.execute('UPDATE descargas SET url=? WHERE id=?', [url, self.new_url_id])
+            self.DB.DB_cursor.execute('UPDATE descargas SET url=? WHERE id=?', [url, self.new_url_id])
+            self.DB.commit()
         else:
-            datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads, time.time(),
-                     'esperando']
-            self.DB_cursor.execute('INSERT INTO descargas VALUES(null,?,?,?,?,?,?,?)', datos)
+            datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads]
+            self.DB.añadir_descarga(*datos)
 
-        self.DB.commit()
+        
 
         self.reload_lista_descargas()
         self.screen_new_download_bool = False
@@ -174,9 +173,10 @@ class Other_funcs:
     
     def reload_lista_descargas(self, cursor = None):
         if not cursor:
-            cursor = self.DB_cursor
-        cursor.execute('SELECT * FROM descargas')
-        self.cached_list_DB = cursor.fetchall()
+            self.cached_list_DB = self.DB.buscar_descargas()
+        else:
+            cursor.execute('SELECT * FROM descargas')
+            self.cached_list_DB = cursor.fetchall()
 
         if not self.cached_list_DB:
             self.lista_descargas.clear()
@@ -188,11 +188,11 @@ class Other_funcs:
             tipo = row[2].split('/')[0]
             peso_formateado = format_size(row[3])
             peso = f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}'
-            hilos = row[5]
-            fecha = datetime.datetime.fromtimestamp(float(row[6]))
+            hilos = row[6]
+            fecha = datetime.datetime.fromtimestamp(float(row[7]))
             # txt_fecha = f'{fecha.hour}:{fecha.minute}:{fecha.second} - {fecha.day}/{fecha.month}/{fecha.year}'
             txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
-            estado = self.txts[f'{row[7]}'.lower()] if f'{row[7]}'.lower() in self.txts else row[7]
+            estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
             cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
             self.lista_descargas.append([nombre, tipo, hilos, peso, estado, cola, txt_fecha])
 
@@ -215,10 +215,13 @@ class Other_funcs:
     
     def toggle_enfoques(self):
         self.enfoques = not self.enfoques
-        self.btn_config_enfoques.text = ''if self.enfoques else ''
+        self.btn_config_enfoques.text = '' if self.enfoques else ''
     def toggle_detener_5min(self):
         self.detener_5min = not self.detener_5min
-        self.btn_config_detener_5min.text = ''if self.detener_5min else ''
+        self.btn_config_detener_5min.text = '' if self.detener_5min else ''
+    def toggle_mini_ventana_captar_extencion(self):
+        self.mini_ventana_captar_extencion = not self.mini_ventana_captar_extencion
+        self.btn_config_mini_ventana_captar_extencion.text = '' if self.mini_ventana_captar_extencion else ''
 
     def func_comprobar_url(self):
         self.url = self.input_newd_url.get_text()

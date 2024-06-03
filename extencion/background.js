@@ -1,5 +1,27 @@
-// chorme.download.changeAdd
-window.alert('aaa')
-document.addEventListener('DOMContentLoaded', function () {
-    console.log(document)
+
+chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
+
+//     // var newUrl = 'http://localhost:5000/download?url=' + encodeURIComponent(item.url)+'&name=item.filename';
+//     // suggest({ filename: item.filename, conflictAction: 'overwrite', url: newUrl });
+
+	const regex = /(.exe|.iso|.rar|.zip|.cia|.mp4|.mkv)/i
+
+	if (regex.test(item.filename)) {
+		const data = {
+		fileUrl: item.url,
+		name: item.filename
+		}
+		fetch('http://127.0.0.1:5000/add_download', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(data)
+		})
+		chrome.downloads.erase({id:item.id})
+		suggest();
+	} else {
+		suggest({ filename: item.filename, conflictAction: 'overwrite'});
+	}
+	
 });

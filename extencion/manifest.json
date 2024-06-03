@@ -1,10 +1,20 @@
 {
-  "manifest_version": 3,
-  "name": "Ejemplo de Extensión",
-  "version": "1.0",
-  "permissions": ["downloads", "tabs", "activeTab", "storage", "scripting"],
-  "action": {"default_popup": "popup.html"},
-  "background": {
-    "service_worker": "background.js"
+    "manifest_version": 3,
+    "name": "Acelerador de descargas by Edouard",
+    "version": "1.0",
+    "permissions": ["downloads"],
+    "background": {
+        "service_worker": "background.js"
+      },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "descargas16x16.png",
+        "32": "descargas32x32.png",
+        "64": "descargas64x64.png"
+      }
+    },
+    "icons": {
+      "64": "descargas64x64.png"
+    }
   }
-}

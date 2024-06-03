@@ -12,10 +12,12 @@ import pygame as pag
 import requests
 import sqlite3
 import time
+import subprocess
+import shutil
 
 from urllib.parse import urlparse, unquote
 from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
-from platformdirs import user_config_path, user_cache_path, user_downloads_dir
+from platformdirs import user_config_path, user_cache_path, user_downloads_dir, user_desktop_path
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
@@ -23,6 +25,7 @@ from pygame import Vector2
 from funcs import Other_funcs
 from textos import idiomas
 from my_warnings import LinkCaido, LowSizeError, TrajoHTML
+from DB import Data_Base
 
 
 pag.init()
@@ -56,7 +59,6 @@ class DownloadManager(Other_funcs):
         self.new_file_size: int = 0
         self.thread_new_download = None
         self.actualizar_url = False
-        self.prepared_session = requests.session()
 
         self.cached_list_DB = []
         self.cola = []
@@ -64,20 +66,21 @@ class DownloadManager(Other_funcs):
 
         self.data_actualizacion = {}
         self.url_actualizacion = ''
-        self.version = '2.8'
+        self.version = '2.9'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
         self.enfoques = True
         self.detener_5min = True
         self.low_detail_mode = False
+        self.mini_ventana_captar_extencion = True
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -98,7 +101,9 @@ class DownloadManager(Other_funcs):
         self.Func_pool = Funcs_pool()
         self.Func_pool.add('actualizacion', self.buscar_acualizaciones)
         self.Func_pool.add('descargar actualizacion', self.descargar_actualizacion)
-            
+        self.Func_pool.add('listener', lambda: subprocess.run("listener.py",shell=True))
+        
+        
         self.Func_pool.start('actualizacion')
 
         self.screen_main_bool = True
@@ -122,15 +127,8 @@ class DownloadManager(Other_funcs):
                 x()
 
     def load_resources(self):
-        self.DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
-        self.DB_cursor = self.DB.cursor()
+        self.DB = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
 
-        try:
-            self.DB_cursor.execute('SELECT * FROM descargas')
-        except sqlite3.OperationalError:
-            self.DB_cursor.executescript(open('./descargas.sql').read())
-
-        # noinspection PyBroadException
         try:
             self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
         except Exception:
@@ -139,6 +137,7 @@ class DownloadManager(Other_funcs):
         self.enfoques = self.configs.get('enfoques', True)
         self.detener_5min = self.configs.get('detener_5min', True)
         self.low_detail_mode = self.configs.get('ldm', False)
+        self.mini_ventana_captar_extencion = self.configs.get('mini_ventana_captar_extencion', True)
 
         self.idioma = self.configs.get('idioma', 'español')
         self.save_dir = self.configs.get('save_dir', self.save_dir)
@@ -151,6 +150,8 @@ class DownloadManager(Other_funcs):
         self.configs['hilos'] = self.threads
         self.configs['enfoques'] = self.enfoques
         self.configs['detener_5min'] = self.detener_5min
+        self.configs['ldm'] = self.low_detail_mode
+        self.configs['mini_ventana_captar_extencion'] = self.mini_ventana_captar_extencion
 
         self.configs['idioma'] = self.idioma
         self.configs['save_dir'] = self.save_dir
@@ -280,6 +281,12 @@ class DownloadManager(Other_funcs):
                                                 (self.text_config_detener_5min.right, 295), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_detener_5min)
+        self.text_config_mini_ventana_captar_extencion = Create_text('Mini ventana al capturar url: ', 16, self.font_mononoki, (20, 330), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20))
+        self.btn_config_mini_ventana_captar_extencion = Create_boton('' if self.mini_ventana_captar_extencion else '', 16, self.font_simbolos, 
+                                                (self.text_config_mini_ventana_captar_extencion.right, 330), 10,'left',
+                                                'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
+                                                border_width=-1, func=self.toggle_mini_ventana_captar_extencion)
 
         # Pantalla de extras
         self.text_extras_title = Create_text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
@@ -295,8 +302,18 @@ class DownloadManager(Other_funcs):
         self.btn_extras_link_github = Create_boton('', 30, self.font_simbolos, (370, 200), 20, 'center',
                                                    func=lambda: os.startfile('http://github.com/Tecrato'))
         self.btn_extras_link_youtube = Create_boton('輸', 30, self.font_simbolos, (430, 200), 20, 'center',
-                                                    func=lambda: os.startfile(
-                                                        'http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
+                                                    func=lambda: os.startfile('http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
+        self.btn_extras_install_extension = Create_boton('Instalar Extencion', 20, self.font_mononoki, (self.ventana_rect.centerx, 300),
+                                                         20, 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+                                                        func=lambda: \
+                                                            self.GUI_manager.add(
+                                                                GUI.Desicion(self.ventana_rect.center,"Instalar extension","Desea instalar la extencion?\n\n\
+El Archivo de la extencion se copiara \n\
+en el escritorio Y debera ejecutarlo\n\
+con su navegador de preferencia"),
+                                                                             lambda e: shutil.copy("./extencion.crx",user_desktop_path().joinpath('./Extencion.crx')) if e == 'aceptar' else None
+                                                                )
+        )
 
         # Pantalla principal
         self.list_to_draw = [self.txt_title, self.btn_extras, self.btn_configs, self.btn_new_descarga,
@@ -321,16 +338,20 @@ class DownloadManager(Other_funcs):
                                     self.text_config_idioma, self.btn_config_idioma_en, self.btn_config_idioma_es,
                                     self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola,
                                     self.text_config_LDM,self.btn_config_LDM,self.btn_change_hilos,self.text_config_enfoques,
-                                    self.btn_config_enfoques,self.text_config_detener_5min,self.btn_config_detener_5min]
+                                    self.btn_config_enfoques,self.text_config_detener_5min,self.btn_config_detener_5min,
+                                    self.text_config_mini_ventana_captar_extencion,self.btn_config_mini_ventana_captar_extencion]
         self.list_to_click_config = [self.btn_config_exit, self.btn_change_hilos, 
                                      self.btn_config_idioma_en, self.btn_config_idioma_es,
                                      self.btn_config_apagar_al_finalizar_cola,self.btn_config_LDM,
-                                     self.btn_config_enfoques,self.btn_config_detener_5min]
+                                     self.btn_config_enfoques,self.btn_config_detener_5min,
+                                     self.btn_config_mini_ventana_captar_extencion]
 
         # Pantalla de Extras
         self.list_to_draw_extras = [self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
-                                    self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version]
-        self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube]
+                                    self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version,
+                                    self.btn_extras_install_extension]
+        self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube,
+                                     self.btn_extras_install_extension]
 
     def move_objs(self):
         self.Mini_GUI_manager.limit = self.ventana_rect
@@ -364,7 +385,7 @@ class DownloadManager(Other_funcs):
 
         try:
             self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
-            response2 = self.prepared_session.send(requests.Request('GET',self.data_actualizacion['url']).prepare(),stream=True, allow_redirects=True, timeout=15)
+            response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=15)
 
             self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if self.data_actualizacion['file_type'] in ['text/plain', 'text/html']:
@@ -424,7 +445,6 @@ class DownloadManager(Other_funcs):
             if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path:
                 try:
                     for x in parse.path[1:].split('/'):
-                        print(x)
                         if '.' in x:
                             self.new_filename = x
                             self.text_newd_filename.text = self.new_filename
@@ -432,9 +452,9 @@ class DownloadManager(Other_funcs):
                     url = get_mediafire_url(self.url)
                 except:
                     raise LinkCaido('nt')
-                response = self.prepared_session.send(requests.Request('GET',url).prepare(),stream=True, allow_redirects=True, timeout=15)
+                response = requests.get(url, stream=True, allow_redirects=True, timeout=15)
             else:
-                response = self.prepared_session.send(requests.Request('GET',self.url).prepare(),stream=True, allow_redirects=True, timeout=15)
+                response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
                 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
@@ -443,9 +463,9 @@ class DownloadManager(Other_funcs):
                 print(response.headers)
                 raise TrajoHTML('No paginas')
 
+            # print(response.headers)
             self.new_file_size = int(response.headers.get('content-length', 1))
             if self.new_file_size < (1024 //8) *self.threads:
-                print(response.headers)
                 raise LowSizeError('Peso muy pequeño')
             peso_formateado = format_size(self.new_file_size)
             self.text_newd_size.text = f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}'
@@ -712,12 +732,12 @@ class DownloadManager(Other_funcs):
     def screen_extras(self):
         if self.screen_extras_bool:
             self.cicle_try = 0
-            self.ventana.fill((20, 20, 20))
-            for x in self.list_to_draw_extras:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (-500,-500))
-                else:
-                    x.draw(self.ventana)
+            # self.ventana.fill((20, 20, 20))
+            # for x in self.list_to_draw_extras:
+            #     if isinstance(x, Create_boton):
+            #         x.draw(self.ventana, (-500,-500))
+            #     else:
+            #         x.draw(self.ventana)
 
         while self.screen_extras_bool:
             self.relog.tick(self.framerate)
@@ -727,28 +747,38 @@ class DownloadManager(Other_funcs):
 
             for evento in eventos:
                 if self.eventos_en_comun(evento):
-                    self.ventana.fill((20, 20, 20))
-                    for x in self.list_to_draw_extras:
-                        if isinstance(x, Create_boton):
-                            x.draw(self.ventana, (-500,-500))
-                        else:
-                            x.draw(self.ventana)
                     continue
+                elif self.GUI_manager.active >= 0:
+                    if evento.type == KEYDOWN and evento.key == K_ESCAPE:
+                        self.GUI_manager.pop()
+                    elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                        self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.screen_extras_bool = False
                         self.screen_main_bool = True
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    if self.Mini_GUI_manager.click(evento.pos):
+                        continue
                     for x in self.list_to_click_extras:
                         if x.click((mx, my)):
                             break
-                elif evento.type == MOUSEMOTION:
-                    for x in self.list_to_draw_extras:
-                        if isinstance(x, Create_boton):
-                            x.draw(self.ventana, (mx, my))
 
+            if not self.drawing:
+                continue
+            self.ventana.fill((20, 20, 20))
+
+            for x in self.list_to_draw_extras:
+                if isinstance(x, Create_boton):
+                    x.draw(self.ventana, (mx,my))
+                else:
+                    x.draw(self.ventana)
+
+            self.GUI_manager.draw(self.ventana, (mx, my))
+            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
             pag.display.flip()
 
 
 if __name__ == '__main__':
-    clase = DownloadManager(sys.argv[1] if len(sys.argv) > 1 else False)
+    # clase = DownloadManager(sys.argv[1] if len(sys.argv) > 1 else False)
+    clase = DownloadManager()
