@@ -3,7 +3,7 @@ Creado por Edouard Sandoval
 # Acelerador de descargas
 Un programa capaz de descargar archivos dividido en partes simultaneas, multiplicando la velocidad de descarga del archivo.
 
-Aun tiene algunos errores, cualquier duda o sugerencia pueden enviarmela al correo o hacer un pull si es codigo.
+Aun tiene algunos errores, cualquier duda o sugerencia pueden enviarmela al correo o hacer un pull request si es codigo.
 
 ahora si pueden usar las utilidades, deben descargar la libreria de utilidades, requests, pywin32, platformdirs, flask y numpy.
 ya con estas librerias, puede ejecutar el codigo.
