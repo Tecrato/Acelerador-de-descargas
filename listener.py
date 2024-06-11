@@ -63,8 +63,7 @@ def descargar_archivo(url,name,num):
 
     Data_Base = db(carpeta_config.joinpath('./downloads.sqlite3'))
     Data_Base.añadir_descarga(name,tipo,peso,url,partes)
-    # id = Data_Base.get_last_insert()[0]
-    print(Data_Base.get_last_insert())
+    
     down_winds.remove(num)
     subprocess.run(f'Downloader.exe "{Data_Base.get_last_insert()[0]}" "0"', shell=True)
     # subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{Data_Base.get_last_insert()[0]}" "0"', shell=True)

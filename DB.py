@@ -67,6 +67,11 @@ class Data_Base:
         descargas = self.cursor.fetchall()
         return descargas
     
+    def buscar_descarga(self,id):
+        self.cursor.execute('SELECT * FROM descargas WHERE id=?',[id])
+        descarga = self.cursor.fetchone()
+        return descarga
+    
     def añadir_descarga(self,nombre,tipo,peso,url,partes,url_page=None,tiempo=None):
         self.cursor.execute("INSERT INTO descargas (nombre,tipo,peso,url,url_page,partes,fecha,estado) VALUES(?,?,?,?,?,?,?,?)",(nombre,tipo,peso,url,url_page,partes,time.time() if not tiempo else tiempo,'esperando'))
         self.DB.commit()
@@ -78,4 +83,11 @@ class Data_Base:
     def get_last_insert(self):
         self.cursor.execute("SELECT * FROM descargas WHERE id=?",(self.cursor.lastrowid,))
         return self.cursor.fetchone()
+
+    def update_estado(self,id,estado):
+        self.cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[estado,id])
+        self.DB.commit()
         
+    def update_url(self,id,url):
+        self.cursor.execute('UPDATE descargas SET url=? WHERE id=?',[url,id])
+        self.DB.commit()

@@ -1,12 +1,13 @@
-import pyperclip, datetime, subprocess, shutil, sqlite3, pygame as pag, sys
+import pyperclip, datetime, subprocess, shutil, pygame as pag, sys
 from threading import Thread
 from pygame import Vector2
 from tkinter.filedialog import askdirectory
 
-from Utilidades import GUI, mini_GUI, Create_boton
+from Utilidades import GUI, mini_GUI, Button
 from Utilidades import win32_tools
 
 from textos import idiomas
+from DB import Data_Base
 
 
 def format_size(size) -> list:
@@ -19,8 +20,8 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            # proceso = subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{id}" "{mod}"', shell=True)
-            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+            proceso = subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
                 if len(self.cola) > 0:
@@ -28,10 +29,6 @@ class Other_funcs:
                     self.descargando.append(self.cola[0])
                 elif self.apagar_al_finalizar_cola:
                     subprocess.call('shutdown /s /t 10 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
-                    
-                    DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
-                    DB_cursor = DB.cursor()
-                    self.reload_lista_descargas(DB_cursor)
                     pag.quit()
                     sys.exit()
                 else:
@@ -43,9 +40,9 @@ class Other_funcs:
             else:
                 print('NT Bro')
             self.descargando.remove(id)
-            DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
-            DB_cursor = DB.cursor()
-            self.reload_lista_descargas(DB_cursor)
+            DB = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
+            self.reload_lista_descargas(DB.cursor)
+            del DB
     def init_download(self,id,mod=0):
             Thread(target=self.download, args=(id,mod)).start()
 
@@ -111,19 +108,17 @@ class Other_funcs:
                                         self.txts['gui-descarga en curso'])
                 )
                 return
-            self.DB.DB_cursor.execute('UPDATE descargas SET estado=? WHERE id=?', ['esperando', obj_cached[0]])
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
-            self.DB.commit()
+            self.DB.update_estado(obj_cached[0],'esperando')
             self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
 
     def func_select_box_hilos(self, respuesta) -> None:
-        # if respuesta['index'] == 0:
         self.threads = 2**respuesta['index']
 
         self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
         self.ventana.fill((20, 20, 20))
         for x in self.list_to_draw_config:
-            if isinstance(x, Create_boton):
+            if isinstance(x, Button):
                 x.draw(self.ventana, (-500,-500))
             else:
                 x.draw(self.ventana)
@@ -144,10 +139,7 @@ class Other_funcs:
         if not self.can_add_new_download:
             return 0
         if self.actualizar_url:
-            url = self.input_newd_url.get_text()
-
-            self.DB.DB_cursor.execute('UPDATE descargas SET url=? WHERE id=?', [url, self.new_url_id])
-            self.DB.commit()
+            self.DB.update_url(self.new_url_id,self.input_newd_url.get_text())
         else:
             datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads]
             self.DB.añadir_descarga(*datos)
@@ -159,17 +151,19 @@ class Other_funcs:
 
     def func_preguntar_carpeta(self):
         try:
-            self.save_dir = askdirectory(initialdir=self.save_dir, title='Select dir')
+            ask = askdirectory(initialdir=self.save_dir, title=self.txts['cambiar carpeta'])
             if not self.save_dir: 
                 return
+            self.save_dir = ask
+            self.save_json()
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', self.txts['carpeta cambiada'], self.txts['gui-carpeta cambiada con exito'])
             )
-            self.save_json()
         except:
-            self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
-            )
+            pass
+            # self.Mini_GUI_manager.add(
+            #     mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', 'Error', self.txts['gui-carpeta cambiada con exito'])
+            # )
     
     def reload_lista_descargas(self, cursor = None):
         if not cursor:
@@ -235,12 +229,7 @@ class Other_funcs:
 
         self.generate_objs()
         self.reload_lista_descargas()
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw_config:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500,-500))
-            else:
-                x.draw(self.ventana)
+        self.redraw = True
 
     def func_newd_close(self):
         self.screen_new_download_bool = False

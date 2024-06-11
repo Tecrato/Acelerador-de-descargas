@@ -10,13 +10,11 @@ import json
 import os
 import pygame as pag
 import requests
-import sqlite3
-import time
 import subprocess
 import shutil
 
 from urllib.parse import urlparse, unquote
-from Utilidades import Create_text, Create_boton, Multi_list, GUI, mini_GUI, Funcs_pool, Input_text, check_update, get_mediafire_url
+from Utilidades import Text, Button, Multi_list, GUI, mini_GUI, Funcs_pool, Input, check_update, get_mediafire_url
 from platformdirs import user_config_path, user_cache_path, user_downloads_dir, user_desktop_path
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
@@ -42,8 +40,8 @@ def format_size(size) -> list:
 
 # noinspection PyAttributeOutsideInit
 class DownloadManager(Other_funcs):
-    def __init__(self, url=False) -> None:
-        self.ventana = pag.display.set_mode(RESOLUCION, pag.RESIZABLE)
+    def __init__(self) -> None:
+        self.ventana = pag.display.set_mode(RESOLUCION, pag.RESIZABLE|pag.DOUBLEBUF)
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
         pag.display.set_caption('Download Manager by Edouard Sandoval')
@@ -65,8 +63,9 @@ class DownloadManager(Other_funcs):
         self.descargando: list[int] = []
 
         self.data_actualizacion = {}
+        self.updates = []
         self.url_actualizacion = ''
-        self.version = '2.9'
+        self.version = '2.8.1'
         self.save_dir = user_downloads_dir()
         self.threads = 8
         self.drawing = True
@@ -74,13 +73,14 @@ class DownloadManager(Other_funcs):
         self.detener_5min = True
         self.low_detail_mode = False
         self.mini_ventana_captar_extencion = True
+        self.redraw = True
         self.framerate = 60
         self.relog = pag.time.Clock()
 
-        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos = './Assets/fuentes/Symbols.ttf'
+        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos = './Assets/fuentes/Symbols.ttf'
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -114,12 +114,6 @@ class DownloadManager(Other_funcs):
         self.ciclo_general = [self.main_cycle, self.screen_configs, self.screen_extras]
         self.cicle_try = 0
 
-        if url:
-            self.func_paste_url(url)
-            self.func_comprobar_url()
-            self.screen_new_download()
-
-        
 
         while self.cicle_try < 5:
             self.cicle_try += 1
@@ -166,18 +160,18 @@ class DownloadManager(Other_funcs):
         self.Mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
 
         # Pantalla principal
-        self.txt_title = Create_text(self.txts['title'], 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
-        self.btn_extras = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright', 'white',
+        self.txt_title = Text(self.txts['title'], 26, self.font_mononoki, (self.ventana_rect.centerx, 30),with_rect=True,color_rect=(20,20,20))
+        self.btn_extras = Button('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright', 'white',
                                        (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                        func=self.func_main_to_extras)
-        self.btn_configs = Create_boton('', 26, self.font_simbolos, (0, 0), 10, 'topleft', 'white', (20, 20, 20),
+        self.btn_configs = Button('', 26, self.font_simbolos, (0, 0), 10, 'topleft', 'white', (20, 20, 20),
                                         (50, 50, 50), 0, -1, border_width=-1, func=self.func_main_to_config)
 
-        self.btn_new_descarga = Create_boton(self.txts['btn-nueva_descarga'], 16, self.font_mononoki, (30, 80), 20,
+        self.btn_new_descarga = Button(self.txts['btn-nueva_descarga'], 16, self.font_mononoki, (30, 80), 20,
                                              'topleft', 'white', (50, 50, 50), (90, 90, 90), 0, 20,
                                              border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,
                                              func=lambda: self.screen_new_download(False))
-        self.btn_change_dir = Create_boton(self.txts['btn-cambiar_carpeta'], 16, self.font_mononoki,
+        self.btn_change_dir = Button(self.txts['btn-cambiar_carpeta'], 16, self.font_mononoki,
                                            (self.btn_new_descarga.rect.right, 80), 20, 'topleft', 'white', (50, 50, 50),
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1, func=self.func_preguntar_carpeta)
@@ -186,7 +180,7 @@ class DownloadManager(Other_funcs):
                                           10, (10,10,10), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
                                           fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100),
                                           smothscroll=True if not self.low_detail_mode else False)
-        self.btn_reload_list = Create_boton('', 13, self.font_simbolos, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
+        self.btn_reload_list = Button('', 13, self.font_simbolos, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
                                             border_radius=0, border_top_right_radius=20, border_color=(100,100,100),
                                             func=self.reload_lista_descargas)
@@ -194,52 +188,52 @@ class DownloadManager(Other_funcs):
         # Cosas de la ventana de nueva descarga
         self.new_download_rect = pag.Rect(0, 0, 500, 300)
         self.new_download_rect.center = self.ventana_rect.center
-        self.text_newd_title = Create_text(self.txts['agregar nueva descarga'], 16, self.font_mononoki,
+        self.text_newd_title = Text(self.txts['agregar nueva descarga'], 16, self.font_mononoki,
                                            (self.new_download_rect.centerx, self.new_download_rect.top + 20))
-        self.boton_newd_cancelar = Create_boton(self.txts['cancelar'], 16, self.font_mononoki,
+        self.boton_newd_cancelar = Button(self.txts['cancelar'], 16, self.font_mononoki,
                                                 Vector2(-20, 0) + self.new_download_rect.bottomright, (30, 20),
                                                 'bottomright', border_radius=0, border_top_right_radius=20,
                                                 func=self.func_newd_close)
-        self.boton_newd_aceptar = Create_boton(self.txts['aceptar'], 16, self.font_mononoki,
+        self.boton_newd_aceptar = Button(self.txts['aceptar'], 16, self.font_mononoki,
                                                (self.boton_newd_cancelar.rect.left, self.new_download_rect.bottom),
                                                (30, 19), 'bottomright', border_radius=0, border_top_left_radius=20,
                                                func=self.func_add_download_to_DB)
 
-        self.input_newd_url = Input_text((self.new_download_rect.left + 20, self.new_download_rect.top + 100), 12,
+        self.input_newd_url = Input((self.new_download_rect.left + 20, self.new_download_rect.top + 100), 12,
                                          width=300, height= 20, font=self.font_mononoki, text_value='url de la descarga', max_letter=400,
                                          dire='left')
-        self.input_newd_paste = Create_boton('', 22, self.font_simbolos,
+        self.input_newd_paste = Button('', 22, self.font_simbolos,
                                              (self.input_newd_url.right, self.input_newd_url.pos.y), (20, 10),
                                              'left', 'black', 'lightgrey', 'darkgrey', border_width=1, border_radius=0,
                                              border_top_right_radius=20, border_bottom_right_radius=20,
                                              func=self.func_paste_url)
 
-        self.btn_comprobar_url = Create_boton(self.txts['comprobar'], 16, self.font_mononoki,
+        self.btn_comprobar_url = Button(self.txts['comprobar'], 16, self.font_mononoki,
                                               (self.new_download_rect.right - 20, self.input_newd_url.pos.y), (20, 10),
                                               'right', 'black', 'lightgrey', 'darkgrey', border_width=1,
                                               border_radius=20,
                                               func=self.func_comprobar_url)
 
-        self.text_newd_title_details = Create_text(self.txts['detalles'], 20, self.font_mononoki, (400, 300))
-        self.text_newd_filename = Create_text(self.txts['nombre']+': ----------', 16, self.font_mononoki,
+        self.text_newd_title_details = Text(self.txts['detalles'], 20, self.font_mononoki, (400, 300))
+        self.text_newd_filename = Text(self.txts['nombre']+': ----------', 16, self.font_mononoki,
                                               (self.new_download_rect.left + 20, 320), 'left')
-        self.text_newd_file_type = Create_text(self.txts['tipo']+': ----------', 16, self.font_mononoki,
+        self.text_newd_file_type = Text(self.txts['tipo']+': ----------', 16, self.font_mononoki,
                                               (self.new_download_rect.left + 20, 340), 'left')
-        self.text_newd_size = Create_text(self.txts['tamaño']+': -------', 16, self.font_mononoki,
+        self.text_newd_size = Text(self.txts['tamaño']+': -------', 16, self.font_mononoki,
                                           (self.new_download_rect.left + 20, 360), 'left')
-        self.text_newd_status = Create_text(self.txts['descripcion-state[esperando]'], 16, self.font_mononoki,
+        self.text_newd_status = Text(self.txts['descripcion-state[esperando]'], 16, self.font_mononoki,
                                             (self.new_download_rect.left + 20, 380), 'left')
 
         # Pantalla de configuraciones
-        self.text_config_title = Create_text(self.txts['title-configuraciones'], 26, self.font_mononoki,
+        self.text_config_title = Text(self.txts['title-configuraciones'], 26, self.font_mononoki,
                                              (self.ventana_rect.centerx, 30), with_rect=True, color_rect=(20,20,20))
-        self.btn_config_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
+        self.btn_config_exit = Button('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_exit_configs)
 
-        self.text_config_hilos = Create_text(self.txts['config-hilos'].format(self.threads), 16, self.font_mononoki,
-                                             (20, 100), 'left', with_rect=True, color_rect=(20,20,20))
-        self.btn_change_hilos = Create_boton(self.txts['cambiar'],16, self.font_mononoki, 
+        self.text_config_hilos = Text(self.txts['config-hilos'].format(self.threads), 16, self.font_mononoki,
+                                             (30, 100), 'left', with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_change_hilos = Button(self.txts['cambiar'],16, self.font_mononoki, 
                                              (self.text_config_hilos.rect.right + 60, self.text_config_hilos.rect.centery),
                                              (20,10),color='white', color_rect=(20,20,20), color_rect_active=(40, 40, 40),
                                              border_radius=0, border_width=3,
@@ -248,62 +242,64 @@ class DownloadManager(Other_funcs):
                                                                 self.func_select_box_hilos)
         )
 
-        self.text_config_idioma = Create_text(self.txts['config-idioma'], 16, self.font_mononoki, (20, 130), 'left',with_rect=True, color_rect=(20,20,20))
-        self.btn_config_idioma_es = Create_boton('Español', 14, self.font_mononoki, (20, 160), (20, 10), 'left',
+        self.text_config_idioma = Text(self.txts['config-idioma'], 16, self.font_mononoki, (30, 130), 'left', padding=10,with_rect=True, color_rect=(20,20,20))
+        self.btn_config_idioma_es = Button('Español', 14, self.font_mononoki, (30, 160), (10, 10), 'left',
                                                  'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('español'))
-        self.btn_config_idioma_en = Create_boton('English', 14, self.font_mononoki, (110, 160), (20, 10), 'left',
+        self.btn_config_idioma_en = Button('English', 14, self.font_mononoki, (120, 160), (10, 10), 'left',
                                                  'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                  func=lambda: self.func_change_idioma('ingles'))
         
-        self.text_config_apagar_al_finalizar_cola = Create_text(self.txts['apagar-al-finalizar']+' ('+self.txts['la']+' '+self.txts['cola']+')', 16, self.font_mononoki, (20, 190), 'left', 'white', 
-                                                                 with_rect=True, color_rect=(20,20,20))
-        self.btn_config_apagar_al_finalizar_cola = Create_boton('' if self.apagar_al_finalizar_cola else '', 16, self.font_simbolos, (self.text_config_apagar_al_finalizar_cola.right, 190), 10, 'left', 'white',with_rect=True,
+        self.text_config_apagar_al_finalizar_cola = Text(self.txts['apagar-al-finalizar']+' ('+self.txts['la']+' '+self.txts['cola']+')', 
+                                                         16, self.font_mononoki, (30, 190), 'left', 'white', with_rect=True, 
+                                                         color_rect=(20,20,20), padding=10)
+        self.btn_config_apagar_al_finalizar_cola = Button('' if self.apagar_al_finalizar_cola else '', 16, self.font_simbolos, (self.text_config_apagar_al_finalizar_cola.right, 190), 10, 'left', 'white',with_rect=True,
                                                                 color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1,
                                                                  func=self.toggle_apagar_al_finalizar_cola)
         
-        self.text_config_LDM = Create_text('Low Power Mode: ', 16, self.font_mononoki, (20, 225), 'left', 'white', 
-                                                                 with_rect=True, color_rect=(20,20,20))
-        self.btn_config_LDM = Create_boton('' if self.low_detail_mode else '', 16, self.font_simbolos, (self.text_config_LDM.right, 225), 10,
+        self.text_config_LDM = Text(self.txts['bajo consumo']+': ', 16, self.font_mononoki, (30, 225), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_config_LDM = Button('' if self.low_detail_mode else '', 16, self.font_simbolos, (self.text_config_LDM.right, 225), 10,
                                            'left', 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                            border_width=-1, func=self.toggle_LDM)
         
-        self.text_config_enfoques = Create_text('Enfocar aplicacion: ', 16, self.font_mononoki, (20, 260), 'left', 'white', 
-                                                                 with_rect=True, color_rect=(20,20,20))
-        self.btn_config_enfoques = Create_boton('' if self.enfoques else '', 16, self.font_simbolos, 
+        self.text_config_enfoques = Text(f'focus {self.txts["aplicacion"]}: ', 16, self.font_mononoki, (30, 260), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_config_enfoques = Button('' if self.enfoques else '', 16, self.font_simbolos, 
                                                 (self.text_config_enfoques.right, 260), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_enfoques)
         
-        self.text_config_detener_5min = Create_text('Detener a los 5min sin cambio: ', 16, self.font_mononoki, (20, 295), 'left', 'white', 
-                                                                 with_rect=True, color_rect=(20,20,20))
-        self.btn_config_detener_5min = Create_boton('' if self.detener_5min else '', 16, self.font_simbolos, 
+        
+        self.text_config_detener_5min = Text('Detener a los 5min sin cambio: ', 16, self.font_mononoki, (30, 295), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_config_detener_5min = Button('' if self.detener_5min else '', 16, self.font_simbolos, 
                                                 (self.text_config_detener_5min.right, 295), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_detener_5min)
-        self.text_config_mini_ventana_captar_extencion = Create_text('Mini ventana al capturar url: ', 16, self.font_mononoki, (20, 330), 'left', 'white', 
-                                                                 with_rect=True, color_rect=(20,20,20))
-        self.btn_config_mini_ventana_captar_extencion = Create_boton('' if self.mini_ventana_captar_extencion else '', 16, self.font_simbolos, 
+        self.text_config_mini_ventana_captar_extencion = Text('Mini ventana al capturar url: ', 16, self.font_mononoki, (30, 330), 'left', 'white', 
+                                                                 with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_config_mini_ventana_captar_extencion = Button('' if self.mini_ventana_captar_extencion else '', 16, self.font_simbolos, 
                                                 (self.text_config_mini_ventana_captar_extencion.right, 330), 10,'left',
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_mini_ventana_captar_extencion)
 
         # Pantalla de extras
-        self.text_extras_title = Create_text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx, 30))
-        self.btn_extras_exit = Create_boton('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
+        self.text_extras_title = Text('Extras', 26, self.font_mononoki, (self.ventana_rect.centerx, 30),with_rect=True,color_rect=(20,20,20))
+        self.btn_extras_exit = Button('', 26, self.font_simbolos, (self.ventana_rect.w, 0), 10, 'topright',
                                             'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                             func=self.func_extras_to_main)
 
-        self.text_extras_version = Create_text('Version '+self.version, 26, self.font_mononoki, self.ventana_rect.bottomright,
-                                               'bottomright')
+        self.text_extras_version = Text('Version '+self.version, 26, self.font_mononoki, self.ventana_rect.bottomright,
+                                               'bottomright',with_rect=True,color_rect=(20,20,20))
 
-        self.text_extras_mi_nombre = Create_text('Edouard Sandoval', 30, self.font_mononoki, (400, 100),
-                                                 'center', padding=0)
-        self.btn_extras_link_github = Create_boton('', 30, self.font_simbolos, (370, 200), 20, 'center',
+        self.text_extras_mi_nombre = Text('Edouard Sandoval', 30, self.font_mononoki, (400, 100),
+                                                 'center', padding=0,with_rect=True,color_rect=(20,20,20))
+        self.btn_extras_link_github = Button('', 30, self.font_simbolos, (370, 200), 20, 'center',
                                                    func=lambda: os.startfile('http://github.com/Tecrato'))
-        self.btn_extras_link_youtube = Create_boton('輸', 30, self.font_simbolos, (430, 200), 20, 'center',
+        self.btn_extras_link_youtube = Button('輸', 30, self.font_simbolos, (430, 200), 20, 'center',
                                                     func=lambda: os.startfile('http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
-        self.btn_extras_install_extension = Create_boton('Instalar Extencion', 20, self.font_mononoki, (self.ventana_rect.centerx, 300),
+        self.btn_extras_install_extension = Button('Instalar Extencion', 20, self.font_mononoki, (self.ventana_rect.centerx, 300),
                                                          20, 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                         func=lambda: \
                                                             self.GUI_manager.add(
@@ -352,6 +348,7 @@ con su navegador de preferencia"),
                                     self.btn_extras_install_extension]
         self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube,
                                      self.btn_extras_install_extension]
+        self.move_objs()
 
     def move_objs(self):
         self.Mini_GUI_manager.limit = self.ventana_rect
@@ -371,21 +368,19 @@ con su navegador de preferencia"),
         
         self.lista_descargas.resize((self.ventana_rect.w - 60, self.ventana_rect.h - 140))
         self.btn_reload_list.pos = self.lista_descargas.topright
+        self.redraw = True
 
 
     def buscar_acualizaciones(self):
        
         sera = check_update('acelerador de descargas', self.version, 'last')
-
         if not sera:
             return 
-        
         self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)))
         
-
         try:
             self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
-            response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=15)
+            response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=30)
 
             self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if self.data_actualizacion['file_type'] in ['text/plain', 'text/html']:
@@ -405,18 +400,13 @@ con su navegador de preferencia"),
 
     def descargar_actualizacion(self):
 
-        DB = sqlite3.connect(self.carpeta_config.joinpath('./downloads.sqlite3'))
-        DB_cursor = DB.cursor()
+        db = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
+        db.añadir_descarga(self.data_actualizacion['file_name'], self.data_actualizacion['file_type'], self.data_actualizacion['size'], self.data_actualizacion['url'], self.threads)
 
-        datos = [self.data_actualizacion['file_name'], self.data_actualizacion['file_type'], self.data_actualizacion['size'], self.data_actualizacion['url'], self.threads, time.time(),'en espera']
-        DB_cursor.execute('INSERT INTO descargas VALUES(null,?,?,?,?,?,?,?)', datos)
-        DB.commit()
+        self.reload_lista_descargas(db.cursor)
+        id = db.get_last_insert()[0]
+        del db
 
-        self.reload_lista_descargas(DB_cursor)
-
-        DB_cursor.execute('SELECT id from descargas ORDER BY id DESC LIMIT 1')
-        id = DB_cursor.fetchone()[0]
-        
         self.descargando.append(id)
         self.init_download(id,1)
 
@@ -508,9 +498,21 @@ con su navegador de preferencia"),
             return
 
     def eventos_en_comun(self,evento):
+        mx, my = pag.mouse.get_pos()
         if evento.type == QUIT:
             pag.quit()
             sys.exit()
+        if evento.type == pag.WINDOWRESTORED:
+            return True
+        elif self.GUI_manager.active >= 0:
+            if evento.type == KEYDOWN and evento.key == K_ESCAPE:
+                self.GUI_manager.pop()
+            elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                self.GUI_manager.click((mx, my))
+            return True
+        elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+            if self.Mini_GUI_manager.click(evento.pos):
+                return True
         elif evento.type == WINDOWMINIMIZED:
             self.drawing = False
             return True
@@ -520,10 +522,11 @@ con su navegador de preferencia"),
         elif evento.type in [WINDOWTAKEFOCUS, WINDOWFOCUSGAINED, WINDOWMAXIMIZED]:
             self.framerate = 60 if not self.low_detail_mode else 30
             self.drawing = True
+            self.redraw = True
             return True
         elif evento.type in [pag.WINDOWRESIZED,pag.WINDOWMAXIMIZED,pag.WINDOWSIZECHANGED,pag.WINDOWMINIMIZED]:
             size = pag.display.get_window_size()
-            self.ventana = pag.display.set_mode(size, pag.RESIZABLE)
+            self.ventana = pag.display.set_mode(size, pag.RESIZABLE|pag.DOUBLEBUF)
             self.ventana_rect = self.ventana.get_rect()
 
             self.display = pag.Surface(self.ventana_rect.size)
@@ -533,7 +536,7 @@ con su navegador de preferencia"),
             return True
         elif evento.type == pag.WINDOWSHOWN or evento.type == pag.WINDOWMOVED:
             size = pag.display.get_window_size()
-            self.ventana = pag.display.set_mode(size, pag.RESIZABLE)
+            self.ventana = pag.display.set_mode(size, pag.RESIZABLE|pag.DOUBLEBUF)
             self.ventana_rect = self.ventana.get_rect()
 
             self.display = pag.Surface(self.ventana_rect.size)
@@ -543,15 +546,41 @@ con su navegador de preferencia"),
             return True
         return False
 
+    def draw_objs(self,lista):
+        mx, my = pag.mouse.get_pos()
+        if self.redraw:
+            self.ventana.fill((20, 20, 20))
+            for x in lista:
+                if isinstance(x, Button):
+                    x.draw(self.ventana, (mx,my), False)
+                elif isinstance(x, Multi_list):
+                    if self.lista_descargas.listas[0].lista_palabras:
+                        x.draw(self.ventana)
+                else:
+                    x.draw(self.ventana, False)
+            self.GUI_manager.draw(self.ventana, (mx, my), False)
+            self.Mini_GUI_manager.draw(self.ventana, (mx, my), False)
+            pag.display.update()
+            self.redraw = False
+        else:
+            self.updates.clear()
+            for x in lista:
+                if isinstance(x, Button):
+                    self.updates.append(x.draw(self.ventana, (mx,my), True))
+                else:
+                    self.updates.append(x.draw(self.ventana, True))
+
+            self.updates.append(self.GUI_manager.draw(self.ventana, (mx, my), True))
+            self.updates.append(self.Mini_GUI_manager.draw(self.ventana, (mx, my), True))
+
+            self.updates = list(filter(lambda ele: isinstance(ele, pag.Rect),self.updates))
+
+            pag.display.update(self.updates)
+
     def screen_configs(self):
         if self.screen_configs_bool:
             self.cicle_try = 0
-            self.ventana.fill((20, 20, 20))
-            for x in self.list_to_draw_config:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (-500,-500))
-                else:
-                    x.draw(self.ventana)
+            self.redraw = True
         while self.screen_configs_bool:
             self.relog.tick(self.framerate)
 
@@ -559,36 +588,18 @@ con su navegador de preferencia"),
             eventos = pag.event.get()
             for evento in eventos:
                 if self.eventos_en_comun(evento):
+                    self.redraw = True
                     continue
-                if evento.type == QUIT:
-                    pag.quit()
-                    sys.exit()
-                elif self.GUI_manager.active >= 0:
-                    if evento.type == KEYDOWN and evento.key == K_ESCAPE:
-                        self.GUI_manager.pop()
-                    elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                        self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.screen_configs_bool = False
                         self.screen_main_bool = True
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                    if self.Mini_GUI_manager.click(evento.pos):
-                        continue
                     for x in self.list_to_click_config:
                         if x.click((mx, my)):
                             break
-            self.ventana.fill((20, 20, 20))
-            for x in self.list_to_draw_config:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx, my))
-                else:
-                    x.draw(self.ventana)
-
-            self.GUI_manager.draw(self.ventana, (mx, my))
-            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
-
-            pag.display.flip()
+            if self.drawing:
+                self.draw_objs(self.list_to_draw_config)
 
     def screen_new_download(self,actualizar_url= 0):
         """La funcion para dibujar los textos y botones de la ventana de agregar una nueva descarga"""
@@ -603,12 +614,8 @@ con su navegador de preferencia"),
         self.text_newd_status.text = self.txts['descripcion-state[esperando]']
         self.text_newd_file_type.text = self.txts['tipo']+': -------'
         self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw:
-            if isinstance(x, Create_boton):
-                x.draw(self.ventana, (-500, -500))
-            else:
-                x.draw(self.ventana)
         pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
+        pag.display.update()
 
         self.screen_new_download_bool = True
         while self.screen_new_download_bool:
@@ -621,45 +628,27 @@ con su navegador de preferencia"),
                 x.eventos_teclado(eventos)
             for evento in eventos:
                 if self.eventos_en_comun(evento):
+                    self.redraw = True
                     continue
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.func_newd_close()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if self.Mini_GUI_manager.click(evento.pos):
+                        pag.display.update()
                         continue
                     for x in self.list_to_click_newd:
                         if x.click((mx, my)):
                             break
-                elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
-                    if self.Mini_GUI_manager.click(evento.pos):
-                        continue
-                elif evento.type == MOUSEMOTION:
-                    pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
-                    for x in self.list_to_draw_new_download:
-                        if isinstance(x, Create_boton):
-                            x.draw(self.ventana, (mx, my))
-                        else:
-                            x.draw(self.ventana)
             
-            if not self.drawing:
-                continue
-            pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
-            for x in self.list_to_draw_new_download:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx, my))
-                else:
-                    x.draw(self.ventana)
-
-            self.GUI_manager.draw(self.ventana, (mx, my))
-            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
-
-            pag.display.flip()
+            if self.drawing:
+                pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
+                self.draw_objs(self.list_to_draw_new_download)
 
     def main_cycle(self) -> None:
         if self.screen_main_bool:
             self.cicle_try = 0
-        
+            self.redraw = True
 
         while self.screen_main_bool:
             self.relog.tick(self.framerate)
@@ -670,19 +659,13 @@ con su navegador de preferencia"),
 
             for evento in eventos:
                 if self.eventos_en_comun(evento):
+                    self.redraw = True
                     continue
-                elif self.GUI_manager.active >= 0:
-                    if evento.type == KEYDOWN and evento.key == K_ESCAPE:
-                        self.GUI_manager.pop()
-                    elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                        self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN and evento.key == K_ESCAPE:
                     pag.quit()
                     sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                    if self.Mini_GUI_manager.click(evento.pos):
-                        continue
-                    elif self.lista_descargas.rect.collidepoint((mx, my)):
+                    if self.lista_descargas.rect.collidepoint((mx, my)):
                         self.lista_descargas.click((mx, my))
                     for x in self.list_to_click:
                         if x.click((mx, my)):
@@ -710,34 +693,14 @@ con su navegador de preferencia"),
                 elif evento.type == MOUSEMOTION and self.lista_descargas.scroll:
                     self.lista_descargas.rodar_mouse(evento.rel[1])
 
-            if not self.drawing:
-                continue
-            self.ventana.fill((20, 20, 20))
-
-            for x in self.list_to_draw:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx,my))
-                elif isinstance(x, Multi_list):
-                    if self.lista_descargas.listas[0].lista_palabras:
-                        x.draw(self.ventana)
-                else:
-                    x.draw(self.ventana)
-
-            self.GUI_manager.draw(self.ventana, (mx, my))
-            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
-
-
-            pag.display.flip()
+            if self.drawing:
+                self.draw_objs(self.list_to_draw)
+            
 
     def screen_extras(self):
         if self.screen_extras_bool:
             self.cicle_try = 0
-            # self.ventana.fill((20, 20, 20))
-            # for x in self.list_to_draw_extras:
-            #     if isinstance(x, Create_boton):
-            #         x.draw(self.ventana, (-500,-500))
-            #     else:
-            #         x.draw(self.ventana)
+            self.redraw = True
 
         while self.screen_extras_bool:
             self.relog.tick(self.framerate)
@@ -747,36 +710,22 @@ con su navegador de preferencia"),
 
             for evento in eventos:
                 if self.eventos_en_comun(evento):
+                    self.redraw = True
                     continue
-                elif self.GUI_manager.active >= 0:
-                    if evento.type == KEYDOWN and evento.key == K_ESCAPE:
-                        self.GUI_manager.pop()
-                    elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                        self.GUI_manager.click((mx, my))
                 elif evento.type == KEYDOWN:
                     if evento.key == K_ESCAPE:
                         self.screen_extras_bool = False
                         self.screen_main_bool = True
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if self.Mini_GUI_manager.click(evento.pos):
+                        pag.display.update()
                         continue
                     for x in self.list_to_click_extras:
                         if x.click((mx, my)):
                             break
 
-            if not self.drawing:
-                continue
-            self.ventana.fill((20, 20, 20))
-
-            for x in self.list_to_draw_extras:
-                if isinstance(x, Create_boton):
-                    x.draw(self.ventana, (mx,my))
-                else:
-                    x.draw(self.ventana)
-
-            self.GUI_manager.draw(self.ventana, (mx, my))
-            self.Mini_GUI_manager.draw(self.ventana, (mx, my))
-            pag.display.flip()
+            if self.drawing:
+                self.draw_objs(self.list_to_draw_extras)
 
 
 if __name__ == '__main__':
