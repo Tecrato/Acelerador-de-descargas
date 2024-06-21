@@ -84,10 +84,14 @@ class Data_Base:
         self.cursor.execute("SELECT * FROM descargas WHERE id=?",(self.cursor.lastrowid,))
         return self.cursor.fetchone()
 
-    def update_estado(self,id,estado):
+    def update_hilos(self, id, hilos):
+        self.cursor.execute('UPDATE descargas SET partes=? WHERE id=?',[hilos, id])
+        self.DB.commit()
+
+    def update_estado(self, id, estado):
         self.cursor.execute('UPDATE descargas SET estado=? WHERE id=?',[estado,id])
         self.DB.commit()
         
-    def update_url(self,id,url):
-        self.cursor.execute('UPDATE descargas SET url=? WHERE id=?',[url,id])
+    def update_url(self, id, url):
+        self.cursor.execute('UPDATE descargas SET url=? WHERE id=?',[url, id])
         self.DB.commit()

@@ -1,7 +1,7 @@
 Cambiar el nombre del archivo final y la cantidad de hilos
 
+hacer que separe los archivos descargados en carpetas
+
 crear tambien una comprobacion final para saber si el archivo de la url pesa diferente al descargado.
 
-boton de cancelar en la miniventana que se habre al capturar una descarga
 
-hacer que separe los archivos descargados en carpetas

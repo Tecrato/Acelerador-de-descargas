@@ -3,7 +3,6 @@ import pygame as pag, sys, os, time, requests, json, subprocess, shutil
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from numpy import mean
 from urllib.parse import urlparse
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
@@ -118,10 +117,10 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -631,7 +630,7 @@ class Downloader:
                     self.list_vels.pop(0)
 
                 
-                media = mean(self.list_vels) if self.list_vels else 0
+                media = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
 
                 vel_format = format_size(media)
                 vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'

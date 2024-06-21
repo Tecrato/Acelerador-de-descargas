@@ -8,7 +8,6 @@ datas = [
         ('./extencion.crx','./')
     ]
 
-hiddenimports = ['werkzeug','flask','werkzeug.serving','flask.cli']
 
  # main
 a = Analysis(
@@ -16,7 +15,7 @@ a = Analysis(
     datas=datas,
     pathex=[],
     binaries=[],
-    hiddenimports=hiddenimports,
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -28,6 +27,7 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
     [],
     name='Download Manager',
     exclude_binaries=True,
@@ -49,10 +49,10 @@ exe = EXE(
 
 a2 = Analysis(
     ['Downloader.py'],
-    datas=datas,
+    datas=[],
     pathex=[],
     binaries=[],
-    hiddenimports=hiddenimports,
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -64,6 +64,7 @@ pyz2 = PYZ(a2.pure)
 exe2 = EXE(
     pyz2,
     a2.scripts,
+    a2.binaries,
     [],
     name='Downloader',
     exclude_binaries=True,
@@ -83,10 +84,10 @@ exe2 = EXE(
 
 a3 = Analysis(
     ['listener.py'],
-    datas=datas,
+    datas=[],
     pathex=[],
     binaries=[],
-    hiddenimports=hiddenimports,
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -115,12 +116,6 @@ exe3 = EXE(
     icon= './descargas.ico'
 )
 
-build_options = {
-    'build': {
-        'optimize': 2,
-        'include_msvcr': False,
-    },
-}
 coll = COLLECT(
     exe,
     exe2,

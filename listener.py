@@ -1,7 +1,5 @@
-import subprocess, requests, json, time, os, pygame as pag
-import win32gui
-import win32con
-import win32api
+import subprocess, requests, json, time, sys, pygame as pag
+import os
 from threading import Thread, Lock, Condition
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -9,11 +7,12 @@ from platformdirs import user_config_path
 from urllib.parse import urlparse, unquote
 from pathlib import Path
 
-from Utilidades import Funcs_pool, Create_boton, Create_text
-from Utilidades.win32_tools import front2
+from Utilidades import Funcs_pool, Button, Text
+from Utilidades.win32_tools import topmost
 from DB import Data_Base as db
 
 os.chdir(Path(__file__).parent)
+
 
 class Administrador_de_ventanas:
     def __init__(self,count,limit) -> None:
@@ -30,65 +29,64 @@ class Administrador_de_ventanas:
                 self.condition_v.wait()
             self.count -= 1
 
-    def acquire(self):
+    def release(self):
         with self.lock:
             self.count += 1
             self.condition_v.notify()
-    def add(self,mensaje):
-        self.list_m.append(mensaje)
-    
-def op_pro():
-    subprocess.run('"Download Manager.exe"',shell=True)
-    # subprocess.run('"C:/ProgramData/anaconda3/envs/nuevo/python.exe" main.py')
+
 def descargar_archivo(url,name,num):
+    try:
+        response = requests.get(url, stream=True, timeout=20)
+        tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+        if tipo in ['text/plain', 'text/html']:
+            raise Exception('a')
+        peso = int(response.headers.get('content-length', 1))
+        partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
 
-    response = requests.get(url,stream=True,timeout=20)
-    tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
-    peso = int(response.headers.get('content-length', 1))
-    partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
+        if not name:
+            title: str = urlparse(url).path
+            title: str = title.split('/')[-1]
+            title: str = title.split('?')[0]
+            title: str = title.replace('+', ' ')
+            title: str = unquote(title)
+            name = title
+            if a := response.headers.get('content-disposition', False):
+                name = a.split(';')
+                for x in name:
+                    if 'filename=' in x:
+                        name = x[10:].replace('"','')
+                        break
 
-    if not name:
-        title: str = urlparse(url).path
-        title: str = title.split('/')[-1]
-        title: str = title.split('?')[0]
-        title: str = title.replace('+', ' ')
-        title: str = unquote(title)
-        name = title
-        if a := response.headers.get('content-disposition', False):
-            name = a.split(';')
-            for x in name:
-                if 'filename=' in x:
-                    name = x[10:].replace('"','')
-                    break
 
-    Data_Base = db(carpeta_config.joinpath('./downloads.sqlite3'))
-    Data_Base.añadir_descarga(name,tipo,peso,url,partes)
-    
-    down_winds.remove(num)
-    subprocess.run(f'Downloader.exe "{Data_Base.get_last_insert()[0]}" "0"', shell=True)
-    # subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{Data_Base.get_last_insert()[0]}" "0"', shell=True)
+        Data_Base = db(carpeta_config.joinpath('./downloads.sqlite3'))
+        Data_Base.añadir_descarga(name,tipo,peso,url,partes)
+
+        subprocess.Popen(['Downloader.exe', f"{Data_Base.get_last_insert()[0]}", '0'],shell=True)
+        down_winds.remove(num)
+    except:
+        errors.append(num)
+    # archivo = json.load(open(Path(__file__).parent.joinpath('./paths.json'),'r'))['downloader']
+    # subprocess.Popen([f'{archivo} "{Data_Base.get_last_insert()[0]}" "0"'])
 
 def download_window(num,text):
+    wins.acquire()
+
     pag.init()
     
-    v = pag.display.set_mode((250,120), pag.NOFRAME|pag.SRCALPHA)
+    v = pag.display.set_mode((250,120), pag.NOFRAME)
     pag.display.set_icon(pag.image.load('descargas.png'))
     pag.display.set_caption("Listener")
-    # v.fill((255, 0, 128))
-    # v.set_colorkey((255, 0, 128))
     run = True
+    err = False
     r = pag.time.Clock()
 
-    texto = Create_text('Obteniendo informacion de:',24,None,(125,30),with_rect=True,color='white',color_rect=(20,20,20))
-    texto2 = Create_text((text if len(text) < 37 else (text[:40] + "...")),16,None,(125,60),padding=(1,5),with_rect=True,color='white',color_rect=(20,20,20))
-    boton = Create_boton('Aceptar',20,None,(125,95),(20, 10), 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1)
+    texto = Text('Obteniendo informacion de:',24,None,(125,30),with_rect=True,color='white',color_rect=(20,20,20))
+    texto2 = Text((text if len(text) < 37 else (text[:40] + "...")),16,None,(125,60),padding=(1,5),with_rect=True,color='white',color_rect=(20,20,20))
+    boton = Button('Aceptar',20,None,(125,95),(20, 10), 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1)
 
-    # # Create layered window
-    # hwnd = pag.display.get_wm_info()["window"]
-    # win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
-    #                     win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-    # win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(255, 0, 128), 0, win32con.LWA_COLORKEY)
-    win32gui.SetWindowPos(pag.display.get_wm_info()['window'], win32con.HWND_TOPMOST, 0,0,0,0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+
+    topmost(pag.display.get_wm_info()['window'])
+
     while run:
         r.tick(30)
         for e in pag.event.get():
@@ -96,9 +94,16 @@ def download_window(num,text):
                 pag.quit()
                 run = False
             elif e.type == pag.MOUSEBUTTONDOWN and e.button == 1 and boton.click(e.pos):
+                if num in errors:
+                    errors.remove(num)
                 pag.quit()
                 run = False
-        if not num in down_winds:
+        if num in errors:
+            if not err:
+                texto.text = 'Error...'
+                err = True
+            pass
+        elif not num in down_winds:
             pag.quit()
             run = False
         if run:
@@ -110,11 +115,14 @@ def download_window(num,text):
             texto2.draw(v)
             boton.draw(v)
             pag.display.flip()
+    wins.release()
 
             
 
+wins = Administrador_de_ventanas(1,1)
 id = 0
 down_winds = []
+errors = []
 app = Flask("listener")
 CORS(app)
 
@@ -122,7 +130,6 @@ carpeta_config = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
 carpeta_config.mkdir(parents=True, exist_ok=True)
 
 pool_descargas = Funcs_pool()
-pool_descargas.add('open_program',op_pro)
 
 @app.route('/add_download',methods=['POST'])
 def descargar():
@@ -147,13 +154,21 @@ def descargar():
 
 @app.route('/open_program',methods=['POST'])
 def open_program():
-    pool_descargas.start('open_program')
+    # archivo = json.load(open(Path(__file__).parent.joinpath('./paths.json'),'r'))['main']
+    # subprocess.Popen([archivo],shell=True)
+    subprocess.Popen(['Download Manager.exe'],shell=True)
 
     response = jsonify({"status": "success"})
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 @app.route('/check',methods=['POST'])
 def check():
+    response = jsonify({"status": "success"})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+@app.route('/exit',methods=['POST'])
+def exit():
+    sys.exit()
     response = jsonify({"status": "success"})
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
