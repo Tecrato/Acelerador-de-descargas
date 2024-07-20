@@ -1,0 +1,15 @@
+2.11
+
+# Novedades:
+ - Ahora se puede cambiar el nombre del archivo final.
+ - nuevo archivo para cerrar el proceso del listener para las descargas del navegador (no se pueden instalar actualizaciones si el proceso esta activo).
+
+# Cambios:
+ - Opcion para seleccionar el numero de hilos para la descarga en la ventana de nueva descarga.
+ - Ahora aunque el programa pierda el foco se mantiene  en 60fps.
+
+# Mejoras:
+ - Ya no se acumulan las ventanas pequeñas que salen en la esquina.
+ - Fixed el bug con algunos links que dejaban descargando el archivo infinitamente.
+ - Fixed el bug con el cambio de idioma, la lista se rompia.
+ - Fixed no habria la carpeta de descargas cuando daba error la carpeta seleccionada por el usuario.

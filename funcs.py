@@ -2,8 +2,9 @@ import pyperclip, datetime, subprocess, shutil, pygame as pag, sys
 from threading import Thread
 from pygame import Vector2
 from tkinter.filedialog import askdirectory
+from tkinter.simpledialog import askstring
 
-from Utilidades import GUI, mini_GUI, Button
+from Utilidades import GUI, mini_GUI
 from Utilidades import win32_tools
 
 from textos import idiomas
@@ -19,7 +20,7 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            # proceso = subprocess.run(f'"C:/ProgramData/anaconda3/envs/nuevo/python.exe" Downloader.py "{id}" "{mod}"', shell=True)
+            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
             proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
             if proceso.returncode == 1 and id in self.cola:
                 self.cola.remove(id)
@@ -75,9 +76,11 @@ class Other_funcs:
             self.screen_new_download(1)
         elif respuesta['index'] == 3:
             pyperclip.copy(obj_cached[4])
+            self.Mini_GUI_manager.clear_group('portapapeles')
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Copiado',
-                                      self.txts['copiado al portapapeles'])
+                                      self.txts['copiado al portapapeles']),
+                group='portapapeles'
             )
         elif respuesta['index'] == 4:
             if obj_cached[0] in self.cola:
@@ -97,24 +100,37 @@ class Other_funcs:
             self.comprobar_descargando(obj_cached)
 
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
-            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
-            self.lista_descargas[2][respuesta['obj']['index']] = self.threads
             self.DB.update_estado(obj_cached[0], 'esperando')
             self.DB.update_hilos(obj_cached[0], self.threads)
+            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
+            self.lista_descargas[2][respuesta['obj']['index']] = self.threads
+        elif respuesta['index'] == 8:
+            self.comprobar_descargando(obj_cached)
 
-        self.redraw = True
+            nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached[1])
+            if not nombre or nombre == '':
+                return
+
+            shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
+
+            self.DB.update_nombre(obj_cached[0], nombre)
+            self.lista_descargas[0][respuesta['obj']['index']] = nombre
+
 
     def comprobar_descargando(self, obj):
+        self.Mini_GUI_manager.clear_group('descarga en curso')
         if obj[0] in self.descargando or win32_tools.check_win(f'Downloader {obj[0]}_{obj[1]}'):
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
-                                    self.txts['gui-descarga en curso'])
+                                    self.txts['gui-descarga en curso']),
+                group='descarga en curso'
             )
             return True
         elif obj[0] in self.cola:
             self.Mini_GUI_manager.add(
                 mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
-                                    self.txts['gui-descarga en cola'])
+                                    self.txts['gui-descarga en cola']),
+                group='descarga en curso'
             )
             return True
 
@@ -122,12 +138,14 @@ class Other_funcs:
         self.threads = 2**respuesta['index']
 
         self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
-        self.ventana.fill((20, 20, 20))
-        for x in self.list_to_draw_config:
-            if isinstance(x, Button):
-                x.draw(self.ventana, (-500,-500))
-            else:
-                x.draw(self.ventana)
+        self.redraw = True
+
+    def func_select_box_hilos_newd(self, respuesta) -> None:
+        self.new_threads = 2**respuesta['index']
+
+        self.text_newd_hilos.text = self.txts['config-hilos'].format(self.new_threads)
+        self.redraw = True
+
     def del_download_DB(self, id, nombre):
         if win32_tools.check_win(f'Downloader {id}_{nombre}'):
             self.Mini_GUI_manager.add(
@@ -147,7 +165,7 @@ class Other_funcs:
         if self.actualizar_url:
             self.DB.update_url(self.new_url_id,self.input_newd_url.get_text())
         else:
-            datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.threads]
+            datos = [self.new_filename, self.new_file_type, self.new_file_size, self.url, self.new_threads]
             self.DB.añadir_descarga(*datos)
 
         
@@ -193,9 +211,11 @@ class Other_funcs:
             cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
             self.lista_descargas.append([nombre, tipo, hilos, peso, estado, cola, txt_fecha])
 
+        self.Mini_GUI_manager.clear_group('lista_descargas')
         self.Mini_GUI_manager.add(
             mini_GUI.simple_popup(Vector2(50000, 50000), 'bottomright', self.txts['lista actualizada'],
-                                  self.txts['lista actualizada'])
+                                  self.txts['lista actualizada']),
+            group='lista_descargas'
         )
 
     def func_paste_url(self, url=False):
@@ -234,6 +254,7 @@ class Other_funcs:
 
         self.generate_objs()
         self.reload_lista_descargas()
+        self.move_objs()
         self.redraw = True
 
     def func_newd_close(self):

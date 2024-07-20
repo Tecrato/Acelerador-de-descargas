@@ -1,7 +1,10 @@
-Cambiar el nombre del archivo final y la cantidad de hilos
-
 hacer que separe los archivos descargados en carpetas
 
-crear tambien una comprobacion final para saber si el archivo de la url pesa diferente al descargado.
+limitador de velocidad
 
+luego e eliminar un elemento, hacer select() a alguno adyacente, para que no suba y baje a cada rato el scroll
 
+boton para borrar la base de datos y limpiar el cache
+
+sitios betados:
+ - sourceforge

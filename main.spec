@@ -5,7 +5,8 @@ datas = [
         ('C:/Users/Edouard/Documents/fuentes/Symbols.ttf', './Assets/fuentes/'),
         ('./descargas.png','./'),
         ('./descargas.ico','./'),
-        ('./extencion.crx','./')
+        ('./extencion.crx','./'),
+        ('./cerrar_listener.bat','./')
     ]
 
 

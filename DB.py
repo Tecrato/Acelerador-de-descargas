@@ -95,3 +95,7 @@ class Data_Base:
     def update_url(self, id, url):
         self.cursor.execute('UPDATE descargas SET url=? WHERE id=?',[url, id])
         self.DB.commit()
+
+    def update_nombre(self, id, nombre):
+        self.cursor.execute('UPDATE descargas SET nombre=? WHERE id=?',[nombre, id])
+        self.DB.commit()

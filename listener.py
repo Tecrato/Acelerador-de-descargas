@@ -1,47 +1,33 @@
-import subprocess, requests, json, time, sys, pygame as pag
+import subprocess, requests, json, time, pygame as pag
 import os
-from threading import Thread, Lock, Condition
+from threading import Thread
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from platformdirs import user_config_path
 from urllib.parse import urlparse, unquote
 from pathlib import Path
 
-from Utilidades import Funcs_pool, Button, Text
+from Utilidades import Funcs_pool, Semaforo, Button, Text
 from Utilidades.win32_tools import topmost
 from DB import Data_Base as db
 
 os.chdir(Path(__file__).parent)
 
 
-class Administrador_de_ventanas:
-    def __init__(self,count,limit) -> None:
-        self.count = count
-        self.limit = limit
-        self.lock = Lock()
-        self.condition_v = Condition(self.lock)
-
-        self.list_m = []
-
-    def acquire(self):
-        with self.lock:
-            while self.count <= 0:
-                self.condition_v.wait()
-            self.count -= 1
-
-    def release(self):
-        with self.lock:
-            self.count += 1
-            self.condition_v.notify()
-
 def descargar_archivo(url,name,num):
     try:
         response = requests.get(url, stream=True, timeout=20)
+        print(response.headers)
         tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
         if tipo in ['text/plain', 'text/html']:
             raise Exception('a')
         peso = int(response.headers.get('content-length', 1))
-        partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
+
+        if (response.headers.get('ETag', False) or response.headers.get('Expires', 0) not in [-1,0,'-1','0']):
+            partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
+        else:
+            partes = 1
+
 
         if not name:
             title: str = urlparse(url).path
@@ -59,7 +45,7 @@ def descargar_archivo(url,name,num):
 
 
         Data_Base = db(carpeta_config.joinpath('./downloads.sqlite3'))
-        Data_Base.añadir_descarga(name,tipo,peso,url,partes)
+        Data_Base.añadir_descarga(name, tipo, peso, url, partes)
 
         subprocess.Popen(['Downloader.exe', f"{Data_Base.get_last_insert()[0]}", '0'],shell=True)
         down_winds.remove(num)
@@ -119,8 +105,8 @@ def download_window(num,text):
 
             
 
-wins = Administrador_de_ventanas(1,1)
-id = 0
+wins = Semaforo(1,1)
+identificador = 0
 down_winds = []
 errors = []
 app = Flask("listener")
@@ -133,7 +119,7 @@ pool_descargas = Funcs_pool()
 
 @app.route('/add_download',methods=['POST'])
 def descargar():
-    global id
+    global identificador
     data = request.get_json()
     url_file = data['fileUrl']
     filename = data.get('name',None)
@@ -166,15 +152,9 @@ def check():
     response = jsonify({"status": "success"})
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
-@app.route('/exit',methods=['POST'])
-def exit():
-    sys.exit()
-    response = jsonify({"status": "success"})
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     # app.run(port=5000)
     from waitress import serve
     serve(app, host="0.0.0.0", port=5000)

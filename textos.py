@@ -16,6 +16,7 @@ textos_español = {
     'calculando': 'Calculando',
     'cambiar': 'Cambiar',
     'cambiar carpeta': 'Cambiar carpeta',
+    'cambiar nombre': 'Cambiar nombre',
     'cancelar': 'Cancelar',
     'carpeta cambiada': 'Carpeta cambiada',
     'casi termina': 'Casi termina',
@@ -95,6 +96,7 @@ textos_español = {
     'gui-descarga en curso':'La descarga esta en curso',
     'gui-descarga en cola':'La descarga esta en la cola',
     'gui-cola de descarga completada':'La cola de descargas ha finalizado',
+    'gui-nombre del archivo':'Nombre del archivo',
 
     # Downloader
     
@@ -138,6 +140,7 @@ textos_ingles = {
     'calculando': 'Calculating',
     'cambiar': 'Change',
     'cambiar carpeta': 'Change Folder',
+    'cambiar nombre': 'Change name',
     'cancelar': 'Cancel',
     'carpeta cambiada': 'Folder changed',
     'casi termina': 'it\'s almost over',
@@ -216,6 +219,7 @@ textos_ingles = {
     'gui-descarga en curso':'Download in progress',
     'gui-descarga en cola':'Download in the Queue',
     'gui-cola de descarga completada':'The download Queue it\'s finished',
+    'gui-nombre del archivo':'Name of the file',
 
     # Downloader
     'title_hilos': 'Downloads threads',
