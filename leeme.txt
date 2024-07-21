@@ -1,3 +1,5 @@
 ejecutar el "cerrar_listener.exe" si ya tiene una version instalada del acelerador de descargas
 
 si el listener continua activo y intenta instalar una actualizacion, dara error.
+
+psdt: no puee descargar archivos de sourceforge

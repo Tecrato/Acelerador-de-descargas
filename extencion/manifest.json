@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Acelerador de descargas by Edouard",
     "version": "1.0",
-    "permissions": ["downloads"],
+    "permissions": ["downloads","storage"],
     "background": {
         "service_worker": "background.js"
       },

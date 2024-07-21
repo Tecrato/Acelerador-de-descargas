@@ -23,10 +23,10 @@ def descargar_archivo(url,name,num):
             raise Exception('a')
         peso = int(response.headers.get('content-length', 1))
 
-        if (response.headers.get('ETag', False) or response.headers.get('Expires', 0) not in [-1,0,'-1','0']):
-            partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
-        else:
+        if 'bytes' not in response.headers.get('Accept-Ranges', ''):
             partes = 1
+        else:
+            partes = json.load(open(carpeta_config.joinpath('./configs.json'))).get('hilos',8)
 
 
         if not name:

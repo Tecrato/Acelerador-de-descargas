@@ -6,5 +6,7 @@ luego e eliminar un elemento, hacer select() a alguno adyacente, para que no sub
 
 boton para borrar la base de datos y limpiar el cache
 
+poder seleccionar varias entradas en la lista
+
 sitios betados:
  - sourceforge

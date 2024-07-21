@@ -101,9 +101,7 @@ class Other_funcs:
 
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
             self.DB.update_estado(obj_cached[0], 'esperando')
-            self.DB.update_hilos(obj_cached[0], self.threads)
             self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
-            self.lista_descargas[2][respuesta['obj']['index']] = self.threads
         elif respuesta['index'] == 8:
             self.comprobar_descargando(obj_cached)
 

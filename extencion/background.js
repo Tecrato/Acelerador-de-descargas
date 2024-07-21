@@ -1,12 +1,20 @@
+var valor = true
+
+function activar() {
+	chrome.storage.local.get('activa_extension_acc_des_Edouard')
+	.then(respuesta => {
+		console.log(respuesta);
+		valor = respuesta['activa_extension_acc_des_Edouard']
+})}
+
+setInterval(() => {
+	activar()
+}, 1000)
 
 chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
-
-//     // var newUrl = 'http://localhost:5000/download?url=' + encodeURIComponent(item.url)+'&name=item.filename';
-//     // suggest({ filename: item.filename, conflictAction: 'overwrite', url: newUrl });
-
 	const regex = /(.whl|.exe|.iso|.cia|.apk|.rar|.zip|.jar|.mp3|.mp4|.mkv|.flv|.avi)$/i
-
-	if (regex.test(item.filename)) {
+	activar()
+	if (regex.test(item.filename) && valor == true) {
 		const data = {
 		fileUrl: item.url,
 		name: item.filename
@@ -18,10 +26,9 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
 			},
 			body: JSON.stringify(data)
 		})
+		chrome.downloads.cancel(item.id)
 		chrome.downloads.erase({id:item.id})
-		suggest();
-	} else {
-		suggest({ filename: item.filename, conflictAction: 'overwrite'});
+		suggest()
 	}
 	
 });

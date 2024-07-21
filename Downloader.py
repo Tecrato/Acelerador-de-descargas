@@ -72,6 +72,7 @@ class Downloader:
         self.canceled = False
         self.screen_main = True
         self.can_download = False
+        self.can_reanudar = True
         self.downloading = False
         self.apagar_al_finalizar = False
         self.ejecutar_al_finalizar = False if self.modificador != 1 else True
@@ -342,7 +343,8 @@ class Downloader:
 
             self.can_download = True
             self.last_change = time.time()
-            if not response.headers.get('ETag', False):
+            if 'bytes' not in response.headers.get('Accept-Ranges', ''):
+                self.can_reanudar = False
                 try:
                     os.remove(self.carpeta_cache.joinpath(f'./parte0.tmp'))
                 except:
@@ -435,7 +437,7 @@ class Downloader:
             self.lista_status_hilos[num]['status'] = 2
             return
         self.lista_status_hilos_text[num].text = self.txts['status_hilo[iniciando]'].format(num)
-        if Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file():
+        if Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file() and self.can_reanudar:
             self.lista_status_hilos[num]['local_count'] = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
             self.peso_descargado += self.lista_status_hilos[num]['local_count']
             if self.lista_status_hilos[num]['local_count'] >= self.lista_status_hilos[num]['end'] - self.lista_status_hilos[num]['start']:
@@ -443,6 +445,11 @@ class Downloader:
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 1
                 return 0
+        if not self.can_reanudar:
+            try:
+                os.remove(self.carpeta_cache.joinpath(f'./parte0.tmp'))
+            except:
+                pass
         if self.paused:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
@@ -451,7 +458,7 @@ class Downloader:
         try:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[conectando]'].format(num)
             re = self.prepared_request.copy()
-            re.prepare_headers(headers)
+            re.prepare_headers(headers if self.can_reanudar else {})
             response = self.prepared_session.send(re, stream=True, allow_redirects=True, timeout=15)
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]

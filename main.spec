@@ -6,7 +6,8 @@ datas = [
         ('./descargas.png','./'),
         ('./descargas.ico','./'),
         ('./extencion.crx','./'),
-        ('./cerrar_listener.bat','./')
+        ('./cerrar_listener.bat','./'),
+        ('./version.txt','./')
     ]
 
 

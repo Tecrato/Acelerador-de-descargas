@@ -18,6 +18,7 @@ from platformdirs import user_config_path, user_cache_path, user_downloads_dir, 
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
+from pprint import pprint
 
 from funcs import Other_funcs
 from textos import idiomas
@@ -65,7 +66,7 @@ class DownloadManager(Other_funcs):
         self.data_actualizacion = {}
         self.updates: list[pag.Rect] = []
         self.url_actualizacion: str = ''
-        self.version: str = '2.11.0'
+        self.version: str = '2.11.1'
         self.save_dir = user_downloads_dir()
         self.threads: int = 4
         self.drawing: bool = True
@@ -79,10 +80,10 @@ class DownloadManager(Other_funcs):
         self.relog: pag.time.Clock = pag.time.Clock()
         
 
-        self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbolos: str = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        # self.font_mononoki: str = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbolos: str = './Assets/fuentes/Symbols.ttf'
+        # self.font_mononoki: str = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        # self.font_simbolos: str = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
+        self.font_mononoki: str = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
+        self.font_simbolos: str = './Assets/fuentes/Symbols.ttf'
         self.idioma: str = 'español'
         self.txts = idiomas[self.idioma]
 
@@ -456,8 +457,9 @@ con su navegador de preferencia"),
                 response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15)
 
 
-            print(response.headers)
-            if response.headers.get('ETag', False) or response.headers.get('Expires', 0) not in [-1, 0, '-1', '0']:
+            tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+            pprint(response.headers) #Accept-Ranges
+            if 'bytes' in response.headers.get('Accept-Ranges', ''):
                 self.btn_newd_hilos.pos = (self.text_newd_hilos.left, self.text_newd_hilos.bottom + 10)
                 self.new_threads = self.threads
             else:
@@ -465,7 +467,6 @@ con su navegador de preferencia"),
                 self.new_threads = 1
                 self.text_newd_hilos.text = self.txts['config-hilos'].format(self.new_threads)
 
-            tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             self.new_file_type = tipo
             self.text_newd_file_type.text = self.txts['tipo']+': ' + tipo
             if self.new_file_type in ['text/plain', 'text/html']:

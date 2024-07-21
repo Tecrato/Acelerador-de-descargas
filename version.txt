@@ -1,3 +1,10 @@
+2.11.1
+Cambios:
+- Al reiniciar un elemento de la lista ya no cambia el numero de hilos.
+- La extension ahora tiene un boton para activar y desactivar la extension.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------
+
 2.11
 
 # Novedades:
