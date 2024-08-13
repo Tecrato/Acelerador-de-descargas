@@ -72,7 +72,7 @@ class DownloadManager(Other_funcs):
         self.data_actualizacion = {}
         self.updates: list[pag.Rect] = []
         self.url_actualizacion: str = ''
-        self.version: str = '2.11.2'
+        self.version: str = '2.11.2.1'
         self.save_dir = user_downloads_dir()
         self.threads: int = 4
         self.drawing: bool = True

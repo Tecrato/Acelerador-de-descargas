@@ -1,3 +1,12 @@
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
+2.11.2.1
+Bugs fixes:
+ - No servia el cambiar nombre de la descarga.
+ - y la lista no marcaba que se borro el progreso cuando se le cambia el nombre al archivo, (perdon pero la carpeta del cache depende de su nombre).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
 2.11.2
 Novedades:
 - Nuevo boton para borrar todas las descargas existentes.

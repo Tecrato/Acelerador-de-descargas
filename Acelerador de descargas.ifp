@@ -3,7 +3,7 @@
 ProjectFileVersion = 1.1
 [General]
 Program name = Acelerador de descargas
-Program version = 2.11.2
+Program version = 2.11.2.1
 Windows XP = 0
 Windows Server 2003 = 0
 Windows Vista = 0
@@ -78,6 +78,9 @@ Execdlls = 0
 2
 3
 [Files/Dirs]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
+122.3 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ssl.pyd
 174.8 KB
 pyd
@@ -199,7 +202,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 48.4 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-1.9 KB
+2.3 KB
 txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
 106 KB
@@ -266,9 +269,6 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
 81.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
-122.3 KB
 pyd
 [Licence_Begin]
 1362

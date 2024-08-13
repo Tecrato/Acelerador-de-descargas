@@ -119,7 +119,9 @@ class Other_funcs:
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
 
             self.DB.update_nombre(obj_cached[0], nombre)
-            self.lista_descargas[0][respuesta['obj']['index']] = nombre
+            self.lista_descargas[0][int(respuesta['obj'][0]['index'])] = nombre
+            self.DB.update_estado(obj_cached[0], 'esperando')
+            self.lista_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         self.redraw = True
 
 
