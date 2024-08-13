@@ -99,3 +99,7 @@ class Data_Base:
     def update_nombre(self, id, nombre):
         self.cursor.execute('UPDATE descargas SET nombre=? WHERE id=?',[nombre, id])
         self.DB.commit()
+
+    def borrar_todo(self):
+        self.cursor.execute('DELETE FROM descargas WHERE 1')
+        self.DB.commit()

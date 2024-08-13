@@ -1,3 +1,22 @@
+2.11.2
+Novedades:
+- Nuevo boton para borrar todas las descargas existentes.
+- Ahora se pueden seleccionar varios elementos de la lista de descargas con el boton de control (ctrl).
+- Ahora con F12 se pueden tomar capturas de pantalla.
+
+Bugs fixes:
+- Fixed el nombre de algunos links acababa como lista.
+- Fixed se quedaba dibujado en boton de los hilos cuando la descarga no admitia reanudar.
+- Ahora la ventana tiene un ancho y alto minimo a la hora de cambiarla de tamaño.
+
+Cambios:
+ - Ya no se reducen los FPS de 60 cuando entra en modo bajo consumo.
+ - Ahora muestra el nombre del archivo en la ventana de confirmacion de eliminacion.
+ - Nueva mini_GUi que muestra cuando se actualiza la lista, con un simple click se cierra.
+ - Un bloque de codigo para que si la parte finalizada no pesa lo debido se reinicie la parte.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------
+
 2.11.1
 Cambios:
 - Al reiniciar un elemento de la lista ya no cambia el numero de hilos.
@@ -13,7 +32,7 @@ Cambios:
 
 # Cambios:
  - Opcion para seleccionar el numero de hilos para la descarga en la ventana de nueva descarga.
- - Ahora aunque el programa pierda el foco se mantiene  en 60fps.
+ - Ahora aunque el programa pierda el foco se mantiene en 60fps.
 
 # Mejoras:
  - Ya no se acumulan las ventanas pequeñas que salen en la esquina.

@@ -324,18 +324,18 @@ class Downloader:
                         file.write(url)
             else:
                 url = self.url
-            response = requests.get(url, stream=True, allow_redirects=True, timeout=30)
+            response = requests.get(url, stream=True, allow_redirects=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
             if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path and int(response.headers.get('Expires', 123123)) == 0:
                 os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
                 return self.crear_conexion()
 
-            # print(response.headers)
-            self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',url)
+            self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',url,{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
             if tipo != self.type:
-                raise DifferentTypeError('No es el tipo de archivo')
+                print(response.headers)
+                raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
 
             peso = int(response.headers.get('content-length', 0))
             if peso < 8 *self.num_hilos or peso != self.peso_total:
@@ -364,7 +364,9 @@ class Downloader:
                              'El servidor no responde\n\nDesea volver a intentarlo?'),
                 lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
             )
-        except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError):
+        except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError) as err:
+            print(type(err))
+            print(err)
             self.GUI_manager.add(
                 GUI.Info(self.ventana_rect.center, 'Error',
                          self.txts['gui-url no sirve']),
@@ -410,7 +412,7 @@ class Downloader:
                 'status':0,
                 'num':x,
                 'start':self.division * x,
-                'end':(self.division * x + self.division - 1 if x < self.num_hilos - 1 else self.peso_total - 1),
+                'end':(self.division*x + self.division-1 if x < self.num_hilos - 1 else self.peso_total - 1),
                 'local_count':0,
                 'tiempo_reset':2
                 })
@@ -445,20 +447,25 @@ class Downloader:
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 1
                 return 0
+        else:
+            self.lista_status_hilos[num]['local_count'] = 0
         if not self.can_reanudar:
             try:
-                os.remove(self.carpeta_cache.joinpath(f'./parte0.tmp'))
+                os.remove(self.carpeta_cache.joinpath(f'./parte{num}.tmp'))
             except:
                 pass
         if self.paused:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
                 time.sleep(.1)
-        headers = {'Range': f'bytes={self.lista_status_hilos[num]['start'] + self.lista_status_hilos[num]['local_count']}-{self.lista_status_hilos[num]['end']}'}
+        headers = {
+            'Range': f'bytes={self.lista_status_hilos[num]['start'] + self.lista_status_hilos[num]['local_count']}-{self.lista_status_hilos[num]['end']}',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
+        }
         try:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[conectando]'].format(num)
             re = self.prepared_request.copy()
-            re.prepare_headers(headers if self.can_reanudar else {})
+            re.prepare_headers(headers if self.can_reanudar else {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
             response = self.prepared_session.send(re, stream=True, allow_redirects=True, timeout=15)
 
             tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
@@ -474,25 +481,34 @@ class Downloader:
                         raise Exception('')
                     if not data:
                         continue
-                    if self.lista_status_hilos[num]['local_count'] + len(data) > self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
+                    tanto = len(data)
+                    if self.lista_status_hilos[num]['local_count'] + tanto > self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
                         d = data[:(self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start'])-self.lista_status_hilos[num]['local_count']+1]
                         self.lista_status_hilos[num]['local_count'] += len(d)
                         self.peso_descargado_vel += len(d)
                         self.peso_descargado += len(d)
                         file_p.write(d)
                         break
-                    self.lista_status_hilos[num]['local_count'] += len(data)
-                    self.peso_descargado_vel += len(data)
-                    self.peso_descargado += len(data)
+                    self.lista_status_hilos[num]['local_count'] += tanto
+                    self.peso_descargado_vel += tanto
+                    self.peso_descargado += tanto
                     file_p.write(data)
 
+            # codigo para comprobar que la parte pese lo mismo que el tamaño que se le asigno, sino borra lo descargado y vulve a empezar
+            with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'rb') as file_p:
+                if self.lista_status_hilos[num]['local_count'] != os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size and self.lista_status_hilos[num]['local_count'] != self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
+                    os.remove(self.carpeta_cache.joinpath(f'./parte{num}.tmp'))
+                    print(f'hilo {num} descargado de nuevo')
+                    raise DifferentSizeError('ay')
+
+            print(f'parte {num} finalizado')
             self.lista_status_hilos[num]['status'] = 1
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
             self.hilos_listos += 1
             return
         except (Exception, LowSizeError) as err:
-            # print(err)
-            # print(type(err))
+            print(err)
+            print(type(err))
 
             if self.canceled:
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)

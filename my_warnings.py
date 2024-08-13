@@ -21,3 +21,7 @@ class TrajoHTML(Exception):
 class LinkCaido(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+        
+class DifferentSizeError(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)

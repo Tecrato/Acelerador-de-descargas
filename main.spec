@@ -7,7 +7,9 @@ datas = [
         ('./descargas.ico','./'),
         ('./extencion.crx','./'),
         ('./cerrar_listener.bat','./'),
-        ('./version.txt','./')
+        ('./version.txt','./'),
+        ('./instrucciones.txt','./'),
+        ('./paginas_no_soportadas.txt','./')
     ]
 
 

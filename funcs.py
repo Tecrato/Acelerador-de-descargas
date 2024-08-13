@@ -20,35 +20,41 @@ def format_size(size) -> list:
 
 class Other_funcs:
     def download(self,id,mod) -> None:
-            # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
-            proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
-            if proceso.returncode == 1 and id in self.cola:
-                self.cola.remove(id)
-                if len(self.cola) > 0:
-                    self.init_download(self.cola[0],2)
-                    self.descargando.append(self.cola[0])
-                elif self.apagar_al_finalizar_cola:
-                    subprocess.call('shutdown /s /t 10 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
-                    pag.quit()
-                    sys.exit()
-                else:
-                    if self.enfoques:
-                        win32_tools.front2(pag.display.get_wm_info()['window'])
-                    self.GUI_manager.add(
-                        GUI.Info(self.ventana_rect.center, self.txts['completado'], 
-                                 self.txts['gui-cola de descarga completada'],(400,200)))
+        self.descargando.append(id)
+        # proceso = subprocess.run(f'python Downloader.py "{id}" "{mod}"', shell=True)
+        proceso = subprocess.run(f'Downloader.exe "{id}" "{mod}"', shell=True)
+        if proceso.returncode == 1 and id in self.cola:
+            self.cola.remove(id)
+            if len(self.cola) > 0:
+                self.init_download(self.cola[0],2)
+                self.descargando.append(self.cola[0])
+            elif self.apagar_al_finalizar_cola:
+                subprocess.call('shutdown /s /t 10 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"', shell=True)
+                pag.quit()
+                sys.exit()
             else:
-                print('NT Bro')
-            self.descargando.remove(id)
-            DB = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
-            self.reload_lista_descargas(DB.cursor)
-            del DB
+                if self.enfoques:
+                    win32_tools.front2(pag.display.get_wm_info()['window'])
+                self.GUI_manager.add(
+                    GUI.Info(self.ventana_rect.center, self.txts['completado'],
+                             self.txts['gui-cola de descarga completada'],(400,200)))
+        else:
+            print('NT Bro')
+        self.descargando.remove(id)
+        DB = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
+        self.reload_lista_descargas(DB.cursor)
+        del DB
     def init_download(self,id,mod=0):
             Thread(target=self.download, args=(id,mod)).start()
 
     def func_select_box(self, respuesta) -> None:
         if not self.cached_list_DB: return
-        obj_cached = self.cached_list_DB[respuesta['obj']['index']]
+        if len(respuesta['obj']) > 1:
+            for x in respuesta['obj']:
+                self.func_select_box({'obj': [x], 'index': respuesta['index']})
+            return
+        else:
+            obj_cached = self.cached_list_DB[respuesta['obj'][0]['index']]
 
         if respuesta['index'] == 0:
             if win32_tools.check_win(f'Downloader {obj_cached[0]}_{obj_cached[1]}'):
@@ -59,18 +65,17 @@ class Other_funcs:
                 return
             else:
                 self.init_download(obj_cached[0],2 if obj_cached[0] in self.cola else 0)
-                self.descargando.append(obj_cached[0])
         elif respuesta['index'] == 1:
-            self.comprobar_descargando(obj_cached)
+            if self.comprobar_descargando(obj_cached):
+                return
 
             self.GUI_manager.add(
-                GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']),
-                lambda r: (self.del_download_DB(
-                    *obj_cached[:2]) if r == 'aceptar' else None)
-            )
+                GUI.Desicion(self.ventana_rect.center, self.txts['confirmar'], self.txts['gui-desea borrar el elemento']+f'\n\n"{obj_cached[1]}"'),
+                lambda r: (self.del_download_DB(*obj_cached[:2], respuesta['obj'][0]['index']) if r == 'aceptar' else None))
 
         elif respuesta['index'] == 2:
-            self.comprobar_descargando(obj_cached)
+            if self.comprobar_descargando(obj_cached):
+                return
 
             self.new_url_id = obj_cached[0]
             self.screen_new_download(1)
@@ -86,7 +91,7 @@ class Other_funcs:
             if obj_cached[0] in self.cola:
                 return
             self.cola.append(obj_cached[0])
-            self.lista_descargas[5][respuesta['obj']['index']] = f'[{self.cola.index(obj_cached[0])}]'
+            self.lista_descargas[5][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached[0])}]'
             
         elif respuesta['index'] == 5:
             if not obj_cached[0] in self.cola:
@@ -97,13 +102,15 @@ class Other_funcs:
             self.cola.clear()
             self.reload_lista_descargas()
         elif respuesta['index'] == 7:
-            self.comprobar_descargando(obj_cached)
+            if self.comprobar_descargando(obj_cached):
+                return
 
             shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}_{"".join(obj_cached[1].split(".")[:-1])}'), True)
             self.DB.update_estado(obj_cached[0], 'esperando')
-            self.lista_descargas[4][respuesta['obj']['index']] = self.txts['esperando'].capitalize()
+            self.lista_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         elif respuesta['index'] == 8:
-            self.comprobar_descargando(obj_cached)
+            if self.comprobar_descargando(obj_cached):
+                return
 
             nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached[1])
             if not nombre or nombre == '':
@@ -113,6 +120,7 @@ class Other_funcs:
 
             self.DB.update_nombre(obj_cached[0], nombre)
             self.lista_descargas[0][respuesta['obj']['index']] = nombre
+        self.redraw = True
 
 
     def comprobar_descargando(self, obj):
@@ -131,6 +139,7 @@ class Other_funcs:
                 group='descarga en curso'
             )
             return True
+        return False
 
     def func_select_box_hilos(self, respuesta) -> None:
         self.threads = 2**respuesta['index']
@@ -144,16 +153,13 @@ class Other_funcs:
         self.text_newd_hilos.text = self.txts['config-hilos'].format(self.new_threads)
         self.redraw = True
 
-    def del_download_DB(self, id, nombre):
-        if win32_tools.check_win(f'Downloader {id}_{nombre}'):
-            self.Mini_GUI_manager.add(
-                mini_GUI.simple_popup(Vector2(50000,50000), 'botomright', 'Error',
-                                      self.txts['gui-descarga en curso'])
-            )
-            return
+    def del_download_DB(self, id, nombre, index):
         shutil.rmtree(self.carpeta_cache.joinpath(f'./{id}_{"".join(nombre.split(".")[:-1])}'), True)
         self.DB.eliminar_descarga(id)
         self.reload_lista_descargas()
+        # self.cached_list_DB.pop(index)
+        # self.lista_descargas.pop(index)
+
 
     def func_add_download_to_DB(self):
         'Funcion para agregar los datos de la nueva descarga a la base de datos'
@@ -211,10 +217,15 @@ class Other_funcs:
 
         self.Mini_GUI_manager.clear_group('lista_descargas')
         self.Mini_GUI_manager.add(
-            mini_GUI.simple_popup(Vector2(50000, 50000), 'bottomright', self.txts['lista actualizada'],
-                                  self.txts['lista actualizada']),
+            mini_GUI.more_objs.aviso1((50000, 50000), 'bottomright', self.txts['lista actualizada'],self.font_mononoki),
             group='lista_descargas'
         )
+
+    def func_borrar_todas_las_descargas(self):
+        shutil.rmtree(self.carpeta_cache)
+        self.DB.borrar_todo()
+        self.reload_lista_descargas()
+
 
     def func_paste_url(self, url=False):
         'Pegar la url en el input'
@@ -230,7 +241,6 @@ class Other_funcs:
     def toggle_LDM(self):
         self.low_detail_mode = not self.low_detail_mode
         self.btn_config_LDM.text = ''if self.low_detail_mode else ''
-        self.framerate = 60 if not self.low_detail_mode else 30
         self.lista_descargas.smothscroll = not self.low_detail_mode
     
     def toggle_enfoques(self):

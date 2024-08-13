@@ -107,6 +107,7 @@ def download_window(num,text):
 
 wins = Semaforo(1,1)
 identificador = 0
+program_opened = False
 down_winds = []
 errors = []
 app = Flask("listener")
