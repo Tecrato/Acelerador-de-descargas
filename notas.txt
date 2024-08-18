@@ -8,5 +8,9 @@ la seleccion multiple pero con la cola de por medio
 
 entonces, el programa lo que va a hacer es capturar si el archivo .exe del programa ya se inicio, si es asi llama a front.
 
+no sirve el boton de recargar lista.
+
+al abrir el archivo del control de versiones, el programa se queda pegado
+
 para las descargas le manda al listener el id de la descarga, para que sepa que se esta descargando, y tambien pueda
 hacer una comprobacion mejor para evitar descargar un archivo si ya se esta descargando
