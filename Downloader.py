@@ -332,7 +332,7 @@ class Downloader:
 
             self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',url,{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
-            tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+            tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
                 print(response.headers)
                 raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
@@ -468,7 +468,7 @@ class Downloader:
             re.prepare_headers(headers if self.can_reanudar else {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
             response = self.prepared_session.send(re, stream=True, allow_redirects=True, timeout=15)
 
-            tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+            tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
                 raise DifferentTypeError('ay')
 
@@ -642,7 +642,7 @@ class Downloader:
                 
             if time.time() - self.speed_deltatime.last_time > 1/15:
                 self.speed_deltatime.update()
-                vel = self.peso_descargado_vel * self.speed_deltatime.dt * 15
+                vel = self.peso_descargado_vel * self.speed_deltatime.dt * 10
                 self.peso_descargado_vel = 0
 
                 self.list_vels.append(vel)

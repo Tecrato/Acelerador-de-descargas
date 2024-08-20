@@ -206,7 +206,7 @@ class DownloadManager(Other_funcs):
                                                func=self.func_add_download_to_DB)
 
         self.input_newd_url = Input((self.new_download_rect.left + 20, self.new_download_rect.top + 100), 12,
-                                         width=300, height= 20, font=self.font_mononoki, text_value='url de la descarga', max_letter=400,
+                                         width=300, height= 20, font=self.font_mononoki, text_value='url de la descarga', max_letter=800,
                                          dire='left')
         self.input_newd_paste = Button('', 22, self.font_simbolos,
                                              (self.input_newd_url.right, self.input_newd_url.pos.y), (20, 10),
@@ -493,7 +493,7 @@ con su navegador de preferencia"),
                 response = requests.get(self.url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
 
-            tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+            tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             pprint(response.headers) #Accept-Ranges
             if 'bytes' in response.headers.get('Accept-Ranges', ''):
                 self.btn_newd_hilos.pos = (self.text_newd_hilos.left, self.text_newd_hilos.bottom + 10)
@@ -512,6 +512,7 @@ con su navegador de preferencia"),
             # print(response.headers)
             self.new_file_size = int(response.headers.get('content-length', 1))
             if self.new_file_size < 8 *self.threads:
+                print(response.text)
                 raise LowSizeError('Peso muy pequeño')
             peso_formateado = format_size(self.new_file_size)
             self.text_newd_size.text = f'{peso_formateado[1]:.2f}{self.nomenclaturas[peso_formateado[0]]}'

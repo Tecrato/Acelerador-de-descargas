@@ -16,9 +16,9 @@ os.chdir(Path(__file__).parent)
 
 def descargar_archivo(url,name,num):
     try:
-        response = requests.get(url, stream=True, timeout=20)
+        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}, stream=True, timeout=20)
         print(response.headers)
-        tipo = response.headers.get('Content-Type', 'text/plain;a').split(';')[0]
+        tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         if tipo in ['text/plain', 'text/html']:
             raise Exception('a')
         peso = int(response.headers.get('content-length', 1))

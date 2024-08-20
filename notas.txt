@@ -4,7 +4,7 @@ limitador de velocidad
 
 la seleccion multiple pero con la cola de por medio
 
-
+colocar porcentaje a los hilos
 
 entonces, el programa lo que va a hacer es capturar si el archivo .exe del programa ya se inicio, si es asi llama a front.
 
