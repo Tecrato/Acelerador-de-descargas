@@ -75,6 +75,7 @@ class Data_Base:
     def añadir_descarga(self,nombre,tipo,peso,url,partes,url_page=None,tiempo=None):
         self.cursor.execute("INSERT INTO descargas (nombre,tipo,peso,url,url_page,partes,fecha,estado) VALUES(?,?,?,?,?,?,?,?)",(nombre,tipo,peso,url,url_page,partes,time.time() if not tiempo else tiempo,'esperando'))
         self.DB.commit()
+        return self.cursor.lastrowid
         
     def eliminar_descarga(self,id):
         self.cursor.execute("DELETE FROM descargas WHERE id=?",(id,))
@@ -103,3 +104,6 @@ class Data_Base:
     def borrar_todo(self):
         self.cursor.execute('DELETE FROM descargas WHERE 1')
         self.DB.commit()
+
+    def close(self):
+        self.DB.close()

@@ -3,7 +3,7 @@
 ProjectFileVersion = 1.1
 [General]
 Program name = Acelerador de descargas
-Program version = 2.11.2.1
+Program version = 3.0
 Windows XP = 0
 Windows Server 2003 = 0
 Windows Vista = 0
@@ -78,6 +78,18 @@ Execdlls = 0
 2
 3
 [Files/Dirs]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
+34.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd
+54.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd
+31.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
+81.8 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
 122.3 KB
 pyd
@@ -106,7 +118,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 2.5 KB
 png
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe
-3.2 MB
+3.3 MB
 exe
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Downloader.exe
 3.4 MB
@@ -154,7 +166,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 437 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\listener.exe
-5 MB
+5.1 MB
 exe
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
 182 Byte
@@ -165,6 +177,9 @@ dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pyexpat.pyd
 197.3 KB
 pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python3.dll
+66.8 KB
+dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python312.dll
 6.6 MB
 dll
@@ -222,6 +237,9 @@ N/A
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe
 N/A
 [Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\psutil
+N/A
+[Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pygame
 N/A
 [Folder]
@@ -257,18 +275,6 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
 156.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
-34.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd
-54.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd
-31.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
-81.8 KB
 pyd
 [Licence_Begin]
 1362

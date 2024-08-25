@@ -3,32 +3,30 @@ var valor = true
 function activar() {
 	chrome.storage.local.get('activa_extension_acc_des_Edouard')
 	.then(respuesta => {
-		console.log(respuesta);
 		valor = respuesta['activa_extension_acc_des_Edouard']
 })}
+activar()
 
-setInterval(() => {
-	activar()
-}, 1000)
 
 chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
-	const regex = /(.whl|.exe|.iso|.cia|.apk|.rar|.zip|.jar|.mp3|.mp4|.mkv|.flv|.avi)$/i
-	activar()
-	if (regex.test(item.filename) && valor == true) {
-		const data = {
-		fileUrl: item.url,
-		name: item.filename
-		}
-		fetch('http://127.0.0.1:5000/add_download', {
-			method: 'POST',
+	let extension = item.filename.split('.').pop()
+	extension = extension.toLowerCase()
+	activar();
+
+	fetch('http://127.0.0.1:5000/extencion/check/' + extension)
+	.then(response => response.json())
+	.then(n => {
+	  if (n['respuesta'] == true && valor == true) {
+			chrome.downloads.cancel(item.id);
+			fetch('http://127.0.0.1:5000/descargas/add_web?url=' + item.url + '&nombre=' + item.filename, {
+			method: 'GET',
 			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(data)
+			'Content-Type': 'application/json'
+		  }
 		})
-		chrome.downloads.cancel(item.id)
-		chrome.downloads.erase({id:item.id})
-		suggest()
-	}
-	
+	  } else {
+		suggest({filename: item.filename, conflictAction: 'uniquify'})
+		}
+	});
+	return true
 });

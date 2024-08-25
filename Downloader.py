@@ -14,19 +14,14 @@ from Utilidades import GUI, mini_GUI
 from Utilidades import multithread
 from Utilidades import win32_tools
 from Utilidades import format_date
+from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES
 
 from textos import idiomas
 from my_warnings import *
-from DB import Data_Base
+
+from constants import DICT_CONFIG_DEFAULT
 
 pag.init()
-
-def format_size(size) -> list:
-    count = 0
-    while size > 1024:
-        size /= 1024
-        count += 1
-    return [count, size]
 
 
 class Downloader:
@@ -50,8 +45,7 @@ class Downloader:
         self.carpeta_config = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
         self.carpeta_config.mkdir(parents=True, exist_ok=True)
 
-        self.Database = Data_Base(self.carpeta_config.joinpath('./downloads.sqlite3'))
-        self.raw_data = self.Database.buscar_descarga(id)
+        self.raw_data = requests.get(f'http://127.0.0.1:5000/descargas/get/{id}').json()
 
         self.id: int = self.raw_data[0]
         self.file_name: str = self.raw_data[1]
@@ -66,7 +60,7 @@ class Downloader:
         pag.display.set_caption(f'Downloader {self.id}_{self.file_name}')
 
         self.division = self.peso_total // self.num_hilos
-        self.peso_total_formateado = format_size(self.peso_total)
+        self.peso_total_formateado = format_size_bits_to_bytes(self.peso_total)
 
         self.paused = True
         self.canceled = False
@@ -81,20 +75,23 @@ class Downloader:
         self.finished = False
         self.detener_5min = True
         self.fallo_destino = False
+        self.low_detail_mode = False
         self.last_change = time.time()
         self.db_update = time.time()
         self.speed_deltatime = Utilidades.Deltatime(15,10)
         self.intentos = 0
+        self.chunk = 128
         self.list_vels: list[int] = []
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
 
-        self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}_{"".join(self.file_name.split(".")[:-1])}')
+        self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
         self.hilos_listos = 0
         self.lista_status_hilos: list[dict] = []
         self.lista_status_hilos_text: list[Text] = []
+        self.lista_status_hilos_porcentaje: list[Text] = []
         self.surface_hilos = pag.Surface((self.ventana_rect.w // 2, self.ventana_rect.h - 70))
         self.surface_hilos.fill((254, 1, 1))
         self.surface_hilos.set_colorkey((254, 1, 1))
@@ -103,14 +100,6 @@ class Downloader:
 
         self.peso_descargado = 0
         self.peso_descargado_vel = 0
-
-        self.nomenclaturas = {
-            0: 'bytes',
-            1: 'Kb',
-            2: 'Mb',
-            3: 'Gb',
-            4: 'Tb'
-        }
 
         self.prepared_request = requests.Request('GET', 'https://www.google.com').prepare()
         self.prepared_session = requests.session()
@@ -154,7 +143,7 @@ class Downloader:
 
         self.Titulo = Text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, self.font_mononoki, (10, 50), 'left')
         self.text_tamaño = Text(self.txts['descripcion-peso'].format(
-            f'{self.peso_total_formateado[1]:.2f}{self.nomenclaturas[self.peso_total_formateado[0]]}'), 12,
+            f'{self.peso_total_formateado[1]:.2f}{UNIDADES_BYTES[self.peso_total_formateado[0]]}'), 12,
             self.font_mononoki, (10, 70), 'left')
         self.text_url = Text(f'url: {(self.url if len(self.url) < 37 else (self.url[:39] + "..."))}', 12,
                                     self.font_mononoki, (10, 90), 'left')
@@ -211,10 +200,11 @@ class Downloader:
         try:
             self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
         except:
-            self.configs = {}
-        self.idioma = self.configs.get('idioma', 'español')
-        self.enfoques = self.configs.get('enfoques', True)
-        self.detener_5min = self.configs.get('enfoques', True)
+            self.configs = DICT_CONFIG_DEFAULT
+        self.idioma = self.configs['idioma']
+        self.enfoques = self.configs['enfoques']
+        self.detener_5min = self.configs['detener_5min']
+        self.low_detail_mode = self.configs['ldm']
         self.txts = idiomas[self.idioma]
 
         self.save_dir = self.configs.get('save_dir',user_downloads_dir())
@@ -338,9 +328,10 @@ class Downloader:
                 raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
 
             peso = int(response.headers.get('content-length', 0))
-            if peso < 8 *self.num_hilos or peso != self.peso_total:
+            if peso < self.chunk *self.num_hilos or peso != self.peso_total:
                 raise LowSizeError('Peso muy pequeño')
 
+            self.intentos = 0
             self.can_download = True
             self.last_change = time.time()
             if 'bytes' not in response.headers.get('Accept-Ranges', ''):
@@ -358,7 +349,7 @@ class Downloader:
             if self.modificador == 2:
                 self.intentos += 1
                 if self.intentos > 10:
-                    sys.exit(0)
+                    self.cerrar_todo('a')
             self.GUI_manager.add(
                 GUI.Desicion(self.ventana_rect.center, 'Error',
                              'El servidor no responde\n\nDesea volver a intentarlo?'),
@@ -384,7 +375,7 @@ class Downloader:
         if self.peso_descargado == 0:
             return
         progreso = (self.peso_descargado / self.peso_total)
-        self.Database.update_estado(self.id, f'{progreso * 100:.2f}%' if float(progreso) != 1.0 else 'Completado')
+        requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.id}/{f'{progreso * 100:.2f}%' if float(progreso) != 1.0 else 'Completado'}')
 
     def start_download(self) -> None:
         if not self.can_download:
@@ -399,12 +390,18 @@ class Downloader:
 
         self.lista_status_hilos.clear()
         self.lista_status_hilos_text.clear()
+        self.lista_status_hilos_porcentaje.clear()
         self.pool_hilos.shutdown(True, cancel_futures=True)
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
         for x in range(self.num_hilos):
             self.lista_status_hilos_text.append(
                 Text(self.txts['status_hilo[iniciando]'].format(x), 12, self.font_mononoki, (50, (30 * x) + 5),
-                            'left', with_rect=True, color_rect=(20, 20, 20)))
+                            'left', with_rect=True, color_rect=(20, 20, 20))
+            )
+            self.lista_status_hilos_porcentaje.append(
+                Text('0%', 12, self.font_mononoki, (self.surface_hilos.get_width(), (30 * x) + 5),
+                            'right', with_rect=True, color_rect=(20, 20, 20))
+            )
             if x == self.num_hilos - 1:
                 self.surf_h_max = self.lista_status_hilos_text[-1].rect.bottom
 
@@ -476,19 +473,19 @@ class Downloader:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
-                for data in response.iter_content(8):
+                for data in response.iter_content(self.chunk):
                     if self.paused or self.canceled:
                         raise Exception('')
                     if not data:
                         continue
                     tanto = len(data)
-                    if self.lista_status_hilos[num]['local_count'] + tanto > self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
-                        d = data[:(self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start'])-self.lista_status_hilos[num]['local_count']+1]
-                        self.lista_status_hilos[num]['local_count'] += len(d)
-                        self.peso_descargado_vel += len(d)
-                        self.peso_descargado += len(d)
-                        file_p.write(d)
-                        break
+                    # if self.lista_status_hilos[num]['local_count'] + tanto > self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
+                    #     d = data[:(self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start'])-self.lista_status_hilos[num]['local_count']+1]
+                    #     self.lista_status_hilos[num]['local_count'] += len(d)
+                    #     self.peso_descargado_vel += len(d)
+                    #     self.peso_descargado += len(d)
+                    #     file_p.write(d)
+                    #     break
                     self.lista_status_hilos[num]['local_count'] += tanto
                     self.peso_descargado_vel += tanto
                     self.peso_descargado += tanto
@@ -545,7 +542,7 @@ class Downloader:
 
         self.pool_hilos.shutdown(False,cancel_futures=True)
 
-        self.Database.update_estado(self.id,  'Completado')
+        self.actualizar_porcentaje_db()
 
         self.can_download = True
         self.drawing = True
@@ -556,9 +553,9 @@ class Downloader:
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
-        if self.cerrar_al_finalizar:
-            pag.quit()
-            sys.exit(1)
+
+        if self.cerrar_al_finalizar or requests.get(f'http://127.0.0.1:5000/descargas/check/{self.id}').json()['cola'] == True:
+            self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
             subprocess.call('shutdown /s /t 10', shell=True)
             self.cerrar_todo('aceptar')
@@ -566,8 +563,8 @@ class Downloader:
         elif self.ejecutar_al_finalizar:
             self.actualizar_porcentaje_db()
             pag.quit()
-            subprocess.run(self.save_dir + '/' + self.file_name, shell=True)
-            sys.exit(0)
+            subprocess.Popen([self.save_dir + '/' + self.file_name], shell=True)
+            sys.exit(1)
 
         self.GUI_manager.add(
             GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta'], (400, 200)),
@@ -632,6 +629,8 @@ class Downloader:
                         self.surf_h_diff += evento.y * 20
                         for x in self.lista_status_hilos_text:
                             x.pos += (0, evento.y * 20)
+                        for x in self.lista_status_hilos_porcentaje:
+                            x.pos += (0, evento.y * 20)
                 elif evento.type == MOUSEMOTION:
                     for x in self.list_to_draw:
                         if isinstance(x, Button):
@@ -652,8 +651,8 @@ class Downloader:
                 
                 media = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
 
-                vel_format = format_size(media)
-                vel_text = f'{vel_format[1]:.2f}{self.nomenclaturas[vel_format[0]]}/s'
+                vel_format = format_size_bits_to_bytes(media)
+                vel_text = f'{vel_format[1]:.2f}{UNIDADES_BYTES[vel_format[0]]}/s'
                 self.text_vel_descarga.text = self.txts['velocidad']+': '+vel_text
 
 
@@ -673,8 +672,8 @@ class Downloader:
             if self.peso_total > 0:
                 progreso = (self.peso_descargado / self.peso_total)
                 self.text_porcentaje.text = f'{progreso * 100:.2f}%'
-                descargado = format_size(self.peso_descargado)
-                descargado_text = f'{descargado[1]:.2f}{self.nomenclaturas[descargado[0]]}'
+                descargado = format_size_bits_to_bytes(self.peso_descargado)
+                descargado_text = f'{descargado[1]:.2f}{UNIDADES_BYTES[descargado[0]]}'
                 self.text_peso_progreso.text = self.txts['descargado']+': '+descargado_text
                 self.barra_progreso.volumen = progreso
             
@@ -694,6 +693,12 @@ class Downloader:
             self.ventana.blit(self.display, (0, 0))
 
             self.surface_hilos.fill((254, 1, 1))
+
+            if not self.low_detail_mode:
+                for i,x in enumerate(self.lista_status_hilos_porcentaje):
+                    x.text = f'{int(self.lista_status_hilos[i]['local_count'])/self.division * 100:.2f}%'
+                    x.draw(self.surface_hilos)
+
             for x in self.lista_status_hilos_text:
                 x.draw(self.surface_hilos)
             self.ventana.blit(self.surface_hilos, (self.ventana_rect.centerx, 50))

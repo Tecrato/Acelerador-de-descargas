@@ -1,3 +1,40 @@
+3.0  - 22/8/2024
+Novedades:
+ NUEVA ARQUITECTURA:
+ ->Ahora el programa es el microservicio (el listener.exe) en ese EndPoint es donde se manejara todo lo que sea abrir el programa, crear descargas, la cola de descargas, y todo lo que sea Base de datos.
+ ->Ahora si entendí como se separa un backend de un frontend realmente.
+
+NOTIFICACIONES:
+ ->Ahora el programa crea notificaciones del sistema cuando captura una nueva descarga de la extencion y si falla.
+ ->Nuevo icono en el para la barra de tareas, donde se podra abrir el programa y Finalizar la ejecucion del mismo.
+
+Cosas de codigo:
+ - se movio la funcion para crear los bytes a partir de bits a las Utilidades.
+ - Añadido un constans.py para el diccionario por defecto, el titulo, resolucion, minima resolucion, y la version actual
+ - las unidades de bytes ahora estan en Utilidades.math
+ - Ahora recargar la lista de descargas se hace en un thread aparte, para que se pueda ver el loader.
+ - Ahora las funciones de los botones estan en el archivo principal, ya fastidiaba que no escontrara las referencias a las variables.
+
+Optimizaciones:
+ - Ahora al limpiar la cola de descargas, se cambia solo el texto de esacolunma, es mucho mas rapido que recargar toda la lista.
+ - La barra de la lista en un poco mas ancha.
+
+Cosas Nuevas:
+ - Ahora se ven los porcentajes de cada hilo de descarga, para mas informacion de saber cuanto le falta a la descarga.
+ - Nueva lista en configuraciones para seleccionar que extenciones se van a descargar desde el navegador.
+
+Correcciones:
+ - Ya no se queda pegado el programa al abrir el archivo txt de las versiones.
+ - Ya funciona el boton de recargar la lista.
+ - Daba error algunas veces que los headers de la descarga no traian el tipo de archivo que se esta descargando, ahora tiene por defecto que el tipo sea "Nose" :), para cuando el requests no traiga el tipo de archivo.
+ - Las listas actualizaban el texto doble cuando se movian con el mouse, no afectaba en nada pero no se veia bien, parecian 20 FPS.
+ - Arreglado el metodo para obtener actualizaciones, tenia variables que no eran xD.
+ - Como ahora la base de datos la maneja exclusivamente el listener, ya no debe dar error de base de datos bloqueada.
+ - Ya la extension de chrome no da errores xD.
+
+
+Para luego:
+ - Se podra modificar el tamaño del chunk de la descarga.
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
 
 2.11.2.1
