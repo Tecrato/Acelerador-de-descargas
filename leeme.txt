@@ -2,4 +2,5 @@ ejecutar el "cerrar_listener.exe" si ya tiene una version instalada del acelerad
 
 si el listener continua activo y intenta instalar una actualizacion, dara error.
 
-psdt: no puee descargar archivos de sourceforge
+el archivo "extension.crx" se debe ejecutar con el navegador, 
+de momento es para los navegadores basados en chromiun (opera, chrome, edge)

@@ -289,6 +289,13 @@ icon = pystray.Icon("AdD", image, "Acelerador de descargas",
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+    
+    try:
+        requests.get('http://127.0.0.1:5000/check')
+        os._exit(0)
+    except requests.exceptions.ConnectionError:
+        pass
+
     a = Thread(target=icon.run,name='Icono',daemon=True)
     a.start()
     

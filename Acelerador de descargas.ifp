@@ -78,6 +78,27 @@ Execdlls = 0
 2
 3
 [Files/Dirs]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
+69.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
+83.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
+122.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
+251.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_elementtree.pyd
+130.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd
+64.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
+156.3 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
 34.8 KB
 pyd
@@ -130,7 +151,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 639 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt
-1.5 KB
+1.8 KB
 txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libcrypto-3.dll
 5 MB
@@ -166,7 +187,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 437 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\listener.exe
-5.1 MB
+5.4 MB
 exe
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
 182 Byte
@@ -217,7 +238,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 48.4 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-2.3 KB
+4.6 KB
 txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
 106 KB
@@ -235,6 +256,9 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\PIL
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\psutil
@@ -258,24 +282,6 @@ N/A
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
 N/A
 [Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
-69.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
-83.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
-122.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
-251.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd
-64.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
-156.3 KB
-pyd
 [Licence_Begin]
 1362
 {\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil Arial;}{\f1\fnil\fcharset0 Arial;}}
@@ -320,12 +326,6 @@ Acelerador de descargas
 Startmenu
 Acelerador de descargas
 <InstallPath>\Download Manager.exe
-
-<InstallPath>\descargas.ico
-0
-Startmenu
-listener
-<InstallPath>\listener.exe
 
 <InstallPath>\descargas.ico
 0

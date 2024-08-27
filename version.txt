@@ -1,3 +1,10 @@
+3.0.1 - 26/8/2024
+Correcciones:
+ - Se corrigio que el listener se podia habrir 2 o mas veces.
+ - Se corrigio el loader al recargar la lista.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
 3.0  - 22/8/2024
 Novedades:
  NUEVA ARQUITECTURA:
@@ -35,6 +42,7 @@ Correcciones:
 
 Para luego:
  - Se podra modificar el tamaño del chunk de la descarga.
+
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
 
 2.11.2.1

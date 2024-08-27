@@ -7,7 +7,6 @@ if not (len(sys.argv) > 1 and str(sys.argv[1]) == '--run'):
     try:
         requests.get('http://127.0.0.1:5000/open_program')
     except requests.exceptions.ConnectionError:
-        # subprocess.Popen(['fastapi','run','listener2.py','--host','0.0.0.0','--port','5000'])
         subprocess.Popen(['listener.exe'])
         time.sleep(3)
         requests.get('http://127.0.0.1:5000/open_program')
@@ -706,7 +705,6 @@ con su navegador de preferencia"),
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for i,x in sorted(enumerate(self.list_to_click_config), reverse=True):
                         if isinstance(x, List) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
-                            print(x)
                             break
                         elif x.click((mx, my)):
                             break
@@ -990,7 +988,6 @@ con su navegador de preferencia"),
             )
 
     def func_añadir_extencion(self):
-        print('aca')
         nombre = askstring('Extencion', 'Ingrese la extencion que desea agregar')
         if not nombre or nombre == '':
             return
@@ -1059,8 +1056,8 @@ con su navegador de preferencia"),
             pass
     
     def reload_lista_descargas(self):
-        self.loading += 1
         try:
+            self.loading += 1
             response = requests.get('http://127.0.0.1:5000/descargas/get_all',timeout=5)
             self.cached_list_DB = response.json()['lista']
             self.cola = response.json()['cola']
@@ -1084,18 +1081,18 @@ con su navegador de preferencia"),
                 estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
                 cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
                 self.lista_descargas.append([nombre, tipo, hilos, peso, estado, cola, txt_fecha])
-        except:
+            self.Mini_GUI_manager.clear_group('lista_descargas')
+            self.Mini_GUI_manager.add(
+                mini_GUI.more_objs.aviso1((50000, 50000), 'bottomright', self.txts['lista actualizada'],self.font_mononoki),
+                group='lista_descargas'
+            )
+        except Exception as err:
+            print(type(err))
+            print(err)
             raise ConnectionError("No se pudo conectar con el servidor")
         finally:
             self.loading -= 1
-
-        self.Mini_GUI_manager.clear_group('lista_descargas')
-        self.Mini_GUI_manager.add(
-            mini_GUI.more_objs.aviso1((50000, 50000), 'bottomright', self.txts['lista actualizada'],self.font_mononoki),
-            group='lista_descargas'
-        )
-        self.loading -= 1
-        self.redraw = True
+            self.redraw = True
 
     def func_borrar_todas_las_descargas(self):
         requests.get('http://127.0.0.1:5000/descargas/delete_all',timeout=5)
