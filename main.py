@@ -185,7 +185,7 @@ class DownloadManager:
 
         self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
                                           10, (10,10,10), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
-                                          fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=5, border_color=(100,100,100),
+                                          fonts=[self.font_mononoki for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=20, border_color=(100,100,100),
                                           smothscroll=True if not self.low_detail_mode else False)
         self.btn_reload_list = Button('', 13, self.font_simbolos, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
@@ -450,25 +450,18 @@ con su navegador de preferencia"),
         self.btn_config_añair_extencion.width =  self.list_config_extenciones.width/2
         self.btn_config_eliminar_extencion.width =  self.list_config_extenciones.width/2
 
-        # if self.ventana_rect.width <= 670:
-        #     self.btn_config_añair_extencion.size =  12
-        #     self.btn_config_eliminar_extencion.size =  12
-        # else:
-        #     self.btn_config_añair_extencion.size =  16
-        #     self.btn_config_eliminar_extencion.size =  16
-
         self.redraw = True
 
 
     def buscar_acualizaciones(self):
        
-        sera = check_update('acelerador de descargas', VERSION, 'last')
-        if not sera:
-            return
-        self.Mini_GUI_manager.clear_group('actualizaciones')
-        self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)),group='actualizaciones')
-        
         try:
+            sera = check_update('acelerador de descargas', VERSION, 'last')
+            if not sera:
+                return
+            self.Mini_GUI_manager.clear_group('actualizaciones')
+            self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)),group='actualizaciones')
+        
             self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
             response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=30)
 
@@ -992,14 +985,14 @@ con su navegador de preferencia"),
         if not nombre or nombre == '':
             return
         self.extenciones.append(nombre)
-        self.list_config_extenciones.change_list(self.extenciones)
+        self.list_config_extenciones.append(nombre)
         self.save_json()
 
 
     def func_eliminar_extencion(self):
         for i,x in sorted(self.list_config_extenciones.get_selects(), reverse=True):
             self.extenciones.pop(i)
-        self.list_config_extenciones.change_list(self.extenciones)
+            self.list_config_extenciones.pop(i)
         self.save_json()
 
     def func_select_box_hilos(self, respuesta) -> None:

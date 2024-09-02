@@ -2,3 +2,4 @@ hacer que separe los archivos descargados en carpetas
 
 limitador de velocidad
 
+cuando se hace click en una miniventana se oprime la lista.

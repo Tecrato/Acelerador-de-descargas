@@ -1,3 +1,14 @@
+3.1 - 2/9/2024
+
+Optimizaciones:
+ - Nueva logica en las listas, ahora carga rapidisimo.
+
+Correcciones:
+ - el minimo ancho de la ventana pasa de 550px a 600px, el boton de recargar la lista queda mal con menos de 600px de ancho de la ventana.
+ - Arreglado el input text para el url, el boton a la dferecha funcionaba rarete.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
 3.0.1 - 26/8/2024
 Correcciones:
  - Se corrigio que el listener se podia habrir 2 o mas veces.

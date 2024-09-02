@@ -87,6 +87,7 @@ def close():
     if lista_descargas:
         notifypy.Notify('Cerrar', f"Cierre todas las descargas antes de continuar", "Acelerador de descargas", 'normal', "./descargas.ico").send()
         return
+    icon.stop()
     os._exit(0)
 # --------------------------------------- Programa --------------------------------------- #
 
@@ -188,8 +189,6 @@ def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:i
 
 @app.route("/descargas/add_web", methods=["GET"])
 def add_descarga_web():
-    
-
     response1 = request.args.to_dict()
     
     notifypy.Notify('Descargar', f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
@@ -296,11 +295,11 @@ if __name__ == '__main__':
     except requests.exceptions.ConnectionError:
         pass
 
-    a = Thread(target=icon.run,name='Icono',daemon=True)
-    a.start()
+    icon.run_detached()
     
     # app.run('0.0.0.0', 5000, debug=True, threaded=True)
     from waitress import serve
     serve(app, host="0.0.0.0", port=5000)
+    icon.stop()
 
 
