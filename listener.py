@@ -5,6 +5,8 @@ import shutil
 import multiprocessing
 import notifypy
 import pystray
+import win32gui
+
 
 from PIL import Image
 from DB import Data_Base
@@ -17,8 +19,6 @@ from constants import DICT_CONFIG_DEFAULT, TITLE
 
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS, cross_origin
-
-import win32gui
 
 
 def windowEnumerationHandler(hwnd, windows):
@@ -138,8 +138,6 @@ def update_url(id:int, url: str):
 
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
 def update_estado(id:int, estado: str):
-    if id in lista_descargas:
-        return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     get_db().update_estado(id, estado)
     return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'})
 

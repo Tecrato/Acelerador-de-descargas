@@ -145,7 +145,7 @@ textos_ingles = {
     'agregar nueva descarga': 'Add new download',
     'añadir a la cola': 'Add to queue',
     'agregar a la cola': 'Add to queue',
-    'añadir': 'Añadir',
+    'añadir': 'Add',
     'año': 'Year',
     'apagar': 'Turn off',
     'apagar-al-finalizar': 'Turn off at the end',

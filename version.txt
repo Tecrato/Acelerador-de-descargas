@@ -1,3 +1,13 @@
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
+3.2 - 16/9/2024
+
+Correcciones:
+ - Solucionado que no actualizaba el estado de las descargas.
+ - Cuando se escogia abrir al finalizar, el programa seguia ligado al archivo, y si era una actualizacion, no se instalaba (arreglado).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+
 3.1 - 2/9/2024
 
 Optimizaciones:

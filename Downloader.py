@@ -19,7 +19,7 @@ from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES
 from textos import idiomas
 from my_warnings import *
 
-from constants import DICT_CONFIG_DEFAULT
+from constants import DICT_CONFIG_DEFAULT, FONT_MONONOKI
 
 pag.init()
 
@@ -106,10 +106,6 @@ class Downloader:
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
-        # self.font_mononoki = 'C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        # self.font_simbols = 'C:/Users/Edouard/Documents/fuentes/Symbols.ttf'
-        self.font_mononoki = './Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf'
-        self.font_simbols = './Assets/fuentes/Symbols.ttf'
 
         self.cargar_configs()
         self.generate_objects()
@@ -127,7 +123,6 @@ class Downloader:
 
     def generate_objects(self) -> None:
         # Cosas varias
-        Utilidades.GUI.configs['fuente_simbolos'] = self.font_simbols
         self.GUI_manager = GUI.GUI_admin()
         self.mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
         self.Func_pool = multithread.Funcs_pool()
@@ -141,32 +136,32 @@ class Downloader:
 
         # ------------------------------------------- Textos y botones -----------------------------------
 
-        self.Titulo = Text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, self.font_mononoki, (10, 50), 'left')
+        self.Titulo = Text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, FONT_MONONOKI, (10, 50), 'left')
         self.text_tamaño = Text(self.txts['descripcion-peso'].format(
             f'{self.peso_total_formateado[1]:.2f}{UNIDADES_BYTES[self.peso_total_formateado[0]]}'), 12,
-            self.font_mononoki, (10, 70), 'left')
+            FONT_MONONOKI, (10, 70), 'left')
         self.text_url = Text(f'url: {(self.url if len(self.url) < 37 else (self.url[:39] + "..."))}', 12,
-                                    self.font_mononoki, (10, 90), 'left')
+                                    FONT_MONONOKI, (10, 90), 'left')
         self.text_num_hilos = Text(self.txts['descripcion-numero_hilos'].format(self.num_hilos), 12,
-                                          self.font_mononoki, (10, 110), 'left')
-        self.text_estado_general = Text(self.txts['descripcion-state[esperando]'], 12, self.font_mononoki,
+                                          FONT_MONONOKI, (10, 110), 'left')
+        self.text_estado_general = Text(self.txts['descripcion-state[esperando]'], 12, FONT_MONONOKI,
                                                (10, 130), 'left')
 
-        self.text_peso_progreso = Text('0b', 14, self.font_mononoki, (10, self.ventana_rect.centery + 10),
+        self.text_peso_progreso = Text('0b', 14, FONT_MONONOKI, (10, self.ventana_rect.centery + 10),
                                               'topleft', padding=(20,10), color_rect=(20, 20, 20))
-        self.text_vel_descarga = Text(self.txts['velocidad'] + ': ' + '0kb/s', 14, self.font_mononoki,
+        self.text_vel_descarga = Text(self.txts['velocidad'] + ': ' + '0kb/s', 14, FONT_MONONOKI,
                                              (10, self.ventana_rect.centery + 34),
                                              'topleft', padding=(20,10))
-        self.text_tiempo_restante = Text(self.txts['tiempo restante'] + ': 0Seg', 14, self.font_mononoki,
+        self.text_tiempo_restante = Text(self.txts['tiempo restante'] + ': 0Seg', 14, FONT_MONONOKI,
                                              (10, self.ventana_rect.centery + 58),
                                              'topleft', padding=(20,10))
 
-        self.text_porcentaje = Text('0.00%', 14, self.font_mononoki, (175, self.ventana_rect.bottom - 50),
+        self.text_porcentaje = Text('0.00%', 14, FONT_MONONOKI, (175, self.ventana_rect.bottom - 50),
                                            'center', padding=(300, 5))
 
-        self.text_title_hilos = Text(self.txts['title_hilos'], 14, self.font_mononoki, (550, 30), 'center')
+        self.text_title_hilos = Text(self.txts['title_hilos'], 14, FONT_MONONOKI, (550, 30), 'center')
 
-        self.btn_cancelar_descarga = Button(self.txts['cancelar'], 16, self.font_mononoki, ((700 / 2) / 3, 20),
+        self.btn_cancelar_descarga = Button(self.txts['cancelar'], 16, FONT_MONONOKI, ((700 / 2) / 3, 20),
                                                   (20, 10), 'center', 'black',
                                                   'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=lambda:
             self.GUI_manager.add(
@@ -176,12 +171,12 @@ class Downloader:
                 self.func_cancelar
             ))
 
-        self.btn_pausar_y_reanudar_descarga = Button(self.txts['reanudar'], 16, self.font_mononoki,
+        self.btn_pausar_y_reanudar_descarga = Button(self.txts['reanudar'], 16, FONT_MONONOKI,
                                                            (((700 / 2) / 3) * 2, 20), (20, 10), 'center', 'black',
                                                            'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
                                                            func=self.func_reanudar)
 
-        self.btn_more_options = Button('', 16, self.font_simbols, ((700/2)-1, 20), 10, 'right', 'white',
+        self.btn_more_options = Button('', 16, FONT_MONONOKI, ((700/2)-1, 20), 10, 'right', 'white',
                                              (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
                                              func=self.func_select_of_options)
 
@@ -395,11 +390,11 @@ class Downloader:
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
         for x in range(self.num_hilos):
             self.lista_status_hilos_text.append(
-                Text(self.txts['status_hilo[iniciando]'].format(x), 12, self.font_mononoki, (50, (30 * x) + 5),
+                Text(self.txts['status_hilo[iniciando]'].format(x), 12, FONT_MONONOKI, (50, (30 * x) + 5),
                             'left', with_rect=True, color_rect=(20, 20, 20))
             )
             self.lista_status_hilos_porcentaje.append(
-                Text('0%', 12, self.font_mononoki, (self.surface_hilos.get_width(), (30 * x) + 5),
+                Text('0%', 12, FONT_MONONOKI, (self.surface_hilos.get_width(), (30 * x) + 5),
                             'right', with_rect=True, color_rect=(20, 20, 20))
             )
             if x == self.num_hilos - 1:
@@ -479,13 +474,6 @@ class Downloader:
                     if not data:
                         continue
                     tanto = len(data)
-                    # if self.lista_status_hilos[num]['local_count'] + tanto > self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
-                    #     d = data[:(self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start'])-self.lista_status_hilos[num]['local_count']+1]
-                    #     self.lista_status_hilos[num]['local_count'] += len(d)
-                    #     self.peso_descargado_vel += len(d)
-                    #     self.peso_descargado += len(d)
-                    #     file_p.write(d)
-                    #     break
                     self.lista_status_hilos[num]['local_count'] += tanto
                     self.peso_descargado_vel += tanto
                     self.peso_descargado += tanto
@@ -563,7 +551,7 @@ class Downloader:
         elif self.ejecutar_al_finalizar:
             self.actualizar_porcentaje_db()
             pag.quit()
-            subprocess.Popen([self.save_dir + '/' + self.file_name], shell=True)
+            os.startfile(self.save_dir + '/' + self.file_name)
             sys.exit(1)
 
         self.GUI_manager.add(
