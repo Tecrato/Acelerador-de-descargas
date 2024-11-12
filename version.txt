@@ -1,4 +1,15 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.3 - 12/11/2024
+
+Correcciones:
+ - Cambios en las Utilidades.
+ - Ahora la extencion si marca cuando esta desactivada.
+ - Corregido cuando la url que se pasa es invalida o da error.
+
+Añadidos:
+ - Nuevo logger, ahora el programa va generando un log.txt de su uso.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 
 3.2 - 16/9/2024
 

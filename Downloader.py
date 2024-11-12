@@ -1,4 +1,11 @@
-import pygame as pag, sys, os, time, requests, json, subprocess, shutil
+import pygame as pag
+import sys
+import os
+import time
+import requests
+import json
+import subprocess
+import shutil
 
 from platformdirs import user_downloads_dir, user_cache_path, user_config_path
 from concurrent.futures import ThreadPoolExecutor
@@ -7,14 +14,12 @@ from urllib.parse import urlparse
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 
-import Utilidades
-
-from Utilidades import Text, Button, Barra_de_progreso, get_mediafire_url
-from Utilidades import GUI, mini_GUI
+from Utilidades_pygame import Text, Button, Barra_de_progreso, GUI, mini_GUI
 from Utilidades import multithread
 from Utilidades import win32_tools
 from Utilidades import format_date
-from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES
+from Utilidades import web_tools
+from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES, Deltatime
 
 from textos import idiomas
 from my_warnings import *
@@ -78,7 +83,7 @@ class Downloader:
         self.low_detail_mode = False
         self.last_change = time.time()
         self.db_update = time.time()
-        self.speed_deltatime = Utilidades.Deltatime(15,10)
+        self.speed_deltatime = Deltatime(15,10)
         self.intentos = 0
         self.chunk = 128
         self.list_vels: list[int] = []
@@ -303,7 +308,7 @@ class Downloader:
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'r+') as file:
                         url = file.read()
                 else:
-                    url = get_mediafire_url(self.url)
+                    url = web_tools.get_mediafire_url(self.url)
                     if not url: raise Exception('no cargo xD')
                     with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'w') as file:
                         file.write(url)

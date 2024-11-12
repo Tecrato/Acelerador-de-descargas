@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function () {
   chrome.storage.local.get('activa_extension_acc_des_Edouard').then(res => {
     if (res['activa_extension_acc_des_Edouard'] == true) {
       boton.setAttribute('checked','')
+    } else if (res['activa_extension_acc_des_Edouard'] == false) {
+      boton.removeAttribute('checked')
+    } else {
+      boton.setAttribute('checked','')
     }
   })
   

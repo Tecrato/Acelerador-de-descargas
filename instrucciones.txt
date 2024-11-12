@@ -16,6 +16,7 @@ Limitantes:
  - Existen varios links que aún no funcionan con la application, recomendable desactivar mediante la ventana de la extencion en caso de tenerla activada.
  - Problemas para que brave instale la extension, algún día subiré la extension a la web store.
 
+English:
 
 General Buttons:
 

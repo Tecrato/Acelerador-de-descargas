@@ -17,22 +17,24 @@ if not (len(sys.argv) > 1 and str(sys.argv[1]) == '--run'):
 
 
 
-import Utilidades
 import json
 import pygame as pag
 import shutil
 import datetime
 import pyperclip
+import datetime
 
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 from threading import Thread
 from urllib.parse import urlparse, unquote
-from Utilidades import Text, Button, List, Multi_list, GUI, mini_GUI, Input,  UNIDADES_BYTES, Deltatime
-from Utilidades import Funcs_pool, check_update, get_mediafire_url, win32_tools
+from Utilidades_pygame import Text, Button, List, Multi_list, GUI, mini_GUI, Input
+from Utilidades import Funcs_pool, win32_tools, Deltatime,  UNIDADES_BYTES
+from Utilidades.web_tools import get_mediafire_url, check_update
 from Utilidades import format_size_bits_to_bytes
+from Utilidades.logger import Logger
 from Utilidades.figuras.engranajes import Engranaje
-from platformdirs import user_config_path, user_cache_path, user_downloads_dir, user_desktop_path, user_pictures_path
+from platformdirs import user_config_path, user_cache_path, user_downloads_dir, user_desktop_path, user_pictures_path, user_log_path
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
@@ -89,6 +91,7 @@ class DownloadManager:
         self.framerate: int = 60
         self.relog: pag.time.Clock = pag.time.Clock()
         self.delta_time: Deltatime = Deltatime(60)
+        self.logger = Logger('Acelerador de descargas', user_log_path())
         
         self.idioma: str = 'español'
         self.txts = idiomas[self.idioma]
@@ -97,12 +100,13 @@ class DownloadManager:
         self.Func_pool.add('actualizacion', self.buscar_acualizaciones)
         self.Func_pool.add('reload list',self.reload_lista_descargas)
 
+        self.logger.write(f"Acelerador de descargas iniciado en {datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
+
         self.load_resources()
         self.generate_objs()
         self.Func_pool.start('reload list')
         self.move_objs()
         
-
         self.Func_pool.start('actualizacion')
 
         self.screen_main_bool: bool = True
@@ -149,20 +153,26 @@ class DownloadManager:
         self.configs['apagar al finalizar cola'] = self.apagar_al_finalizar_cola
         self.configs['extenciones'] = self.extenciones
 
+        self.logger.write(f"Configuraciones guardadas")
+        self.logger.write(self.configs)
+
         json.dump(self.configs, open(self.carpeta_config.joinpath('./configs.json'), 'w'))
 
     def generate_objs(self) -> None:
         # Cosas varias
-        Utilidades.GUI.configs['fuente_simbolos'] = FONT_SIMBOLS
+        GUI.configs['fuente_simbolos'] = FONT_SIMBOLS
         self.GUI_manager = GUI.GUI_admin()
         self.Mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
 
         # Loader
         self.loader = [
-            Engranaje((self.ventana_rect.w - 40, self.ventana_rect.h - 80), 8, 5, 20, 20, (153,44,170)),
-            Engranaje((self.ventana_rect.w - 70, self.ventana_rect.h - 50), 8, 5, 20, 0, (190,70,210)),
-            Engranaje((self.ventana_rect.w - 90, self.ventana_rect.h - 75), 4, 5, 10, 30, (190,60,230)),
+            Engranaje((self.ventana_rect.w - 40, self.ventana_rect.h - 80), 8, 5, 20, 20),
+            Engranaje((self.ventana_rect.w - 70, self.ventana_rect.h - 50), 8, 5, 20, 0),
+            Engranaje((self.ventana_rect.w - 90, self.ventana_rect.h - 75), 4, 5, 10, 30),
         ]
+        self.loader[0].color = (153,44,170)
+        self.loader[1].color = (190,70,210)
+        self.loader[2].color = (190,60,230)
 
         # Pantalla principal
         self.txt_title = Text(self.txts['title'], 26, FONT_MONONOKI, (self.ventana_rect.centerx, 30),with_rect=True,color_rect=(20,20,20))
@@ -455,11 +465,15 @@ con su navegador de preferencia"),
         try:
             sera = check_update('acelerador de descargas', VERSION, 'last')
             if not sera:
+                self.logger.write(f"No se encontró una nueva actualización")
                 return
+            self.logger.write(f"Se a encontrado una nueva actualizacion\n\nObteniendo link...")
+
             self.Mini_GUI_manager.clear_group('actualizaciones')
             self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)),group='actualizaciones')
         
             self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
+            self.logger.write(f"Obteniendo informacion de {self.data_actualizacion['url']}")
             response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=30)
 
             self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
@@ -487,6 +501,9 @@ con su navegador de preferencia"),
             return
 
         self.can_add_new_download = False
+
+        self.logger.write(f"Comprobando url: {self.url}")
+
         title: str = urlparse(self.url).path
         title: str = title.split('/')[-1]
         title: str = title.split('?')[0]
@@ -511,12 +528,16 @@ con su navegador de preferencia"),
                             self.text_newd_filename.text = self.new_filename
                             break
                     url = get_mediafire_url(self.url)
-                except:
+                except Exception as err:
+                    print(err)
+                    print(type(err))
                     raise LinkCaido('nt')
                 response = requests.get(url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
             else:
                 response = requests.get(self.url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
+            self.logger.write(f"Informacion obtenida")
+            self.logger.write(response.headers)
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             print(response.headers) #Accept-Ranges
@@ -556,6 +577,7 @@ con su navegador de preferencia"),
             self.text_newd_status.text = self.txts['estado']+': '+self.txts['disponible']
 
             self.can_add_new_download = True
+
             return
         except requests.URLRequired:
             return
@@ -646,7 +668,9 @@ con su navegador de preferencia"),
                 self.loader[2].angle += 2
 
                 for x in self.loader:
-                    x.draw(self.ventana)
+                    pag.draw.circle(self.ventana, x.color, x.pos,x.radio)
+                    for y in x.dientes:
+                        pag.draw.polygon(self.ventana, x.color, y.figure)
 
             pag.display.update()
             self.redraw = False
@@ -668,7 +692,12 @@ con su navegador de preferencia"),
                 self.loader[2].angle += 2
 
                 for x in self.loader:
-                    self.updates.append(x.draw(self.ventana))
+                    pag.draw.circle(self.ventana, x.color, x.pos,x.radio)
+                    for y in x.dientes:
+                        pag.draw.polygon(self.ventana, x.color, y.figure)
+
+                # for x in self.loader:
+                #     self.updates.append(x.draw(self.ventana))
 
             self.updates = list(filter(lambda ele: isinstance(ele, pag.Rect),self.updates))
 
@@ -813,7 +842,6 @@ con su navegador de preferencia"),
             if not self.drawing:
                 continue
             self.draw_objs(self.list_to_draw)
-
 
     def screen_extras(self):
         if self.screen_extras_bool:

@@ -1,27 +1,17 @@
 class MyException(Exception):
-    def __init__(self, mensaje) -> None:
-        super().__init__(mensaje)
-
+    pass
 
 class DifferentTypeError(Exception):
-    def __init__(self, mensaje):
-        super().__init__(mensaje)
-
+    pass
 
 class LowSizeError(Exception):
-    def __init__(self, mensaje):
-        super().__init__(mensaje)
-
+    pass
 
 class TrajoHTML(Exception):
-    def __int__(self, mensaje):
-        super().__init__(mensaje)
-
+    pass
 
 class LinkCaido(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+    pass
         
 class DifferentSizeError(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+    pass

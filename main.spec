@@ -25,6 +25,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=2,
 )
 pyz = PYZ(a.pure)
 
@@ -62,6 +63,7 @@ a2 = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=2,
 )
 pyz2 = PYZ(a2.pure)
 
@@ -97,6 +99,7 @@ a3 = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=2,
 )
 pyz3 = PYZ(a3.pure)
 

@@ -4,3 +4,5 @@ si el listener continua activo y intenta instalar una actualizacion, dara error.
 
 el archivo "extension.crx" se debe ejecutar con el navegador, 
 de momento es para los navegadores basados en chromiun (opera, chrome, edge)
+
+Psdt: debo subirlo a chrome web store, ya los navegadores lo bloquean
