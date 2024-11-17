@@ -8,6 +8,6 @@ Aun tiene algunos errores, cualquier duda o sugerencia pueden enviarmela al corr
 ahora si pueden usar las utilidades, deben descargar la libreria de utilidades, requests, pywin32, platformdirs, flask y alguna otra que se requiera en las utilidades.
 ya con estas librerias, puede ejecutar el codigo.
 
-Link de la ultima version (3.0):
-[https://www.mediafire.com/file/gugs3hyaslz1hr8/Acelerador_de_descargas_V3.0.rar/file](https://www.mediafire.com/file/gugs3hyaslz1hr8/Acelerador_de_descargas_V3.0.rar/file)
+Link de la ultima version (3.3.1):
+[https://www.mediafire.com/file/uqb3ki0qa7lwpb0/Acelerador+de+descargas+V3.3.1.rar/file](https://www.mediafire.com/file/uqb3ki0qa7lwpb0/Acelerador+de+descargas+V3.3.1.rar/file)
 
