@@ -247,7 +247,7 @@ class Downloader:
             sys.exit(0)
 
     def func_reanudar(self) -> None:
-        if not self.can_download: return 0
+        if not self.can_download: return
         self.paused = False
         self.canceled = False
         self.btn_pausar_y_reanudar_descarga.text = self.txts['pausar']
@@ -301,26 +301,9 @@ class Downloader:
         self.downloading = False
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
-            parse = urlparse(self.url)
+            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
-            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path:
-                if os.path.exists(self.carpeta_cache.joinpath(f'./url cache.txt')):
-                    with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'r+') as file:
-                        url = file.read()
-                else:
-                    url = web_tools.get_mediafire_url(self.url)
-                    if not url: raise Exception('no cargo xD')
-                    with open(self.carpeta_cache.joinpath(f'./url cache.txt'), 'w') as file:
-                        file.write(url)
-            else:
-                url = self.url
-            response = requests.get(url, stream=True, allow_redirects=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
-
-            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path and int(response.headers.get('Expires', 123123)) == 0:
-                os.remove(self.carpeta_cache.joinpath(f'./url cache.txt'))
-                return self.crear_conexion()
-
-            self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',url,{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
+            self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',self.url,{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
@@ -328,7 +311,7 @@ class Downloader:
                 raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
 
             peso = int(response.headers.get('content-length', 0))
-            if peso < self.chunk *self.num_hilos or peso != self.peso_total:
+            if peso < self.chunk * self.num_hilos or peso != self.peso_total:
                 raise LowSizeError('Peso muy pequeño')
 
             self.intentos = 0

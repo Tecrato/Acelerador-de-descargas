@@ -1,4 +1,16 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.3.1 - 17/11/2024
+
+Correcciones:
+ - Ahora si funcion el logger para la interfaz grafica principal.
+ - Añadido el default a las variables que se setean con el config.json, para evitar futuros errores.
+ - Añadido id en la lista de descargas.
+
+Cambios:
+ - Como ya no sirve hacer web scraping a mediafire, ahora la miniventana de actualizaciones muestra un boton que manda al link para el navegador.
+ - Y ya no tiene nada mas para sacar el url de mediafire automatico.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.3 - 12/11/2024
 
 Correcciones:

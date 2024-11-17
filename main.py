@@ -20,7 +20,6 @@ if not (len(sys.argv) > 1 and str(sys.argv[1]) == '--run'):
 import json
 import pygame as pag
 import shutil
-import datetime
 import pyperclip
 import datetime
 
@@ -91,7 +90,7 @@ class DownloadManager:
         self.framerate: int = 60
         self.relog: pag.time.Clock = pag.time.Clock()
         self.delta_time: Deltatime = Deltatime(60)
-        self.logger = Logger('Acelerador de descargas', user_log_path())
+        self.logger = Logger('Acelerador de descargas(UI)', user_log_path('Acelerador de descargas', 'Edouard Sandoval'))
         
         self.idioma: str = 'español'
         self.txts = idiomas[self.idioma]
@@ -129,14 +128,14 @@ class DownloadManager:
             self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
-        self.threads = self.configs['hilos']
-        self.enfoques = self.configs['enfoques']
-        self.detener_5min = self.configs['detener_5min']
-        self.low_detail_mode = self.configs['ldm']
+        self.threads = self.configs.get('hilos',DICT_CONFIG_DEFAULT['hilos'])
+        self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
+        self.detener_5min = self.configs.get('detener_5min',DICT_CONFIG_DEFAULT['detener_5min'])
+        self.low_detail_mode = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
 
-        self.idioma = self.configs['idioma']
-        self.save_dir = self.configs['save_dir']
-        self.apagar_al_finalizar_cola = self.configs['apagar al finalizar cola']
+        self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
+        self.save_dir = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
+        self.apagar_al_finalizar_cola = self.configs.get('apagar al finalizar cola',DICT_CONFIG_DEFAULT['apagar al finalizar cola'])
         self.extenciones = self.configs.get('extenciones',DICT_CONFIG_DEFAULT['extenciones'])
         self.txts = idiomas[self.idioma]
 
@@ -149,7 +148,7 @@ class DownloadManager:
         self.configs['ldm'] = self.low_detail_mode
 
         self.configs['idioma'] = self.idioma
-        self.configs['save_dir'] = self.save_dir
+        self.configs['save_dir'] = str(self.save_dir)
         self.configs['apagar al finalizar cola'] = self.apagar_al_finalizar_cola
         self.configs['extenciones'] = self.extenciones
 
@@ -191,9 +190,9 @@ class DownloadManager:
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
-        self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
-                                          10, (10,10,10), header_text=[self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
-                                          fonts=[FONT_MONONOKI for _ in range(7)], colums_witdh=[0, .27, .41, .49, .63, .77, .85], padding_left=20, border_color=(100,100,100),
+        self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 8, None, 11,
+                                          10, (10,10,10), header_text=["id",self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
+                                          fonts=[FONT_MONONOKI for _ in range(8)], colums_witdh=[0, .065, .27, .41, .49, .65, .79, .86], padding_left=20, border_color=(100,100,100),
                                           smothscroll=True if not self.low_detail_mode else False)
         self.btn_reload_list = Button('', 13, FONT_SIMBOLS, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
@@ -464,10 +463,15 @@ con su navegador de preferencia"),
     def buscar_acualizaciones(self):
         try:
             sera = check_update('acelerador de descargas', VERSION, 'last')
+        except:
+            self.logger.write('No se encontró una nueva actualización')
+            return
+        try:
             if not sera:
                 self.logger.write(f"No se encontró una nueva actualización")
                 return
-            self.logger.write(f"Se a encontrado una nueva actualizacion\n\nObteniendo link...")
+            self.logger.write(f"\nSe a encontrado una nueva actualizacion\nObteniendo link...")
+            self.logger.write(f"{sera}")
 
             self.Mini_GUI_manager.clear_group('actualizaciones')
             self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)),group='actualizaciones')
@@ -488,12 +492,23 @@ con su navegador de preferencia"),
                 lambda _: (requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.data_actualizacion['url'], "tipo": self.data_actualizacion['file_type'], 'hilos': self.threads, 'nombre': self.data_actualizacion['file_name'], 'size':self.data_actualizacion['size']}),self.Func_pool.start('reload list')),
                 group='actualizaciones'
             )
-            self.redraw = True
         except Exception as err:
             self.Mini_GUI_manager.clear_group('actualizaciones')
-            self.Mini_GUI_manager.add(mini_GUI.simple_popup(Vector2(50000,50000), 'bottomright', self.txts['actualizacion'], 'Error al obtener actualizacion.', (250,100)),group='actualizaciones')
+            self.Mini_GUI_manager.add(
+                mini_GUI.desicion_popup(
+                    Vector2(50000,50000),
+                    self.txts['actualizacion'], 
+                    'Error al obtener actualizacion.',
+                    (250,100),
+                    "abrir link",
+                    'bottomright',
+                ),
+                func=lambda x: (os.startfile(sera['url']) if x != 'exit' else None),
+                group='actualizaciones'
+            )
             print(type(err))
             print(err)
+        self.redraw = True
 
 
     def comprobar_url(self) -> None:
@@ -505,36 +520,23 @@ con su navegador de preferencia"),
         self.logger.write(f"Comprobando url: {self.url}")
 
         title: str = urlparse(self.url).path
-        title: str = title.split('/')[-1]
-        title: str = title.split('?')[0]
-        title: str = title.replace('+', ' ')
-        title: str = unquote(title)
+        for x in title.split('/')[::-1]:
+            if '.' in x:
+                title = unquote(x).replace('+', ' ')
+                break
+        else:
+            title: str = title.split('/')[-1]
+            title: str = unquote(title).replace('+', ' ')
 
         self.new_filename = title
-        if len(title) > 33:
-            title = title[:33] + '...'
-
-
-        self.text_newd_filename.text = f'{title}'
+        if len(self.new_filename) > 33:
+            self.new_filename = self.new_filename[:33] + '...'
+        else:
+            self.text_newd_filename.text = f'{self.new_filename}'
 
         self.text_newd_status.text = self.txts['descripcion-state[conectando]']
         try:
-            parse = urlparse(self.url)
-            if (parse.netloc == "www.mediafire.com" or parse.netloc == ".mediafire.com") and 'file' in parse.path:
-                try:
-                    for x in parse.path[1:].split('/'):
-                        if '.' in x:
-                            self.new_filename = x
-                            self.text_newd_filename.text = self.new_filename
-                            break
-                    url = get_mediafire_url(self.url)
-                except Exception as err:
-                    print(err)
-                    print(type(err))
-                    raise LinkCaido('nt')
-                response = requests.get(url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
-            else:
-                response = requests.get(self.url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
+            response = requests.get(self.url, stream=True, timeout=15,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
             self.logger.write(f"Informacion obtenida")
             self.logger.write(response.headers)
@@ -578,7 +580,7 @@ con su navegador de preferencia"),
 
             self.can_add_new_download = True
 
-            return
+            return None
         except requests.URLRequired:
             return
         except (requests.exceptions.InvalidSchema,requests.exceptions.MissingSchema):
@@ -633,7 +635,6 @@ con su navegador de preferencia"),
                 size.y = MIN_RESOLUTION[1]
             self.ventana = pag.display.set_mode(size, pag.RESIZABLE|pag.DOUBLEBUF)
             self.ventana_rect = self.ventana.get_rect()
-
             self.move_objs()
             return True
         elif self.loading > 0:
@@ -1088,6 +1089,7 @@ con su navegador de preferencia"),
                 return 0
             
             for row in self.cached_list_DB:
+                id = row[0]
                 nombre = row[1]
                 tipo = row[2].split('/')[0]
                 peso_formateado = format_size_bits_to_bytes(row[3])
@@ -1098,7 +1100,7 @@ con su navegador de preferencia"),
                 txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
                 estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
                 cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
-                self.lista_descargas.append([nombre, tipo, hilos, peso, estado, cola, txt_fecha])
+                self.lista_descargas.append([id,nombre, tipo, hilos, peso, estado, cola, txt_fecha])
             self.Mini_GUI_manager.clear_group('lista_descargas')
             self.Mini_GUI_manager.add(
                 mini_GUI.more_objs.aviso1((50000, 50000), 'bottomright', self.txts['lista actualizada'],FONT_MONONOKI),
