@@ -23,6 +23,10 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
 			headers: {
 			'Content-Type': 'application/json'
 		  }
+		}).then(response => {
+			if (response.json()['status'] == 'error'){
+				suggest({filename: item.filename, conflictAction: 'uniquify'})
+			}	
 		})
 	  } else {
 		suggest({filename: item.filename, conflictAction: 'uniquify'})
