@@ -26,12 +26,11 @@ from my_warnings import *
 
 from constants import DICT_CONFIG_DEFAULT, FONT_MONONOKI
 
-pag.init()
-
 
 class Downloader:
     def __init__(self, id, modificador=0) -> None:
-
+        pag.init()
+        
         self.ventana = pag.display.set_mode((700, 300))
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
@@ -89,6 +88,7 @@ class Downloader:
         self.list_vels: list[int] = []
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
+        self.returncode = 0
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -230,7 +230,8 @@ class Downloader:
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
-            os.startfile(self.save_dir if self.fallo_destino else user_downloads_dir())
+            file = (Path(self.save_dir)/self.file_name) if self.fallo_destino else user_downloads_dir()
+            subprocess.call([f'explorer /select,"{file}"'])
         self.cerrar_todo('a')
 
     def cerrar_todo(self, result):
@@ -242,9 +243,10 @@ class Downloader:
         self.pool_hilos.shutdown(False)
         pag.quit()
         if self.finished:
-            sys.exit(1)
+            self.returncode = 1
         else:
-            sys.exit(0)
+            self.returncode = 0
+        sys.exit(self.returncode)
 
     def func_reanudar(self) -> None:
         if not self.can_download: return
@@ -540,7 +542,8 @@ class Downloader:
             self.actualizar_porcentaje_db()
             pag.quit()
             os.startfile(self.save_dir + '/' + self.file_name)
-            sys.exit(1)
+            self.returncode = 1
+            sys.exit(self.returncode)
 
         self.GUI_manager.add(
             GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta'], (400, 200)),

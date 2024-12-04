@@ -1,4 +1,11 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.4 - 4/12/2024
+
+Cambios:
+ - Ahora el listener obtiene tanto las ventanas para descargar asi como la UI principal como clases, por lo que ya no se tendran ejecutables aparate, esto tambien soluciona el nombre en el administrador de tareas, de listener.exe a Download Manager
+ - Al aceptar abrir la carpeta donde se guardo el archivo, ahora tambien selecciona el archivo en si para mayor rapidez buscandolo.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.3.1 - 17/11/2024
 
 Correcciones:

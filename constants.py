@@ -14,7 +14,7 @@ DICT_CONFIG_DEFAULT = {
 TITLE = 'Download Manager by Edouard Sandoval'
 RESOLUCION = [800, 550]
 MIN_RESOLUTION = [600,450]
-VERSION = '3.3.1'
+VERSION = '3.4.0'
 
 # FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
 # FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"

@@ -8,10 +8,10 @@ import pystray
 import datetime
 
 
+from multiprocessing import Process
 from PIL import Image
 from DB import Data_Base
 from pathlib import Path
-from subprocess import Popen
 from threading import Thread
 from platformdirs import user_config_path, user_cache_path, user_log_path
 
@@ -22,6 +22,8 @@ from flask_cors import CORS, cross_origin
 
 from Utilidades import win32_tools, Logger
 
+from main import DownloadManager
+from Downloader import Downloader
 
 os.chdir(Path(__file__).parent)
 carpeta_config = Path(user_config_path('Acelerador de descargas', 'Edouard Sandoval'))
@@ -63,7 +65,7 @@ def get_conf(key: str):
 
 lista_descargas = []
 cola: list[int] = []
-cola_iniciada = False
+cola_iniciada = 0
 program_opened = False
 program_thread = None
 
@@ -85,6 +87,7 @@ def close():
     get_logger().write(f'Logger: Cerrando el programa {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     icon.stop()
     os._exit(0)
+    raise Exception('adadad')
 # --------------------------------------- Programa --------------------------------------- #
 
 @app.route("/open_program", methods=["GET"])
@@ -102,8 +105,7 @@ def open_program():
 def open_program_thread():
     global program_opened
     program_opened = True
-    Popen(['Download Manager.exe','--run'],shell=True).wait()
-    # Popen(['main.py','--run'],shell=True).wait()
+    DownloadManager()
     program_opened = False
 
 @app.route("/extencion/check/<name>")
@@ -150,21 +152,28 @@ def download(id: int):
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     
-    if id in cola and cola_iniciada == True:
+    if id in cola and cola_iniciada > 0:
         return jsonify({"message": "Descarga en cola", "code":2, 'status':'error'})
     elif id in cola:
-        cola_iniciada = True
-    Thread(target=init_download,args=(id,),daemon=True).start()
+        cola_iniciada += 1
+    Thread(target=init_download,args=(id,)).start()
+    
+    
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'})
 
 def init_download(id):
     global cola, cola_iniciada
     lista_descargas.append(id)
     get_logger().write(f'Logger: Iniciando descarga {id} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
-    proceso = Popen(['Downloader.exe',f'{id}','2' if id in cola else '0'],shell=True)
-    proceso.wait()
 
-    if id in cola and proceso.returncode == 1:
+    p = Process(name=f'Descarga {id} - Download Manager by Edouard Sandoval',target=Downloader,args=(id,'2' if id in cola else '0'),daemon=True)
+    p.start()
+    p.join()
+    # c = Downloader(id,'2' if id in cola else '0')
+    print("Termino " + str(id))
+    print(p.exitcode)
+
+    if id in cola and p.exitcode == 1:
         cola.remove(id)
 
         if len(cola) > 0:
@@ -175,6 +184,9 @@ def init_download(id):
         if get_conf('apagar al finalizar cola'):
             get_logger().write(f'Logger: Apagando el sistema por finalizar la cola de descargas {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")} \n')
             os.system('shutdown /s /t 30 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"')
+    if id in cola:
+        cola_iniciada -= 1
+    del p
     lista_descargas.remove(id)
     
 @app.route("/descargas/add_from_program" , methods=["GET"])
@@ -275,10 +287,10 @@ def after_click(icon, query):
         else:
             win32_tools.front(TITLE)
     elif str(query) == "Salir":
-        icon.stop()
+        # icon.stop()
         requests.get("http://127.0.0.1:5000/api_close")
 
-        raise Exception('adadad')
+        # raise Exception('adadad')
     elif str(query) == "Open log":
         get_logger().open()
 
@@ -297,7 +309,7 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     
     try:
-        requests.get('http://127.0.0.1:5000/check')
+        requests.get('http://127.0.0.1:5000/open_program')
         os._exit(0)
     except requests.exceptions.ConnectionError:
         pass

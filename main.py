@@ -4,19 +4,6 @@ import time
 import os
 from pathlib import Path
 
-os.chdir(Path(__file__).parent)
-if not (len(sys.argv) > 1 and str(sys.argv[1]) == '--run'):
-    try:
-        requests.get('http://127.0.0.1:5000/open_program')
-    except requests.exceptions.ConnectionError:
-        os.startfile(Path(__file__).parent / 'listener.exe')
-        time.sleep(3)
-        requests.get('http://127.0.0.1:5000/open_program')
-    finally:
-        sys.exit()
-
-
-
 import json
 import pygame as pag
 import shutil
@@ -121,6 +108,8 @@ class DownloadManager:
             self.cicle_try += 1
             for x in self.ciclo_general:
                 x()
+
+        pag.quit()
 
 
     def load_resources(self):
@@ -610,8 +599,14 @@ con su navegador de preferencia"),
     def eventos_en_comun(self, evento: pag.event.Event):
         mx, my = pag.mouse.get_pos()
         if evento.type == QUIT:
-            pag.quit()
-            sys.exit()
+            self.cicle_try = 20
+
+            self.screen_main_bool: bool = False
+            self.screen_new_download_bool: bool = False
+            self.screen_configs_bool: bool = False
+            self.screen_extras_bool: bool = False
+            # pag.quit()
+            # sys.exit()
         elif evento.type == pag.KEYDOWN and evento.key == pag.K_F12:
             momento = datetime.datetime.today().strftime('%d-%m-%y %f')
             pag.image.save(self.ventana,self.carpeta_screenshots.joinpath('Download Manager {}.png'.format(momento)))
@@ -814,8 +809,9 @@ con su navegador de preferencia"),
                     self.redraw = True
                     continue
                 elif evento.type == KEYDOWN and evento.key == K_ESCAPE:
-                    pag.quit()
-                    sys.exit()
+                    self.screen_main_bool = False
+                    # pag.quit()
+                    # sys.exit()
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     for i,x in sorted(enumerate(self.list_to_click), reverse=True):
                         if isinstance(x, Multi_list) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
@@ -1193,4 +1189,15 @@ con su navegador de preferencia"),
 
 
 if __name__ == '__main__':
+    os.chdir(Path(__file__).parent)
+    if not (len(sys.argv) > 1 and str(sys.argv[1]) == '--run'):
+        try:
+            requests.get('http://127.0.0.1:5000/open_program')
+        except requests.exceptions.ConnectionError:
+            os.startfile(Path(__file__).parent / 'listener.exe')
+            time.sleep(3)
+            requests.get('http://127.0.0.1:5000/open_program')
+        finally:
+            sys.exit()
+
     clase = DownloadManager()
