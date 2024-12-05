@@ -230,8 +230,13 @@ class Downloader:
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
-            file = (Path(self.save_dir)/self.file_name) if self.fallo_destino else user_downloads_dir()
-            subprocess.call([f'explorer /select,"{file}"'])
+            if not self.fallo_destino:
+                file = Path(self.save_dir)/self.file_name
+            else:
+                file = user_downloads_path()/self.file_name
+            print(file)
+
+            subprocess.call(['explorer','/select,{}'.format(file)], shell = True)
         self.cerrar_todo('a')
 
     def cerrar_todo(self, result):
