@@ -9,15 +9,16 @@ DICT_CONFIG_DEFAULT = {
     'save_dir': user_downloads_path(), # Directorio por defecto donde se guardarán los archivos descargados. Puedes cambiarlo a cualquier ruta que desees.
     'apagar al finalizar cola': False, # Si se establece en True, el sistema se apagará automáticamente una vez que se haya procesado toda la cola de descargas.
     'extenciones': ['whl','exe','msi','iso','cia','apk','zip','rar','jar','tar','gz','iso','mp3','mp4','mkv','flv','avi'], # Lista de extensiones de archivo que se permitirán descargar. Puedes agregar o eliminar extensiones según tus necesidades.
+    'velocidad_limite': 0 # Límite de velocidad en kb/s para las descargas. Si se establece en 0, no se aplicará ningún límite.
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
 RESOLUCION = [800, 550]
 MIN_RESOLUTION = [600,450]
-VERSION = '3.4.0'
-
-# FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
-# FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"
+VERSION = '3.5.0'
 
 FONT_MONONOKI = "./Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
 FONT_SIMBOLS = "./Assets/fuentes/Symbols.ttf"
+
+# FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
+# FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"

@@ -1,9 +1,20 @@
-hacer que separe los archivos descargados en carpetas
+# Errores:
+ - parchear la url cuando se manda desde la extencion.
+ - no actualiza la url
+    - hacer que el siguiente link que resiva cambie el url de una descarga.
 
-limitador de velocidad
 
-cuando se hace click en una miniventana se oprime la lista.
+# Cambios:
+ - pasar el parametro de mouse_pos a los updates
+ - que cuando no cambie por 1 minuto (mas o menos), cambiar la sesion con la que se esta descargando.
 
-ponerle borde a las miniventanas
 
-cambiar chunk_size
+# Cosas nuevas:
+ - hacer que separe los archivos descargados en carpetas
+ - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
+ - conectar la interfaz con socket.
+    - cuando este conectada con socket, se puede hacer una ventana a parte para las configuraciones, y notificarle los cambios.
+ - Ventana para cancelar el apagado automatico.
+
+# Exagerado:
+ - descargar Torrent's

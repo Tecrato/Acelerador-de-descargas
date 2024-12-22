@@ -3,7 +3,7 @@
 ProjectFileVersion = 1.1
 [General]
 Program name = Acelerador de descargas
-Program version = 3.4
+Program version = 3.4.1
 Windows XP = 0
 Windows Server 2003 = 0
 Windows Vista = 0
@@ -75,13 +75,28 @@ RunProg =
 RunProgs = 0
 Execdlls = 0
 [Languages]
-2
 3
+2
 [Files/Dirs]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\certifi
+N/A
+[Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\charset_normalizer
 N/A
 [Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\flask-3.1.0.dist-info
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\itsdangerous-2.2.0.dist-info
+N/A
+[Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\MarkupSafe-3.0.2.dist-info
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\PIL
@@ -102,36 +117,60 @@ N/A
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8
 N/A
 [Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\werkzeug-3.1.3.dist-info
+N/A
+[Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
 N/A
 [Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe
-6.4 MB
-exe
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx
-8.2 KB
-crx
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\descargas.ico
-12.6 KB
-ico
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\descargas.png
-2.5 KB
-png
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\cerrar_listener.bat
-118 Byte
-bat
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\base_library.zip
-1.3 MB
-zip
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt
-1.9 KB
-txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
-295 Byte
-txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-6.6 KB
-txt
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
+69.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
+82.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
+128.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
+271.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_elementtree.pyd
+130.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd
+62.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
+154.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
+34.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd
+54.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd
+32.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
+81.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
+125.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ssl.pyd
+177.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tkinter.pyd
+64.8 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_uuid.pyd
+25.3 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_wmi.pyd
+37.3 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-console-l1-1-0.dll
 21.6 KB
 dll
@@ -249,9 +288,30 @@ dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-utility-l1-1-0.dll
 21.6 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\base_library.zip
+1.3 MB
+zip
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\cerrar_listener.bat
+118 Byte
+bat
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\descargas.ico
+12.6 KB
+ico
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\descargas.png
+2.5 KB
+png
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe
+6.3 MB
+exe
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx
+8.2 KB
+crx
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\freetype.dll
 639 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt
+1.9 KB
+txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libcrypto-3.dll
 5 MB
 dll
@@ -285,24 +345,21 @@ dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libwebp-7.dll
 437 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
+295 Byte
+txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\portmidi.dll
 41 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pyexpat.pyd
+196.8 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python313.dll
 5.8 MB
 dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\SDL2.dll
-2.4 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\SDL2_image.dll
-122.5 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\SDL2_mixer.dll
-285 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\SDL2_ttf.dll
-1.5 MB
-dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\select.pyd
+30.3 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\sqlite3.dll
 1.5 MB
 dll
@@ -315,82 +372,25 @@ dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\ucrtbase.dll
 992.8 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\unicodedata.pyd
+693.3 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140.dll
 117.6 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140_1.dll
 48.6 KB
 dll
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
+7.2 KB
+txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
 106 KB
 dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
-69.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
-82.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
-128.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
-271.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_elementtree.pyd
-130.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd
-62.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
-154.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
-34.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd
-54.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd
-32.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
-81.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
-125.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ssl.pyd
-177.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tkinter.pyd
-64.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_uuid.pyd
-25.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_wmi.pyd
-37.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pyexpat.pyd
-196.8 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\select.pyd
-30.3 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\unicodedata.pyd
-693.3 KB
-pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tcl_data
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tk_data
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\certifi
 N/A
 [Folder]
 [Licence_Begin]

@@ -1,5 +1,11 @@
 var valor = true
 
+try{
+	chrome.storage.local.get('activa_extension_acc_des_Edouard')
+} catch(e) {
+	chrome.storage.local.set({'activa_extension_acc_des_Edouard':true});
+}
+
 function activar() {
 	chrome.storage.local.get('activa_extension_acc_des_Edouard')
 	.then(respuesta => {

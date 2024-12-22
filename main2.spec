@@ -15,7 +15,7 @@ datas = [
 
  # main
 a = Analysis(
-    ['listener.py','main.py','Downloader.py'],
+    ['listener.py'],
     datas=datas,
     pathex=[],
     binaries=[],

@@ -6,6 +6,7 @@ import multiprocessing
 import notifypy
 import pystray
 import datetime
+import time
 
 
 from multiprocessing import Process
@@ -17,7 +18,7 @@ from platformdirs import user_config_path, user_cache_path, user_log_path
 
 from constants import DICT_CONFIG_DEFAULT, TITLE
 
-from flask import Flask, request, jsonify, g
+from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
 from Utilidades import win32_tools, Logger
@@ -130,21 +131,21 @@ def read_items():
 @app.route("/descargas/update/url/<int:id>/<url>", methods=["GET"])
 def update_url(id:int, url: str):
     if id in lista_descargas:
-        return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
+        return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     get_db().actualizar_url(id, url)
     return jsonify({"message": "URL actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
-def update_estado(id:int, estado: str):
+def update_estado(id:int, estado: str) -> Response:
     get_db().update_estado(id, estado)
-    return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'})
+    return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/nombre/<int:id>/<nombre>", methods=["GET"])
 def update_name(id:int, nombre: str):
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     get_db().update_nombre(id, nombre)
-    return jsonify({"message": "nombre actualizado", "code":0, 'status':'ok'})
+    return jsonify({"message": "nombre actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/download/<int:id>", methods=["GET"])
 def download(id: int):
@@ -216,6 +217,7 @@ def add_descarga_web():
             hilos = 1
 
         if tipo in ['text/plain', 'text/html'] or peso < 128 * hilos:
+            get_logger().write(response.headers)
             notifypy.Notify('Descargar', f"Error al Obtener informacion de \n\n{response1['nombre']}", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
             return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
@@ -299,11 +301,16 @@ def after_click(icon, query):
 
 icon = pystray.Icon("AdD", image, "Acelerador de descargas",
                     menu=pystray.Menu(
-                        pystray.MenuItem("Abrir programa", after_click),
+                        pystray.MenuItem("Abrir programa", action=after_click,default=True),
                         pystray.MenuItem("Open log", after_click),
                         pystray.MenuItem("Salir", after_click),
                     )
 )
+
+def init():
+    time.sleep(2)
+    requests.get('http://127.0.0.1:5000/open_program')
+    
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
@@ -315,6 +322,8 @@ if __name__ == '__main__':
         pass
 
     icon.run_detached()
+
+    # Thread(target=init).start()
     
     # app.run('0.0.0.0', 5000, debug=True)
     from waitress import serve

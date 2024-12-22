@@ -7,10 +7,11 @@ import json
 import subprocess
 import shutil
 
-from platformdirs import user_downloads_dir, user_cache_path, user_config_path
+
+from platformdirs import user_downloads_dir, user_cache_path, user_config_path, user_downloads_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import urlparse
+from tkinter.simpledialog import askstring
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 
@@ -18,8 +19,7 @@ from Utilidades_pygame import Text, Button, Barra_de_progreso, GUI, mini_GUI
 from Utilidades import multithread
 from Utilidades import win32_tools
 from Utilidades import format_date
-from Utilidades import web_tools
-from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES, Deltatime
+from Utilidades import format_size_bits_to_bytes, UNIDADES_BYTES, Deltatime, format_size_bits_to_bytes_str
 
 from textos import idiomas
 from my_warnings import *
@@ -89,6 +89,7 @@ class Downloader:
         self.save_dir = user_downloads_dir()
         self.relog = pag.time.Clock()
         self.returncode = 0
+        self.velocidad_limite = 0
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -196,18 +197,19 @@ class Downloader:
         self.list_to_click = [self.btn_cancelar_descarga, self.btn_pausar_y_reanudar_descarga, self.btn_more_options]
 
     def cargar_configs(self):
-
         try:
             self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
-        except:
+        except Exception:
             self.configs = DICT_CONFIG_DEFAULT
-        self.idioma = self.configs['idioma']
-        self.enfoques = self.configs['enfoques']
-        self.detener_5min = self.configs['detener_5min']
-        self.low_detail_mode = self.configs['ldm']
-        self.txts = idiomas[self.idioma]
 
-        self.save_dir = self.configs.get('save_dir',user_downloads_dir())
+        self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
+        self.detener_5min = self.configs.get('detener_5min',DICT_CONFIG_DEFAULT['detener_5min'])
+        self.low_detail_mode = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
+        self.velocidad_limite = self.configs.get('velocidad_limite',DICT_CONFIG_DEFAULT['velocidad_limite'])
+
+        self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
+        self.save_dir = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
+        self.txts = idiomas[self.idioma]
 
     def func_pausar(self) -> None:
         self.paused = True
@@ -234,9 +236,7 @@ class Downloader:
                 file = Path(self.save_dir)/self.file_name
             else:
                 file = user_downloads_path()/self.file_name
-            print(file)
-
-            subprocess.call(['explorer','/select,{}'.format(file)], shell = True)
+            subprocess.call(['explorer','/select,{}'.format(file.as_uri())], shell = True)
         self.cerrar_todo('a')
 
     def cerrar_todo(self, result):
@@ -266,14 +266,24 @@ class Downloader:
     def func_select_of_options(self):
         texto1 = self.txts['apagar-al-finalizar'] + ': ' + (self.txts['si'] if self.apagar_al_finalizar else 'No')
         texto2 = self.txts['ejecutar-al-finalizar'] + ': ' + (self.txts['si'] if self.ejecutar_al_finalizar else 'No')
-        self.mini_GUI_manager.add(mini_GUI.select(self.btn_more_options.rect.topright, [texto1,texto2]), self.func_select_box)
+        texto3 = self.txts['limitar-velocidad'] + ': ' + format_size_bits_to_bytes_str(self.velocidad_limite)
+        self.mini_GUI_manager.add(mini_GUI.select(self.btn_more_options.rect.topright, [texto1,texto2, texto3]), self.func_select_box)
 
     def func_select_box(self, result):
         if result['index'] == 0:
             self.func_toggle_apagar()
         elif result['index'] == 1:
             self.func_toggle_ejecutar()
-
+        elif result['index'] == 2:
+            respuesta = askstring('Velocidad limite', 'Ingrese la velocidad limite en kb/s')
+            if not respuesta:
+                return
+            try:
+                self.velocidad_limite = int(respuesta) * 1024
+            except:
+                self.GUI_manager.add(
+                    GUI.Info(self.ventana_rect.center, 'Error', 'Numero invalido'),
+                )
 
     def func_toggle_apagar(self):
         self.apagar_al_finalizar = not self.apagar_al_finalizar
@@ -401,7 +411,9 @@ class Downloader:
                 'start':self.division * x,
                 'end':(self.division*x + self.division-1 if x < self.num_hilos - 1 else self.peso_total - 1),
                 'local_count':0,
-                'tiempo_reset':2
+                'tiempo_reset':2,
+                'time_chunk': 0,
+                'actual_chunk_to_limit': 0
                 })
             self.pool_hilos.submit(self.init_download_thread,x)
         self.last_change = time.time()
@@ -474,6 +486,19 @@ class Downloader:
                     self.peso_descargado += tanto
                     file_p.write(data)
 
+                    if self.velocidad_limite <= 0:
+                        continue
+
+                    self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
+                    actual_time = time.perf_counter()
+                    if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/(self.num_hilos-self.hilos_listos):
+                        self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+                        self.lista_status_hilos[num]['time_chunk'] = actual_time
+                        time.sleep(1-(actual_time-self.lista_status_hilos[num]['time_chunk']))
+                    elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
+                        self.lista_status_hilos[num]['time_chunk'] = actual_time
+                        self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+
             # codigo para comprobar que la parte pese lo mismo que el tamaño que se le asigno, sino borra lo descargado y vulve a empezar
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'rb') as file_p:
                 if self.lista_status_hilos[num]['local_count'] != os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size and self.lista_status_hilos[num]['local_count'] != self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
@@ -540,7 +565,7 @@ class Downloader:
         if self.cerrar_al_finalizar or requests.get(f'http://127.0.0.1:5000/descargas/check/{self.id}').json()['cola'] == True:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
-            subprocess.call('shutdown /s /t 10', shell=True)
+            subprocess.call(f'shutdown /s /t 30 Descarga finalizada - {self.file_name}', shell=True)
             self.cerrar_todo('aceptar')
             return
         elif self.ejecutar_al_finalizar:
@@ -629,11 +654,14 @@ class Downloader:
                 self.peso_descargado_vel = 0
 
                 self.list_vels.append(vel)
-                if len(self.list_vels) > 60:
+                if len(self.list_vels) > 30:
                     self.list_vels.pop(0)
 
                 
                 media = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
+
+                if self.velocidad_limite > 0 and media > self.velocidad_limite:
+                    media = self.velocidad_limite
 
                 vel_format = format_size_bits_to_bytes(media)
                 vel_text = f'{vel_format[1]:.2f}{UNIDADES_BYTES[vel_format[0]]}/s'
@@ -668,6 +696,9 @@ class Downloader:
             if not self.drawing:
                 continue
 
+            for x in self.list_to_draw:
+                x.redraw = 2
+
             pag.draw.rect(self.display, (20,20,20), [0, self.ventana_rect.centery+1, (self.ventana_rect.w/2)-1, self.ventana_rect.h/2])
             self.text_peso_progreso.draw(self.display)
             self.barra_progreso.draw(self.display)
@@ -681,9 +712,11 @@ class Downloader:
             if not self.low_detail_mode:
                 for i,x in enumerate(self.lista_status_hilos_porcentaje):
                     x.text = f'{int(self.lista_status_hilos[i]['local_count'])/self.division * 100:.2f}%'
+                    x.redraw = 2
                     x.draw(self.surface_hilos)
 
             for x in self.lista_status_hilos_text:
+                x.redraw = 2
                 x.draw(self.surface_hilos)
             self.ventana.blit(self.surface_hilos, (self.ventana_rect.centerx, 50))
 

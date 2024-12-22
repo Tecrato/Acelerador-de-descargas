@@ -1,3 +1,33 @@
+3.5.0 - 21/12/2024
+
+Novedades:
+ - Se ha añadido un limite de velocidad para controlar la velocidad de descarga.
+ - Nueva opcion para limitar la velocidad de descarga tanto en la interfaz gráfica principal como en la de descargando.
+
+Cambios:
+ - Al darle click izquierdo en el icono de descarga, se abre la interfaz grafica principal.
+ - 
+
+Correcciones:
+ - Errores con la lista cuando se manejaban las colas.
+ - Prevencion ante posibles problemas con las configuraciones al iniciar una nueva descarga.
+ - Corregido: no mandaba a la carpeta del archivo si tenia espacios en el nombre.
+ - Aumentada un tanto la precision de la velocidad de descarga, de 60 entradas a 30.
+ - arreglado error cuando falla el guardado en la carpeta seleccionada y guarda la descarga en la carpeta por default.
+ - No reiniciaba el progreso en la base de datos al darle a reiniciar a una descarga.
+ - Ahora el select de la lista de descargas se abre 1 pixel hacia abajo y derecha, para evitar dobles clicks inesperados.
+ - Cambiaba el estado de la descarga cuando se cambia el nombre de un archivo.
+
+Enchantements:
+ - Los select ahora son mas bonitos con animaciones para abrir y cerrar.
+ - Eliminadas algunas acciones que se escribian en el logger, innecesarias y ocupan espacio.
+ - Nuevo algoritmo para dibujar botones y cualquier cosa en pantalla, ahora la ventana llega a ocupar 0% del procesador cuando no se mueve si cambia nada. (Lo que mas me costo de la actualizacion)
+ - cuando se le da descargar a un archivo, ya no queda pegada la ventana, ahora sale el loader.
+ - Ahora cuando se actualize la lista de descargas, el scroll vuelve al sitio que estaba.
+
+
+y un par de traducciones
+
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.4.0.1 - 5/12/2024
 
