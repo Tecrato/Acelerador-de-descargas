@@ -3,7 +3,7 @@
 ProjectFileVersion = 1.1
 [General]
 Program name = Acelerador de descargas
-Program version = 3.4.1
+Program version = 3.5.0
 Windows XP = 0
 Windows Server 2003 = 0
 Windows Vista = 0
@@ -75,8 +75,8 @@ RunProg =
 RunProgs = 0
 Execdlls = 0
 [Languages]
-3
 2
+3
 [Files/Dirs]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets
 N/A
@@ -87,16 +87,7 @@ N/A
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\charset_normalizer
 N/A
 [Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\flask-3.1.0.dist-info
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\itsdangerous-2.2.0.dist-info
-N/A
-[Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\MarkupSafe-3.0.2.dist-info
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\PIL
@@ -115,9 +106,6 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\werkzeug-3.1.3.dist-info
 N/A
 [Folder]
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
@@ -306,9 +294,6 @@ exe
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx
 8.2 KB
 crx
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\freetype.dll
-639 KB
-dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt
 1.9 KB
 txt
@@ -318,32 +303,17 @@ dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libffi-8.dll
 38.8 KB
 dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libjpeg-9.dll
-238.5 KB
-dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libmodplug-1.dll
 259 KB
 dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libogg-0.dll
-25 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libopus-0.dll
-359.5 KB
-dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libopusfile-0.dll
 45.5 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libpng16-16.dll
-206 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libssl-3.dll
 774.3 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libtiff-5.dll
 422.5 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libwebp-7.dll
-437 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
 295 Byte
@@ -382,11 +352,8 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 48.6 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-7.2 KB
+8.9 KB
 txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
-106 KB
-dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tcl_data
 N/A
 [Folder]

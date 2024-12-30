@@ -15,6 +15,8 @@
  - conectar la interfaz con socket.
     - cuando este conectada con socket, se puede hacer una ventana a parte para las configuraciones, y notificarle los cambios.
  - Ventana para cancelar el apagado automatico.
+ - comprobacion al iniciar el programa para eliminar las carpetas vacias.
 
 # Exagerado:
  - descargar Torrent's
+ - descargar los archivos que requieren de la sesion actual del navegador.

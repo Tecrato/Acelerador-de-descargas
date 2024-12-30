@@ -1,3 +1,14 @@
+3.5.0.1 - 29/12/2024
+
+Cambios:
+ya no se muestra el tipo de archivo en la lista.
+
+Correcciones:
+ - arreglado el enfoque cuando se abre la interfaz principal.
+ - arreglado el sugerirle al navegador la descarga si el programa no logra descargar el archivo.
+ - Error cuando se intenta descargar un archivo de una pagina web pero el programa no esta ejecutandose.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.5.0 - 21/12/2024
 
 Novedades:

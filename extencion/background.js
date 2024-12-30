@@ -18,25 +18,43 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
 	let extension = item.filename.split('.').pop()
 	extension = extension.toLowerCase()
 	activar();
+	try {
+		fetch('http://127.0.0.1:5000/extencion/check/' + extension)
+		.then(response => response.json())
+		.then(n => {
 
-	fetch('http://127.0.0.1:5000/extencion/check/' + extension)
-	.then(response => response.json())
-	.then(n => {
-	  if (n['respuesta'] == true && valor == true) {
-			chrome.downloads.cancel(item.id);
-			fetch('http://127.0.0.1:5000/descargas/add_web?url=' + item.url + '&nombre=' + item.filename, {
-			method: 'GET',
-			headers: {
-			'Content-Type': 'application/json'
-		  }
-		}).then(response => {
-			if (response.json()['status'] == 'error'){
-				suggest({filename: item.filename, conflictAction: 'uniquify'})
-			}	
-		})
-	  } else {
+			console.log('recibio respuesta')
+			console.log(n)
+			if (n['respuesta'] == true && valor == true) {
+
+				fetch('http://127.0.0.1:5000/descargas/add_web?url=' + item.url + '&nombre=' + item.filename, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
+				}})
+				.then(response2 => response2.json())
+				.then(n2 => {
+					console.log(n2)
+					if (n2['status'] == 'error'){
+						suggest({filename: item.filename, conflictAction: 'uniquify'})
+						console.log('error 1')
+					} else {
+						try{
+							chrome.downloads.cancel(item.id);
+						} catch(e) {
+							valor
+						}
+					}
+				
+				})
+			} else {
+			suggest({filename: item.filename, conflictAction: 'uniquify'})
+			console.log('error 2')
+			}
+		});
+	} catch(e) {
 		suggest({filename: item.filename, conflictAction: 'uniquify'})
-		}
-	});
+		console.log('error 3')
+	}
 	return true
 });

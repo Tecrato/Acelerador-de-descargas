@@ -102,7 +102,8 @@ class DownloadManager:
 
         self.ciclo_general = [self.main_cycle, self.screen_configs, self.screen_extras,self.screen_new_download]
         self.cicle_try = 0
-
+        if self.enfoques:
+            win32_tools.front2(pag.display.get_wm_info()['window'], sw_code=1)
 
         while self.cicle_try < 5:
             self.cicle_try += 1
@@ -171,9 +172,9 @@ class DownloadManager:
                                            (90, 90, 90), 0, 20, border_bottom_left_radius=0, border_top_left_radius=0,
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
-        self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 8, None, 11,
+        self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
                                           10, (10,10,10), header_text=["id",self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
-                                          fonts=[FONT_MONONOKI for _ in range(8)], colums_witdh=[0, .065, .33, .47, .55, .67, .79, .86], padding_left=10, border_color=(100,100,100),
+                                          fonts=[FONT_MONONOKI for _ in range(7)], colums_witdh=[0, .065, .47, .55, .67, .79, .86], padding_left=10, border_color=(100,100,100),
                                           smothscroll=True if not self.low_detail_mode else False)
         self.btn_reload_list = Button('', 13, FONT_SIMBOLS, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
                                             'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,
@@ -895,26 +896,26 @@ con su navegador de preferencia"),
             response = requests.get(f'http://127.0.0.1:5000/cola/add/{obj_cached[0]}').json()
             if response['status'] == 'ok':
                 self.cola.append(obj_cached[0])
-                self.lista_descargas[6][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached[0])}]'         
+                self.lista_descargas[5][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached[0])}]'         
         elif respuesta['index'] == 5:
             # 5 remover de la cola
             response = requests.get(f'http://127.0.0.1:5000/cola/delete/{obj_cached[0]}').json()
             if response['status'] == 'ok':
                 self.cola.remove(obj_cached[0])
-                self.lista_descargas[6][respuesta['obj'][0]['index']] = f' - '   
+                self.lista_descargas[5][respuesta['obj'][0]['index']] = f' - '   
         elif respuesta['index'] == 6:
             # 6 limpiar cola
             response = requests.get(f'http://127.0.0.1:5000/cola/clear').json()
             if response['status'] == 'ok':
                 self.cola.clear()
                 for x in range(len(self.lista_descargas)):
-                    self.lista_descargas[6][x] = f' - '
+                    self.lista_descargas[5][x] = f' - '
         elif respuesta['index'] == 7:
             # 7 reiniciar descarga
             response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
             if response['downloading'] == False and requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached[0]}/esperando').json()['status'] == 'ok':
                 shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}'), True)
-                self.lista_descargas[5][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
+                self.lista_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         elif respuesta['index'] == 8:
             # 8 cambiar nombre
             response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
@@ -1086,7 +1087,6 @@ con su navegador de preferencia"),
             for row in self.cached_list_DB:
                 id = row[0]
                 nombre = row[1]
-                tipo = row[2].split('/')[0]
                 peso_formateado = format_size_bits_to_bytes(row[3])
                 peso = f'{peso_formateado[1]:.2f}{UNIDADES_BYTES[peso_formateado[0]]}'
                 hilos = row[6]
@@ -1095,7 +1095,7 @@ con su navegador de preferencia"),
                 txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
                 estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
                 cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
-                self.lista_descargas.append([id,nombre, tipo, hilos, peso, estado, cola, txt_fecha])
+                self.lista_descargas.append([id,nombre, hilos, peso, estado, cola, txt_fecha])
 
             self.lista_descargas.rodar(diff)
 
