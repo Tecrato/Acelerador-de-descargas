@@ -2,6 +2,7 @@
  - parchear la url cuando se manda desde la extencion.
  - no actualiza la url
     - hacer que el siguiente link que resiva cambie el url de una descarga.
+ - Ya se que va a dar error, asi quequitar un paso en la miniventana de la actualizacion.
 
 
 # Cambios:

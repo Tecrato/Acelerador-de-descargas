@@ -173,7 +173,7 @@ class DownloadManager:
                                            border_width=-1, func=self.func_preguntar_carpeta)
 
         self.lista_descargas: Multi_list = Multi_list((self.ventana_rect.w - 60, self.ventana_rect.h - 140), (30, 120), 7, None, 11,
-                                          10, (10,10,10), header_text=["id",self.txts['nombre'], self.txts['tipo'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
+                                          10, (10,10,10), header_text=["id",self.txts['nombre'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
                                           fonts=[FONT_MONONOKI for _ in range(7)], colums_witdh=[0, .065, .47, .55, .67, .79, .86], padding_left=10, border_color=(100,100,100),
                                           smothscroll=True if not self.low_detail_mode else False)
         self.btn_reload_list = Button('', 13, FONT_SIMBOLS, self.lista_descargas.topright, 16, # (self.ventana_rect.w - 31, 120)
@@ -559,7 +559,7 @@ con su navegador de preferencia"),
                         break
                 print(nuevo_nombre)
                 if isinstance(nuevo_nombre, str):
-                    self.new_filename = nuevo_nombre
+                    self.new_filename = unquote(nuevo_nombre)
                     self.text_newd_filename.text = self.new_filename
 
             self.text_newd_status.text = self.txts['estado']+': '+self.txts['disponible']
@@ -668,7 +668,6 @@ con su navegador de preferencia"),
             except:
                 print('error')
                 print(self.updates)
-                # pag.display.update()
 
     def screen_configs(self):
         if self.screen_configs_bool:
@@ -1127,7 +1126,7 @@ con su navegador de preferencia"),
         if url:
             self.input_newd_url.set(url)
         else:
-            self.input_newd_url.set(pyperclip.paste())
+            self.input_newd_url.set(pyperclip.paste().strip())
 
     def toggle_apagar_al_finalizar_cola(self):
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola

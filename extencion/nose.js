@@ -9,20 +9,4 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }).catch(error => console.error('Error:', error));
   });
-  const boton = document.querySelector('#activar')
-
-  chrome.storage.local.get('activa_extension_acc_des_Edouard').then(res => {
-    if (res['activa_extension_acc_des_Edouard'] == true) {
-      boton.setAttribute('checked','')
-    } else if (res['activa_extension_acc_des_Edouard'] == false) {
-      boton.removeAttribute('checked')
-    } else {
-      boton.setAttribute('checked','')
-    }
-  })
-  
-  boton.addEventListener('click', (btn) => {
-      let checked = btn.target.toggleAttribute('checked')
-      chrome.storage.local.set({'activa_extension_acc_des_Edouard':checked})
-  })
 });

@@ -70,7 +70,7 @@ cola_iniciada = 0
 program_opened = False
 program_thread = None
 
-get_logger().write(f'Logger: Acelerador de descargas iniciado {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+
 
 
 @app.route("/check", methods=["GET"])
@@ -197,9 +197,13 @@ def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:i
     get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'})
 
-@app.route("/descargas/add_web", methods=["GET"])
+@app.route("/descargas/add_web", methods=["POST"])
 def add_descarga_web():
-    response1 = request.args.to_dict()
+    if request.is_json:
+        response1 = request.get_json()
+    else:
+        response1 = request.args.to_dict()
+    print(response1)
     
     get_logger().write(response1)
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])
@@ -208,7 +212,7 @@ def add_descarga_web():
         notifypy.Notify('Descargar', f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
 
         response = requests.get(response1['url'], stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}, timeout=30)
-
+        print(response.headers)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         peso = int(response.headers.get('content-length', 1))
         if 'bytes' in response.headers.get('Accept-Ranges', ''):
@@ -227,7 +231,7 @@ def add_descarga_web():
         notifypy.Notify('Descargar', f"Error al Obtener informacion de \n\n{response1['nombre']}", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
         return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-
+    
     index = get_db().añadir_descarga(response1['nombre'], tipo, peso, response1['url'], hilos)
     Thread(target=init_download,args=(index,)).start()
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
@@ -320,7 +324,13 @@ if __name__ == '__main__':
         os._exit(0)
     except requests.exceptions.ConnectionError:
         pass
+    except Exception as err:
+        print(err)
+        get_logger().write(f'Logger: Error al iniciar el programa {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+        get_logger().write(type(err))
+        get_logger().write(err)
 
+    get_logger().write(f'Logger: Acelerador de descargas iniciado {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     icon.run_detached()
 
     # Thread(target=init).start()

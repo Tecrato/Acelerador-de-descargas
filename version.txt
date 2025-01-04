@@ -1,3 +1,14 @@
+3.5.1 - 29/12/2024
+
+Cambios:
+ - Ahora la peticionde nueva descarga desde la extension, se hace por el metodo POST.
+
+Correcciones:
+ - Arreglado el error cuando se intenta descargar un archivo de una pagina web pero el programa no esta ejecutandose.
+ - Mejorado el algoritmo para limitar la velocidad de descarga.
+ - el tiempo restante se calcula cada 1 segundo.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.5.0.1 - 29/12/2024
 
 Cambios:

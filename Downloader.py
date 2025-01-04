@@ -15,7 +15,7 @@ from tkinter.simpledialog import askstring
 from pygame.constants import (MOUSEBUTTONDOWN, K_ESCAPE, QUIT, KEYDOWN, MOUSEWHEEL, MOUSEMOTION,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 
-from Utilidades_pygame import Text, Button, Barra_de_progreso, GUI, mini_GUI
+from Utilidades_pygame import Text, Button, Barra_de_progreso, GUI, mini_GUI, Input, Select_box
 from Utilidades import multithread
 from Utilidades import win32_tools
 from Utilidades import format_date
@@ -90,6 +90,9 @@ class Downloader:
         self.relog = pag.time.Clock()
         self.returncode = 0
         self.velocidad_limite = 0
+        self.current_velocity = 0
+        self.last_tiempo_restante_update = time.time()
+        self.downloading_threads = 0
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -475,6 +478,7 @@ class Downloader:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
+                self.downloading_threads += 1
                 for data in response.iter_content(self.chunk):
                     if self.paused or self.canceled:
                         raise Exception('')
@@ -491,10 +495,10 @@ class Downloader:
 
                     self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
                     actual_time = time.perf_counter()
-                    if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/(self.num_hilos-self.hilos_listos):
+                    if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/self.downloading_threads:
+                        time.sleep(self.lista_status_hilos[num]['actual_chunk_to_limit'] / (self.velocidad_limite/self.downloading_threads))
                         self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
                         self.lista_status_hilos[num]['time_chunk'] = actual_time
-                        time.sleep(1-(actual_time-self.lista_status_hilos[num]['time_chunk']))
                     elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
                         self.lista_status_hilos[num]['time_chunk'] = actual_time
                         self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
@@ -510,11 +514,13 @@ class Downloader:
             self.lista_status_hilos[num]['status'] = 1
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[finalizado]'].format(num)
             self.hilos_listos += 1
+            self.downloading_threads -= 1
             return
         except (Exception, LowSizeError) as err:
             print(err)
             print(type(err))
 
+            self.downloading_threads -= 1
             if self.canceled:
                 self.lista_status_hilos_text[num].text = self.txts['status_hilo[cancelado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 2
@@ -594,6 +600,47 @@ class Downloader:
         for x in self.lineas_para_separar:
             pag.draw.line(self.display, 'black', x[0], x[1], width=3)
 
+    def draw_objs(self, lista: list[Text|Button|Input|Select_box]):
+        if self.draw_background:
+            self.ventana.fill((20, 20, 20))
+            
+        redraw = self.redraw
+        self.redraw = False
+        if redraw:
+            for x in lista:
+                x.redraw = 2
+
+        if self.loading > 0:
+            self.loader.update(self.delta_time.dt)
+            self.loader.redraw = 1
+        self.updates.clear()
+        for i,x in sorted(enumerate(lista+[self.GUI_manager,self.Mini_GUI_manager,self.loader]),reverse=False):
+            re = x.redraw
+            if isinstance(x, (Button,Select_box,mini_GUI.mini_GUI_admin,GUI.GUI_admin)):
+                r = x.draw(self.ventana, pag.mouse.get_pos())
+            else:
+                r = x.draw(self.ventana)
+            [self.updates.append(s) for s in r]
+            for y in r:
+                for p in lista[i+1:]:
+                    if p.collide(y) and p.redraw < 1:
+                        p.redraw = 1
+            if re < 2:
+                continue
+            for y in r:
+                for p in lista[:i]:
+                    if p.collide(y) and p.redraw < 1:
+                        p.redraw = 1
+        
+        if redraw:
+            pag.display.update()
+        else:
+            try:
+                pag.display.update(self.updates)
+            except:
+                print('error')
+                print(self.updates)
+
     def main_cycle(self) -> None:
         if self.screen_main:
             self.cicle_try: int = 0
@@ -654,21 +701,21 @@ class Downloader:
                 self.peso_descargado_vel = 0
 
                 self.list_vels.append(vel)
-                if len(self.list_vels) > 30:
+                if len(self.list_vels) > 60:
                     self.list_vels.pop(0)
 
                 
-                media = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
+                self.current_velocity = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
 
-                if self.velocidad_limite > 0 and media > self.velocidad_limite:
-                    media = self.velocidad_limite
+                if self.velocidad_limite > 0 and self.current_velocity > self.velocidad_limite:
+                    self.current_velocity = self.velocidad_limite
 
-                vel_format = format_size_bits_to_bytes(media)
+                vel_format = format_size_bits_to_bytes(self.current_velocity)
                 vel_text = f'{vel_format[1]:.2f}{UNIDADES_BYTES[vel_format[0]]}/s'
                 self.text_vel_descarga.text = self.txts['velocidad']+': '+vel_text
 
 
-                if media > 0:
+                if self.current_velocity > 0:
                     self.last_change = time.time()
                 elif time.time() - self.last_change > 300 and self.downloading and self.detener_5min:
                     self.func_pausar()
@@ -678,7 +725,9 @@ class Downloader:
                         lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
                     )
 
-                self.formatear_tiempo_restante(media)
+            if time.time() - self.last_tiempo_restante_update > 1:
+                self.last_tiempo_restante_update = time.time()
+                self.formatear_tiempo_restante(self.current_velocity)
             
 
             if self.peso_total > 0:
