@@ -113,6 +113,7 @@ textos_español = {
     'gui-cola de descarga completada':'La cola de descargas ha finalizado',
     'gui-nombre del archivo':'Nombre del archivo',
     'gui-solo una descarga': 'Opcion solo valida para\nuna descarga a la vez...',
+    'gui-cancelar descarga': '¿Desea cancelar la descarga en curso?',
 
     # Downloader
     
@@ -250,6 +251,7 @@ textos_ingles = {
     'gui-cola de descarga completada':'The download Queue it\'s finished',
     'gui-nombre del archivo':'Name of the file',
     'gui-solo una descarga': 'Opcion only valid for\none download at a time...',
+    'gui-cancelar descarga': 'Do you want cancel the current download?',
 
     # Downloader
     'title_hilos': 'Downloads threads',

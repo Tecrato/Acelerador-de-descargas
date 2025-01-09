@@ -93,6 +93,10 @@ class Downloader:
         self.current_velocity = 0
         self.last_tiempo_restante_update = time.time()
         self.downloading_threads = 0
+        
+        self.default_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
+            }
 
         self.carpeta_cache: Path = self.carpeta_cache.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -111,7 +115,7 @@ class Downloader:
         self.peso_descargado_vel = 0
 
         self.prepared_request = requests.Request('GET', 'https://www.google.com').prepare()
-        self.prepared_session = requests.session()
+        self.prepared_session = requests.Session()
 
         self.idioma = 'español'
         self.txts = idiomas[self.idioma]
@@ -321,9 +325,8 @@ class Downloader:
         self.downloading = False
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
-            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
+            response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
-            self.prepared_request = response.request if self.num_hilos > 0 else requests.Request('GET',self.url,{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
@@ -460,15 +463,14 @@ class Downloader:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
                 time.sleep(.1)
-        headers = {
-            'Range': f'bytes={self.lista_status_hilos[num]['start'] + self.lista_status_hilos[num]['local_count']}-{self.lista_status_hilos[num]['end']}',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
-        }
+        if self.can_reanudar:
+            self.default_headers['Range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
+        else:
+            self.default_headers.pop('Range')
         try:
             self.lista_status_hilos_text[num].text = self.txts['status_hilo[conectando]'].format(num)
-            re = self.prepared_request.copy()
-            re.prepare_headers(headers if self.can_reanudar else {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
-            response = self.prepared_session.send(re, stream=True, allow_redirects=True, timeout=15)
+            
+            response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=headers)
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
@@ -645,7 +647,7 @@ class Downloader:
         if self.screen_main:
             self.cicle_try: int = 0
 
-        self.draw_main()
+        # self.draw_main()
         while self.screen_main:
             self.relog.tick(60)
             mx, my = pag.mouse.get_pos()
