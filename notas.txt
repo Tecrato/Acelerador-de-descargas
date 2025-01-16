@@ -9,6 +9,7 @@
  - pasar el parametro de mouse_pos a los updates
  - que cuando no cambie por 1 minuto (mas o menos), cambiar la sesion con la que se esta descargando.
  - colocar los textos en un archiv json.
+ - Hacer las GUI y mini_GUI denuevo pero con los bloques.
 
 
 # Cosas nuevas:

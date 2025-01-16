@@ -1,3 +1,16 @@
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.6 - 15/1/2025
+# Refactor de la ventana de Download.
+ - tenia que revisar denuevo todo, sino agregarle cosas nuevas iba a ser infumable.
+ - Ademas de usar ahora los bloques para dibujar los hilos y tambien la nueva funcion de draw_objs.
+ - Y bueno, tampoco voy a nombrar todo, literalmente cambie mas del 80% del codigo asi sea de lugar.
+
+# Ventana principal:
+ - El select de limitacion de velocidad ahora muestra menos opciones, y la primera opcion es "off".
+
+A, y algunas traducciones mas.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.5.1 - 29/12/2024
 
 Cambios:

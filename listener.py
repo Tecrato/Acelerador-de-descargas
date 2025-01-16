@@ -174,7 +174,7 @@ def init_download(id):
     print("Termino " + str(id))
     print(p.exitcode)
 
-    if id in cola and p.exitcode == 1:
+    if id in cola and p.exitcode == 3:
         cola.remove(id)
 
         if len(cola) > 0:
@@ -330,7 +330,6 @@ if __name__ == '__main__':
         get_logger().write(type(err))
         get_logger().write(err)
 
-    get_logger().write(f'Logger: Acelerador de descargas iniciado {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     icon.run_detached()
 
     # Thread(target=init).start()
