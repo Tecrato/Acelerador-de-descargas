@@ -62,6 +62,7 @@ textos_español = {
     'lista actualizada': 'Lista actualizada',
     'minuto': 'Minuto',
     'nombre': 'Nombre',
+    'numero invalido': 'Numero invalido',
     'pausar': 'Pausar',
     'pausado': 'Pausado',
     'reanudar': 'Resumir',
@@ -114,6 +115,7 @@ textos_español = {
     'gui-nombre del archivo':'Nombre del archivo',
     'gui-solo una descarga': 'Opcion solo valida para\nuna descarga a la vez...',
     'gui-cancelar descarga': '¿Desea cancelar la descarga en curso?',
+    'gui-no se puede reanudar': 'La descarga no se puede reanudar:\nEl link no permite reanudar la descarga',
 
     # Downloader
     
@@ -201,6 +203,7 @@ textos_ingles = {
     'lista actualizada': 'List updated',
     'minuto': 'Minute',
     'nombre': 'Name',
+    'numero invalido': 'Invalid number',
     'pausar': 'Pause',
     'pausado': 'Paused',
     'reanudar': 'Resume',
@@ -252,6 +255,7 @@ textos_ingles = {
     'gui-nombre del archivo':'Name of the file',
     'gui-solo una descarga': 'Opcion only valid for\none download at a time...',
     'gui-cancelar descarga': 'Do you want cancel the current download?',
+    'gui-no se puede reanudar': 'This download can\'t continue:\nIs not alowed to resume',
 
     # Downloader
     'title_hilos': 'Downloads threads',

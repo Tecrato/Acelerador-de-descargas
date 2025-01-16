@@ -249,7 +249,7 @@ class DownloadManager:
             (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
-        self.select_change_hilos: Select_box = Select_box(self.btn_change_hilos, [1,2,4,8,16,32], auto_open=False, position='right', animation_dir='vertical', func=self.func_select_box_hilos)
+        self.select_change_hilos: Select_box = Select_box(self.btn_change_hilos, [1,2,4,8,16,32], auto_open=False, position='bottom', animation_dir='vertical', text_size=20, padding=5, func=self.func_select_box_hilos)
 
         self.text_config_idioma = Text(self.txts['config-idioma'], 16, FONT_MONONOKI, (30, 130), 'left', padding=10,with_rect=True, color_rect=(20,20,20))
         self.btn_config_idioma_es = Button('Español', 14, FONT_MONONOKI, (30, 160), (20, 10), 'left',
@@ -294,7 +294,7 @@ class DownloadManager:
             (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
-        self.select_config_velocidad = Select_box(self.btn_config_velocidad, [0]+[format_size_bits_to_bytes_str(2**x) for x in range(15,25)], auto_open=False, position='right', animation_dir='vertical', func=self.func_select_box_velocidad)
+        self.select_config_velocidad = Select_box(self.btn_config_velocidad, ['off']+[format_size_bits_to_bytes_str(2**x) for x in [15,16,17,19,20,23,24]], auto_open=False, position='right', animation_dir='vertical', padding=5, func=self.func_select_box_velocidad)
 
         self.list_config_extenciones = List(
             (self.ventana_rect.w*.3,self.ventana_rect.h*.7), (self.ventana_rect.w*.80,self.ventana_rect.centery),
@@ -644,11 +644,9 @@ con su navegador de preferencia"),
         self.updates.clear()
         for i,x in sorted(enumerate(lista+[self.GUI_manager,self.Mini_GUI_manager,self.loader]),reverse=False):
             re = x.redraw
-            if isinstance(x, (Button,Select_box,mini_GUI.mini_GUI_admin,GUI.GUI_admin)):
-                r = x.draw(self.ventana, pag.mouse.get_pos())
-            else:
-                r = x.draw(self.ventana)
-            [self.updates.append(s) for s in r]
+            r = x.draw(self.ventana)
+            for s in r:
+                self.updates.append(s)
             for y in r:
                 for p in lista[i+1:]:
                     if p.collide(y) and p.redraw < 1:
@@ -707,8 +705,7 @@ con su navegador de preferencia"),
                 elif evento.type == MOUSEMOTION and self.list_config_extenciones.scroll:
                     self.list_config_extenciones.rodar_mouse(evento.rel[1])
             
-            for x in self.list_to_draw_config:
-                x.update()
+            self.update_general(self.list_to_draw_config, (mx,my))
 
             if not self.drawing:
                 continue
@@ -753,9 +750,7 @@ con su navegador de preferencia"),
                             self.redraw = True
                             break
             
-            
-            for x in self.list_to_draw_new_download:
-                x.update(dt=self.delta_time.dt)
+            self.update_general(self.list_to_draw_new_download, (mx,my))
             if not self.drawing:
                 continue
             self.ventana.fill((20, 20, 20))
@@ -808,8 +803,7 @@ con su navegador de preferencia"),
                 elif evento.type == MOUSEMOTION and self.lista_descargas.scroll:
                     self.lista_descargas.rodar_mouse(evento.rel[1])
 
-            for x in self.list_to_draw:
-                x.update(dt=self.delta_time.dt)
+            self.update_general(self.list_to_draw, (mx,my))
 
             if not self.drawing:
                 continue
@@ -839,12 +833,16 @@ con su navegador de preferencia"),
                         if x.click((mx, my)):
                             break
 
-            for x in self.list_to_draw_extras:
-                x.update(dt=self.delta_time.dt)
+            self.update_general(self.list_to_draw_extras, (mx,my))
             if not self.drawing:
                 continue
             self.draw_objs(self.list_to_draw_extras)
 
+    def update_general(self,lista,mouse_pos):
+        for i,x in sorted(enumerate(lista), reverse=True):
+            x.update(dt=self.delta_time.dt,mouse_pos=mouse_pos)
+        self.GUI_manager.update(mouse_pos=mouse_pos)
+        self.Mini_GUI_manager.update(mouse_pos=mouse_pos)
 
     def func_select_box(self, respuesta) -> None:
         if not self.cached_list_DB: return
@@ -998,11 +996,11 @@ con su navegador de preferencia"),
             1: 2**15,
             2: 2**16,
             3: 2**17,
-            4: 2**18,
+            # 4: 2**18,
             5: 2**19,
             6: 2**20,
-            7: 2**21,
-            8: 2**22,
+            # 7: 2**21,
+            # 8: 2**22,
             9: 2**23,
             10: 2**24,
         }
