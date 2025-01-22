@@ -62,9 +62,11 @@ textos_español = {
     'lista actualizada': 'Lista actualizada',
     'minuto': 'Minuto',
     'nombre': 'Nombre',
+    'nueva descarga disponible': 'Nueva descarga disponible',
     'numero invalido': 'Numero invalido',
     'pausar': 'Pausar',
     'pausado': 'Pausado',
+    'particulas': 'Particulas',
     'reanudar': 'Resumir',
     'redescargar': 'Redescargar',
     'reiniciar': 'Reiniciar',
@@ -79,7 +81,7 @@ textos_español = {
 
     
     # Titulo principal
-    'title': 'Manejador de descargas',
+    'title': 'Acelerador de descargas',
 
     # Botones
     'btn-nueva_descarga': 'Nueva descarga',
@@ -102,7 +104,7 @@ textos_español = {
     # GUI's
     'gui-desea_abrir_la_carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
     'gui-url no sirve': "El URL a dejado de funcionar\n\nActualize la URL o intente mas tarde",
-    "gui-error inesperado":"A ocurrido un error inesperado\n\nDesea volver a intentarlo?",
+    "gui-error inesperado":"A ocurrido un error inesperado\nCompruebe su conexion a internet\n\nDesea volver a intentarlo?",
     'gui-desea descargar la actualizacion': 'Hay una nueva actualizacion disponible\n\nDesea agregar a la lista de descargas?',
     'gui-desea borrar el elemento': '¿Desea borrar el elemento seleccionado!?',
     'gui-desea borrar los elementos': '¿Desea borrar los elementos seleccionados!?',
@@ -203,9 +205,11 @@ textos_ingles = {
     'lista actualizada': 'List updated',
     'minuto': 'Minute',
     'nombre': 'Name',
+    'nueva descarga disponible': 'New download available',
     'numero invalido': 'Invalid number',
     'pausar': 'Pause',
     'pausado': 'Paused',
+    'particulas': 'Particles',
     'reanudar': 'Resume',
     'redescargar': 'Re-download',
     'reiniciar': 'Reset',

@@ -11,7 +11,7 @@ import Utilidades as uti
 import datetime
 
 
-from platformdirs import user_downloads_dir, user_cache_path, user_config_path, user_downloads_path
+from platformdirs import user_downloads_dir, user_downloads_path
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tkinter.simpledialog import askstring
@@ -21,20 +21,19 @@ from pygame.constants import ( K_ESCAPE, KEYDOWN)
 from textos import idiomas
 from my_warnings import *
 
-from constants import DICT_CONFIG_DEFAULT, FONT_MONONOKI, TITLE
+from constants import DICT_CONFIG_DEFAULT, FONT_MONONOKI, SCREENSHOTS_DIR, CACHE_DIR, CONFIG_DIR
 
 RESOLUTION = (700, 300)
+RETURNCODE = 0
 
 class Downloader:
     def __init__(self, id, modificador=0) -> None:
         pag.init()
-        
         self.ventana = pag.display.set_mode(RESOLUTION)
         self.ventana_rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
+        self.hwnd = pag.display.get_wm_info()['window']
 
-
-        
         self.raw_data = requests.get(f'http://127.0.0.1:5000/descargas/get/{id}').json()
         
         self.id: int = self.raw_data[0]
@@ -48,10 +47,8 @@ class Downloader:
         
         pag.display.set_caption(f'Downloader {self.id}_{self.file_name}')
         
-        self.carpeta_cache = user_cache_path('Acelerador de descargas', 'Edouard Sandoval').joinpath(f'./{self.id}')
+        self.carpeta_cache = CACHE_DIR.joinpath(f'./{self.id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
-        self.carpeta_config = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
-        self.carpeta_config.mkdir(parents=True, exist_ok=True)
 
 
         self.paused: bool = True
@@ -68,9 +65,11 @@ class Downloader:
         self.fallo_destino: bool = False
         self.low_detail_mode: bool = False
         self.draw_background: bool = False
+        self.cerrando = False
+        self.hitboxes = False
+        self.loading = 0
         self.intentos: int = 0
         self.chunk: int = 128
-        self.returncode: int = 0
         self.velocidad_limite: int = 0
         self.current_velocity: int = 0
         self.downloading_threads: int = 0
@@ -88,8 +87,6 @@ class Downloader:
         self.last_velocity_update: float = time.time()
         self.relog = pag.time.Clock()
         self.prepared_session = requests.Session()
-        self.bloque_hilos_estatus = uti_pag.Bloque((self.ventana_rect.centerx, 50), (250, self.ventana_rect.h - 70), 'topleft', (0,0,0,0), 0)
-        # self.bloque_hilos_estatus.pos = (self.ventana_rect.centerx, 50)
         self.speed_deltatime = uti.Deltatime(15,10)
         self.save_dir = user_downloads_dir()
         self.Func_pool = uti.Funcs_pool()
@@ -111,10 +108,12 @@ class Downloader:
         if self.enfoques:
             uti.win32_tools.front2(pag.display.get_wm_info()['window'])
         self.Func_pool.add('descargar', self.crear_conexion, self.start_download)
+        self.Func_pool.start('descargar')
+        self.Func_pool.add('__terminar_programa', self.__terminar_de_cerrar)
+
         self.class_intervals.add('actualizar_progress', self.update_progress_db, 1, start=True)
         self.class_intervals.add('actualizar_vel', self.calc_velocity, .4, start=True)
         self.class_intervals.add('actualizar_tiempo_restante', self.calc_tiempo_restante, 1, start=True)
-        self.Func_pool.start('descargar')
 
 
         self.ciclo_general = [self.screen_main]
@@ -124,9 +123,12 @@ class Downloader:
             for x in self.ciclo_general:
                 x()
 
+        pag.quit()
+        sys.exit(RETURNCODE)
+
     def cargar_configs(self):
         try:
-            self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
+            self.configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
 
@@ -142,12 +144,20 @@ class Downloader:
     def generar_objs(self):
         
         self.GUI_manager = uti_pag.GUI.GUI_admin()
-        self.mini_GUI_manager = uti_pag.mini_GUI.mini_GUI_admin(self.ventana_rect)
+        self.Mini_GUI_manager = uti_pag.mini_GUI.mini_GUI_admin(self.ventana_rect)
+        self.list_textos_hilos = uti_pag.Multi_list(
+            (330, self.ventana_rect.h - 70), (self.ventana_rect.centerx+20, 50), 2, None, 12, separation=15, colums_witdh=[0,.7], 
+            padding_left=10, border_color=(20,20,20), header=False, fonts=[FONT_MONONOKI, FONT_MONONOKI], background_color=(20,20,20),
+            smothscroll=True
+        )
 
         self.lineas_para_separar = [
             ((self.ventana_rect.centerx, 0), (self.ventana_rect.centerx, self.ventana_rect.h)),
             ((0, self.ventana_rect.centery), self.ventana_rect.center)
         ]
+
+        self.text_finalizando_hilos = uti_pag.Text(f'Finalizando los {self.num_hilos} hilos...' if self.num_hilos > 1 else 'Finalizando el hilo...', 16, FONT_MONONOKI, (-1000,-1111), 'center', with_rect=True, color_rect='white', padding=20, color='black')
+        self.text_finalizando_hilos2 = uti_pag.Text(f'Restantes: {self.downloading_threads}' if self.num_hilos > 1 else 'Finalizando el hilo...', 16, FONT_MONONOKI, (-1000,-1111), 'center', with_rect=True, color_rect='white', padding=20, color='black')
         
         # ------------------------------------------- Textos y botones -----------------------------------
         self.Titulo = uti_pag.Text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, FONT_MONONOKI, (10, 50), 'left')
@@ -176,26 +186,26 @@ class Downloader:
         self.set_select_options()
 
         #   Barra de progreso
-        self.barra_progreso = uti_pag.Barra_de_progreso((20, self.ventana_rect.bottom - 30), (310, 20), 'horizontal')
+        self.barra_progreso = uti_pag.Barra_de_progreso((20, self.ventana_rect.bottom - 30), (310, 20), 'horizontal', smoth=True)
         self.barra_progreso.volumen = .0
 
         self.list_to_draw_main.extend([
-            self.bloque_hilos_estatus, self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
+            self.list_textos_hilos, self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
             self.text_porcentaje, self.text_estado_general, self.btn_cancelar_descarga,
             self.text_title_hilos, self.text_vel_descarga,self.text_peso_progreso,
             self.text_tiempo_restante, self.btn_pausar_y_reanudar_descarga, self.btn_more_options,
-            self.select_more_options, 
+            self.select_more_options, self.text_finalizando_hilos, self.text_finalizando_hilos2
         ])
         self.list_to_update_main.extend([
             self.Titulo, self.text_tamaño, self.text_url, self.text_num_hilos, self.barra_progreso,
             self.text_porcentaje, self.text_estado_general, self.btn_cancelar_descarga,
             self.text_title_hilos, self.text_vel_descarga,self.text_peso_progreso,
             self.text_tiempo_restante, self.btn_pausar_y_reanudar_descarga, self.btn_more_options,
-            self.select_more_options, self.bloque_hilos_estatus
+            self.select_more_options, self.list_textos_hilos, self.text_finalizando_hilos, self.text_finalizando_hilos2
         ])
         self.list_to_click_main.extend([
             self.btn_cancelar_descarga, self.btn_pausar_y_reanudar_descarga,
-            self.select_more_options, self.bloque_hilos_estatus
+            self.select_more_options, self.list_textos_hilos
         ])
 
     def eventos_en_comun(self,evento):
@@ -203,11 +213,15 @@ class Downloader:
         if evento.type == pag.QUIT:
             self.cerrar_todo('a')
         elif evento.type == pag.KEYDOWN and evento.key == pag.K_F12:
-            momento = datetime.datetime.today().strftime('%y%m%d_%f')
-            pag.image.save(self.ventana,'screenshot_{}_{}.png'.format(pag.display.get_caption()[0],momento))
+            momento = datetime.datetime.today().strftime('%d-%m-%y %f')
+            result = uti.win32_tools.take_window_snapshot(self.hwnd)
+            surf = pag.image.frombuffer(result['buffer'],(result['bmpinfo']['bmWidth'], result['bmpinfo']['bmHeight']),'BGRA')
+            pag.image.save(surf,SCREENSHOTS_DIR.joinpath('Download Manager {}.png'.format(momento)))
+        elif evento.type == pag.KEYDOWN and evento.key == pag.K_F11:
+            self.hitboxes = not self.hitboxes
         elif evento.type == pag.WINDOWRESTORED:
             return True
-        elif evento.type == pag.MOUSEBUTTONDOWN and evento.button in [1,3] and self.mini_GUI_manager.click(evento.pos):
+        elif evento.type == pag.MOUSEBUTTONDOWN and evento.button in [1,3] and self.Mini_GUI_manager.click(evento.pos):
             return True
         elif evento.type == pag.WINDOWMINIMIZED:
             self.drawing = False
@@ -217,8 +231,8 @@ class Downloader:
         elif evento.type in [pag.WINDOWTAKEFOCUS, pag.WINDOWFOCUSGAINED,pag.WINDOWMAXIMIZED]:
             self.drawing = True
             return True
-        # elif self.loading > 0:
-        #     return True
+        elif self.loading > 0:
+            return True
         elif self.GUI_manager.active >= 0:
             if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:
                 self.GUI_manager.pop()
@@ -239,17 +253,18 @@ class Downloader:
                 x.redraw += 1
 
         self.updates.clear()
-        for i,x in sorted(enumerate(lista+[self.GUI_manager,self.mini_GUI_manager]),reverse=False): #,self.loader
+        for i,x in sorted(enumerate(lista+[self.GUI_manager,self.Mini_GUI_manager]),reverse=False): #,self.loader
             re = x.redraw
             r = x.draw(self.ventana)
-            # if r:
-            #     pag.draw.rect(self.ventana, 'green', x.rect, 1)
             for s in r:
                 self.updates.append(s)
             for y in r:
                 for p in lista[i+1:]:
                     if p.collide(y) and p.redraw < 1:
                         p.redraw = 1
+            if self.hitboxes:
+                for x in r:
+                    pag.draw.rect(self.ventana, 'green', x, 1)
             if re < 2:
                 continue
             for y in r:
@@ -262,6 +277,22 @@ class Downloader:
         else:
             pag.display.update(self.updates)
 
+    # Se dibuja todo y listo, pa' que tanto peo
+    def draw_always(self, lista):
+        if self.draw_background:
+            self.ventana.fill(self.background_color)
+        for x in lista:
+            x.redraw += 1
+
+        new_list = lista+[self.GUI_manager,self.Mini_GUI_manager]
+        if self.loading > 0 and self.loader:
+            new_list.append(self.loader)
+
+        for i,x in sorted(enumerate(new_list),reverse=False):
+            x.draw(self.ventana)
+
+        pag.display.update()
+
     def screen_main(self) -> None:
         if self.screen_main_bool:
             self.cicle_try: int = 0
@@ -271,7 +302,6 @@ class Downloader:
             self.relog.tick(60)
 
             eventos = pag.event.get()
-            self.GUI_manager.input_update(eventos)
             for evento in eventos:
                 if self.eventos_en_comun(evento):
                     self.redraw = True
@@ -313,16 +343,24 @@ class Downloader:
             self.text_peso_progreso.text = self.txts['descargado']+': '+ uti.format_size_bits_to_bytes_str(self.peso_descargado)
             self.barra_progreso.volumen = self.peso_descargado / self.peso_total
 
+            if self.cerrando and self.num_hilos > 1:
+                self.text_finalizando_hilos2. text = f'Restantes: {self.downloading_threads}'
+
             mx,my = pag.mouse.get_pos()
             for i,x in sorted(enumerate(self.list_to_update_main), reverse=True):
                 x.update(dt=1,mouse_pos=(mx,my))
 
+            if self.downloading:
+                for i,x in sorted(enumerate(self.lista_status_hilos), reverse=False):
+                    self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
+
+
             self.GUI_manager.update(mouse_pos=(mx,my))
-            self.mini_GUI_manager.update(mouse_pos=(mx,my))
+            self.Mini_GUI_manager.update(mouse_pos=(mx,my))
 
     def wheel_event_main(self,evento,lista):
         for i,x in sorted(enumerate(lista), reverse=True):
-            if isinstance(x, (uti_pag.Multi_list,uti_pag.List,uti_pag.Bloque)) and not x.scroll:
+            if isinstance(x, (uti_pag.Multi_list,uti_pag.List,uti_pag.Bloque)) and not x.scroll and x.rect.collidepoint(pag.mouse.get_pos()):
                 x.rodar(evento.y*15)
                 return True
         # aqui va el codigo que el programador desee (recordar acabar con return True para que no ejecute el resto de eventos)
@@ -362,7 +400,7 @@ class Downloader:
         self.peso_descargado_vel = 0
 
         self.list_vels.append(vel)
-        if len(self.list_vels) > 60:
+        if len(self.list_vels) > 30:
             self.list_vels.pop(0)
 
         self.current_velocity = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
@@ -431,18 +469,21 @@ class Downloader:
         self.start_download()
 
     def cerrar_todo(self, result):
-        if result == 'cancelar':
+        if result == 'cancelar' or self.cerrando:
             return
+        self.cerrando = True
         self.paused = False
         self.canceled = True
-        self.pool_hilos.shutdown(False)
+        self.Func_pool.start('__terminar_programa')
+        
+    def __terminar_de_cerrar(self):
+        self.text_finalizando_hilos.pos = pag.Vector2(RESOLUTION)//2
+        self.text_finalizando_hilos2.pos = (self.text_finalizando_hilos.centerx, self.text_finalizando_hilos.bottom+10)
+        self.loading += 1
+        self.pool_hilos.shutdown(True, True)
         self.update_progress_db()
-        pag.quit()
-        if self.finished:
-            self.returncode = 3
-        else:
-            self.returncode = 0
-        sys.exit(self.returncode)
+        self.screen_main_bool: bool = False
+
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
         if resultado == 'aceptar':
@@ -470,8 +511,9 @@ class Downloader:
                 return
             try:
                 self.velocidad_limite = int(respuesta) * 1024
+                self.set_select_options()
             except:
-                self.GUI_manager.add(uti_pag.GUI.Info(self.ventana_rect.center, 'Error', self.txts['numero invalido']))
+                self.GUI_manager.add(uti_pag.GUI.Info(self.ventana_rect.center, 'Error', self.txts['numero invalido'], (300,125)))
 
 
     def crear_conexion(self):
@@ -534,6 +576,7 @@ class Downloader:
             return
         if self.downloading:
             return
+        self.downloading_threads = 0
         self.paused = False
         self.canceled = False
         self.hilos_listos = 0
@@ -541,19 +584,11 @@ class Downloader:
         self.can_download = False
 
         self.lista_status_hilos.clear()
-        self.bloque_hilos_estatus.clear()
+        self.list_textos_hilos.clear()
         self.pool_hilos.shutdown(True, cancel_futures=True)
         self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloader')
         for x in range(self.num_hilos):
-            self.bloque_hilos_estatus.add(
-                uti_pag.Text(self.txts['status_hilo[iniciando]'].format(x), 12, FONT_MONONOKI, (50, (30 * x) + 5),
-                            'left'),
-                            '(50, (30 * {x}) + 15)'.format(x=x)
-            )
-            # self.lista_status_hilos_porcentaje.append(
-            #     Text('0%', 12, FONT_MONONOKI, (self.surface_hilos.get_width(), (30 * x) + 5),
-            #                 'right', with_rect=True, color_rect=(20, 20, 20))
-            # )
+            self.list_textos_hilos.append((self.txts['status_hilo[iniciando]'].format(x),'0.00%'))
 
             self.lista_status_hilos.append({
                 'status':0,
@@ -563,7 +598,7 @@ class Downloader:
                 'local_count':0,
                 'tiempo_reset':2,
                 'time_chunk': 0,
-                'actual_chunk_to_limit': 0
+                'actual_chunk_to_limit': 0,
                 })
             self.pool_hilos.submit(self.init_download_thread,x)
         self.last_change = time.time()
@@ -576,6 +611,7 @@ class Downloader:
         self.text_estado_general.text = f"{self.txts['estado']}: {self.txts['descargando']}"
 
     def init_download_thread(self,num):
+        self.downloading_threads += 1
         while self.lista_status_hilos[num]['status'] == 0:
             self.peso_descargado -= self.lista_status_hilos[num]['local_count']
             try:
@@ -584,21 +620,23 @@ class Downloader:
                 print(type(err))
                 print(err)
                 raise err
+        self.downloading_threads -= 1
 
 
     def download_thread(self, num):
         tiempo_reset = self.lista_status_hilos[num]['tiempo_reset']
+        # text_var = self.list_textos_hilos[0][num]
         if self.canceled:
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[cancelado]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[cancelado]'].format(num)
             self.lista_status_hilos[num]['status'] = 2
             return
-        self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[iniciando]'].format(num)
+        self.list_textos_hilos[0][num] = self.txts['status_hilo[iniciando]'].format(num)
         if Path(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).is_file() and self.can_reanudar:
             self.lista_status_hilos[num]['local_count'] = os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size
             self.peso_descargado += self.lista_status_hilos[num]['local_count']
             if self.lista_status_hilos[num]['local_count'] >= self.lista_status_hilos[num]['end'] - self.lista_status_hilos[num]['start']:
                 self.hilos_listos += 1
-                self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[finalizado]'].format(num)
+                self.list_textos_hilos[0][num] = self.txts['status_hilo[finalizado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 1
                 return 0
         else:
@@ -609,7 +647,7 @@ class Downloader:
             except FileNotFoundError:
                 pass
         if self.paused:
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[pausado]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[pausado]'].format(num)
             while self.paused:
                 time.sleep(.1)
         if self.can_reanudar:
@@ -619,7 +657,7 @@ class Downloader:
             this_header = self.default_headers.copy()
             this_header.pop('Range')
         try:
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[conectando]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[conectando]'].format(num)
             
             response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
 
@@ -628,10 +666,9 @@ class Downloader:
                 raise DifferentTypeError('ay')
 
             tiempo_reset = 2
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[descargando]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
-                self.downloading_threads += 1
                 for data in response.iter_content(self.chunk):
                     if self.paused or self.canceled:
                         raise Exception('')
@@ -663,27 +700,25 @@ class Downloader:
                     raise DifferentSizeError('ay')
 
             self.lista_status_hilos[num]['status'] = 1
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[finalizado]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[finalizado]'].format(num)
             self.hilos_listos += 1
-            self.downloading_threads -= 1
             return
         except Exception as err:
             print(err)
             print(type(err))
 
-            self.downloading_threads -= 1
             if self.canceled:
-                self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[cancelado]'].format(num)
+                self.list_textos_hilos[0][num] = self.txts['status_hilo[cancelado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 2
                 return
-            self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[reconectando]'].format(num)
+            self.list_textos_hilos[0][num] = self.txts['status_hilo[reconectando]'].format(num)
             t = time.time()
             while time.time() - t < tiempo_reset:
                 if self.canceled:
                     break
                 time.sleep(.1)
             if self.canceled:
-                self.bloque_hilos_estatus.list_objs[num]['GUI'].text = self.txts['status_hilo[cancelado]'].format(num)
+                self.list_textos_hilos[0][num] = self.txts['status_hilo[cancelado]'].format(num)
                 self.lista_status_hilos[num]['status'] = 2
                 return
             self.lista_status_hilos[num]['tiempo_reset'] = (tiempo_reset + 1) if tiempo_reset <= 15 else tiempo_reset
@@ -714,6 +749,8 @@ class Downloader:
         self.drawing = True
         self.finished = True
         self.hilos_listos = 0
+        global RETURNCODE
+        RETURNCODE = 3
         self.list_vels.clear()
         self.text_estado_general.text = f'{self.txts["estado"]}: {self.txts["finalizado"]}'
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
@@ -727,11 +764,9 @@ class Downloader:
             self.cerrar_todo('aceptar')
             return
         elif self.ejecutar_al_finalizar:
-            pag.quit()
             os.startfile(self.save_dir + '/' + self.file_name)
-            self.returncode = 3
-            sys.exit(self.returncode)
-
+            self.cerrar_todo('aceptar')
+            return
         self.GUI_manager.add(
             uti_pag.GUI.Desicion(self.ventana_rect.center, self.txts['enhorabuena'], self.txts['gui-desea_abrir_la_carpeta'], (400, 200)),
             self.func_abrir_carpeta_antes_de_salir

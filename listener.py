@@ -7,6 +7,7 @@ import notifypy
 import pystray
 import datetime
 import time
+import socket as sk
 
 
 from multiprocessing import Process
@@ -14,24 +15,20 @@ from PIL import Image
 from DB import Data_Base
 from pathlib import Path
 from threading import Thread
-from platformdirs import user_config_path, user_cache_path, user_log_path
+from platformdirs import user_log_path
 
-from constants import DICT_CONFIG_DEFAULT, TITLE
+from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR
 
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
-from Utilidades import win32_tools, Logger
+from Utilidades import win32_tools, Logger, check_update
 
 from main import DownloadManager
 from Downloader import Downloader
+from ventana_actualizar import Ventana_actualizar
 
 os.chdir(Path(__file__).parent)
-carpeta_config = Path(user_config_path('Acelerador de descargas', 'Edouard Sandoval'))
-carpeta_config.mkdir(parents=True, exist_ok=True)
-carpeta_cache = Path(user_cache_path('Acelerador de descargas', 'Edouard Sandoval'))
-carpeta_cache.mkdir(parents=True, exist_ok=True)
-
 app = Flask("Acelerador de descargas(API)")
 CORS(app)
 
@@ -39,7 +36,7 @@ CORS(app)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = Data_Base(carpeta_config.joinpath('./downloads.sqlite3'))
+        db = g._database = Data_Base(CONFIG_DIR.joinpath('./downloads.sqlite3'))
     return db
 def get_logger():
     global app
@@ -57,21 +54,35 @@ def close_connection(exception):
     if l is not None:
         l.close()
 
+def get_all_conf():
+    try:
+        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+    except Exception:
+        configs = DICT_CONFIG_DEFAULT
+    return configs
+
 def get_conf(key: str):
     try:
-        configs: dict = json.load(open(carpeta_config.joinpath('./configs.json')))
+        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
     except Exception:
-        configs = {}
+        configs = DICT_CONFIG_DEFAULT
     return configs.get(key, DICT_CONFIG_DEFAULT.get(key))
+def set_conf(key: str, value: str):
+    configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+    configs[key] = value
+    json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
 
 lista_descargas = []
 cola: list[int] = []
 cola_iniciada = 0
 program_opened = False
 program_thread = None
+last_update = time.time()
 
 
-
+def update_last_update():
+    global last_update
+    last_update = float(time.time())
 
 @app.route("/check", methods=["GET"])
 @cross_origin()
@@ -113,6 +124,33 @@ def open_program_thread():
 def check_extencion(name: str):
     return jsonify({"message": "busqueda de extension", "code":0, 'status':'ok', "respuesta":name in get_conf('extenciones')}), 200, {'Access-Control-Allow-Origin':'*'}
 
+@app.route("/configurations")
+def get_configurations():
+    return jsonify(get_all_conf()), 200, {'Access-Control-Allow-Origin':'*'}
+
+def get_sockets_clients():
+    socket = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
+    socket.bind(('127.0.0.1', 5001))
+    socket.listen(5)
+    while True:
+        time.sleep(1)
+        client, address = socket.accept()
+        print(f"Connection from {address}")
+        Thread(target=__comunicacion, args=(client,)).start()
+
+        
+def __comunicacion(client: sk.socket):
+    try:
+        while True:
+            message = json.dumps({'status': 'idle', 'last_update':last_update}).encode()
+            client.send(message)
+            time.sleep(1)
+            client.recv(1024).decode()
+    except Exception as err:
+        print(err)
+    finally:
+        client.close()
+
 
 # --------------------------------------- Downloads --------------------------------------- #
 
@@ -138,6 +176,7 @@ def update_url(id:int, url: str):
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
 def update_estado(id:int, estado: str) -> Response:
     get_db().update_estado(id, estado)
+    update_last_update()
     return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/nombre/<int:id>/<nombre>", methods=["GET"])
@@ -145,6 +184,7 @@ def update_name(id:int, nombre: str):
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     get_db().update_nombre(id, nombre)
+    update_last_update()
     return jsonify({"message": "nombre actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/download/<int:id>", methods=["GET"])
@@ -176,6 +216,7 @@ def init_download(id):
 
     if id in cola and p.exitcode == 3:
         cola.remove(id)
+        update_last_update()
 
         if len(cola) > 0:
             lista_descargas.remove(id)
@@ -194,6 +235,7 @@ def init_download(id):
 def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
     response = request.args.to_dict()
     get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'])
+    update_last_update()
     get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'})
 
@@ -233,6 +275,7 @@ def add_descarga_web():
 
     
     index = get_db().añadir_descarga(response1['nombre'], tipo, peso, response1['url'], hilos)
+    update_last_update()
     Thread(target=init_download,args=(index,)).start()
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
@@ -242,17 +285,19 @@ def delete_descarga(id: int):
     if id in lista_descargas or id in cola:
         return jsonify({"message": "Descarga en progreso", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     else:
+        shutil.rmtree(CACHE_DIR.joinpath(f'./{id}'), True)
         get_db().eliminar_descarga(id)
-        shutil.rmtree(carpeta_cache.joinpath(f'./{id}'), True)
+        update_last_update()
         return jsonify({"message": "Descarga eliminada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/delete_all", methods=["GET"])
 def delete_all():
     if lista_descargas or cola:
         return jsonify({"message": "descargas o colas en proceso", "code":1, 'status':'error'})
-    shutil.rmtree(carpeta_cache)
-    os.remove(carpeta_config.joinpath('./downloads.sqlite3'))
-    setattr(g, '_database', Data_Base(carpeta_config.joinpath('./downloads.sqlite3')))
+    shutil.rmtree(CACHE_DIR)
+    os.remove(CONFIG_DIR.joinpath('./downloads.sqlite3'))
+    setattr(g, '_database', Data_Base(CONFIG_DIR.joinpath('./downloads.sqlite3')))
+    update_last_update()
 
     get_logger().write(f'Logger: todas las descargas eliminadas {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
 
@@ -264,6 +309,7 @@ def add_cola(id: int):
     if id in cola:
         return jsonify({"message": "Descarga en progreso", "code":2, 'status':'error'})
     cola.append(id)
+    update_last_update()
     return jsonify({"message": "Descarga añadida a la cola", "code":0, 'status':'ok'})
 
 @app.route("/cola/delete/<int:id>", methods=["GET"])
@@ -274,11 +320,13 @@ def delete_cola(id: int):
         return jsonify({"message": "Descarga no esta en la cola", "code":2, 'status':'error'})
     
     cola.remove(id)
+    update_last_update()
     return jsonify({"message": "Descarga eliminada de la cola", "code":0, 'status':'ok'})
 
 @app.route("/cola/clear", methods=["GET"])
 def clear_cola():
     cola.clear()
+    update_last_update()
     return jsonify({"message": "Cola limpiada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 
@@ -292,20 +340,38 @@ def after_click(icon, query):
             Thread(target=open_program_thread).start()
         else:
             win32_tools.front(TITLE)
+    elif str(query) == "Buscar actualizaciones":
+        buscar_actualizacion(confirm=True)
+    elif str(query) == "Open log":
+        get_logger().open()
     elif str(query) == "Salir":
         # icon.stop()
         requests.get("http://127.0.0.1:5000/api_close")
 
         # raise Exception('adadad')
-    elif str(query) == "Open log":
-        get_logger().open()
 
+def buscar_actualizacion(confirm=False):
+    try:
+        sera = check_update('acelerador de descargas', VERSION, 'last')
+        if sera:
+            Process(target=Ventana_actualizar,args=(sera['url'],)).start()
+        elif confirm:
+            notifypy.Notify('Acelerador de descargas', f"No hay actualizaciones disponibles", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+    except:
+        if confirm:
+            notifypy.Notify('Acelerador de descargas', f"Error al buscar actualizaciones", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
 
-
+def borrar_carpetas_vacias():
+    cosas = os.listdir(CACHE_DIR)
+    for i in cosas:
+        if os.path.isdir(CACHE_DIR / i) and len(os.listdir(CACHE_DIR / i)) == 0:
+            shutil.rmtree(CACHE_DIR / i)
+            print(f"Se ha eliminado {CACHE_DIR / i}")
 
 icon = pystray.Icon("AdD", image, "Acelerador de descargas",
                     menu=pystray.Menu(
                         pystray.MenuItem("Abrir programa", action=after_click,default=True),
+                        pystray.MenuItem("Buscar actualizaciones", after_click),
                         pystray.MenuItem("Open log", after_click),
                         pystray.MenuItem("Salir", after_click),
                     )
@@ -332,7 +398,9 @@ if __name__ == '__main__':
 
     icon.run_detached()
 
-    # Thread(target=init).start()
+    Thread(target=buscar_actualizacion).start()
+    Thread(target=borrar_carpetas_vacias).start()
+    Thread(target=get_sockets_clients).start()
     
     # app.run('0.0.0.0', 5000, debug=True)
     from waitress import serve

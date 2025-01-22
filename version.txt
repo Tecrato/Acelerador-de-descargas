@@ -1,4 +1,22 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.7 - 22/1/2025
+
+Cosas nuevas:
+ - Nuevo algoritmo de buscar actualizaciones, ahora es el EndPoint(listener) el que busca las actualizaciones, y abre una ventana para que el usuario pueda abrir el link a mediafire.
+ - La lista ahora puede recibir cuando se realizan cambios en la db y actualizar la lista de descargas automaticamente.
+
+Correcciones:
+  - Corregido las screenshot que se hacen con F12.
+  - Aveces quedan carpetas vacias, asi que añadido algoritmo para borrar las carpetas de cache vacias.
+
+Enchantements:
+ - Ahora muestra un texto en pantalla que marca que se estan finalizando los hilos de descarga, para cuando se cierra y se quiere cerrar el programa, muestre que aun no se termina el proceso.
+ - agregada opcion para ver la hitbox de lo que se esta actualizando en la pantalla, para ver que realmente se dibuja y que no (si esta optimizado(F11)).
+ - mejorado la manera en la que se muestran el progreso de los hilos.
+ - el Select de los hilos estaba abajo, ahora esta a la derecha denuevo.
+ - Particulas al pulsar el click del raton en la aplicacion, epico, se puede desactivar en opciones.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.6 - 15/1/2025
 # Refactor de la ventana de Download.
  - tenia que revisar denuevo todo, sino agregarle cosas nuevas iba a ser infumable.

@@ -8,6 +8,7 @@ datas = [
         ('./extencion.crx','./'),
         ('./cerrar_listener.bat','./'),
         ('./version.txt','./'),
+        ('./version','./'),
         ('./instrucciones.txt','./'),
         ('./paginas_no_soportadas.txt','./')
     ]

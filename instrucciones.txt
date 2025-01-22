@@ -3,32 +3,32 @@ Español:
 Botones Generales:
 
  - Esc -> salir de la pantalla actual o del programa.
+ - F_11 -> Para ver las hitboxes de actualizacion.
  - F_12 -> Tomar captura de pantalla.
  - Ctrl + Click -> En los elementos de la lista de descargas para seleccionar varios elementos.
 
 Acciones Generales:
- - Es posible agregar el link de la página del archivo si es de MediaFire, esto permitira al programa reanudar la descarga a pesar de que el link de descarga haya expirado.
  - Es posible instalar una extension del programa, ver en la pantalla de extras (Boton signo de interrogacion en la esquina superior de la pantalla).
  - Es posible borrar todas las descargas desde la pantalla de extras, esto borrara tanto la cache de las descargas como la base de datos.
 
 Limitantes:
-
  - Existen varios links que aún no funcionan con la application, recomendable desactivar mediante la ventana de la extencion en caso de tenerla activada.
- - Problemas para que brave instale la extension, algún día subiré la extension a la web store.
+ - Problemas para que los navegadores instalen la extension, dejare la extension descomprimida en el archivo comprimido, total, ni que fuera mucho.
 
 English:
 
 General Buttons:
+ - Esc -> Exit from the current screen or the program.
+ - F_11 -> See the actualizations hitboxes.
+ - F_12 -> Take a screenshot.
+ - Ctrl + Click -> On the elements of the download list to select multiple elements.
 
-Esc -> Exit from the current screen or the program.
-F_12 -> Take a screenshot.
-Ctrl + Click -> On the elements of the download list to select multiple elements.
+
 General Actions:
+ - It is possible to install an extension of the program, see on the extras screen (Question mark button in the top corner of the screen).
+ - It is possible to delete all downloads from the extras screen, this will delete both the download cache and the database.
 
-It is possible to add the link of the file page if it is from MediaFire, this will allow the program to resume the download even if the download link has expired.
-It is possible to install an extension of the program, see on the extras screen (Question mark button in the top corner of the screen).
-It is possible to delete all downloads from the extras screen, this will delete both the download cache and the database.
+
 Limitations:
-
-There are several links that still do not work with the application, recommended to deactivate through the extension window in case of having it activated.
-Problems for brave to install the extension, one day I will upload the extension to the web store.
+ - There are several links that still do not work with the application, recommended to deactivate through the extension window in case of having it activated.
+ - Problems for browsers to install the extension, leave the extension compressed in the compressed file, total, not much.

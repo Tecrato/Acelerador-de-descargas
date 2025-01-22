@@ -7,18 +7,18 @@ import pygame as pag
 import shutil
 import pyperclip
 import datetime
+import socket
 from pathlib import Path
 
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 from threading import Thread
 from urllib.parse import urlparse, unquote
-from Utilidades_pygame import Text, Button, List, Multi_list, GUI, mini_GUI, Input, Select_box
+from Utilidades_pygame import Text, Button, List, Multi_list, GUI, mini_GUI, Input, Select_box, Particles
 from Utilidades import Funcs_pool, win32_tools, Deltatime,  UNIDADES_BYTES
-from Utilidades.web_tools import get_mediafire_url, check_update
 from Utilidades import format_size_bits_to_bytes, format_size_bits_to_bytes_str
 from Utilidades.logger import Logger
-from platformdirs import user_config_path, user_cache_path, user_downloads_dir, user_desktop_path, user_pictures_path, user_log_path
+from platformdirs import user_desktop_path, user_log_path
 from pygame.constants import (MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, QUIT, K_ESCAPE, MOUSEBUTTONUP, MOUSEWHEEL,
                               WINDOWMINIMIZED, WINDOWFOCUSGAINED, WINDOWMAXIMIZED, WINDOWTAKEFOCUS, WINDOWFOCUSLOST)
 from pygame import Vector2
@@ -26,74 +26,71 @@ from pygame import Vector2
 from loader import Loader
 from textos import idiomas
 from my_warnings import LinkCaido, LowSizeError, TrajoHTML
-from constants import TITLE, DICT_CONFIG_DEFAULT, MIN_RESOLUTION, RESOLUCION, VERSION, FONT_MONONOKI, FONT_SIMBOLS
+from constants import TITLE, DICT_CONFIG_DEFAULT, VERSION, FONT_MONONOKI, FONT_SIMBOLS, SCREENSHOTS_DIR, CONFIG_DIR, CACHE_DIR
+
+RESOLUCION = [800, 550]
+MIN_RESOLUTION = [600,450]
 
 # noinspection PyAttributeOutsideInit
 class DownloadManager:
     def __init__(self) -> None:
         pag.init()
 
-        self.ventana: pag.Surface = pag.display.set_mode(RESOLUCION, pag.RESIZABLE|pag.DOUBLEBUF)
+        self.ventana: pag.Surface = pag.display.set_mode(RESOLUCION, pag.RESIZABLE|pag.DOUBLEBUF|pag.HWACCEL)
         self.ventana_rect: pag.Rect = self.ventana.get_rect()
         pag.display.set_icon(pag.image.load('./descargas.png'))
         pag.display.set_caption(TITLE)
+        self.hwnd = pag.display.get_wm_info()['window']
 
-        self.carpeta_config = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
-        self.carpeta_config.mkdir(parents=True, exist_ok=True)
-        self.carpeta_cache = user_cache_path('Acelerador de descargas', 'Edouard Sandoval')
-        self.carpeta_cache.mkdir(parents=True, exist_ok=True)
-        self.carpeta_screenshots = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas', )
-        self.carpeta_screenshots.mkdir(parents=True, exist_ok=True)
-
-        self.new_url: str = ''
         self.new_filename: str = ''
         self.new_file_type: str = ''
         self.new_file_size: int = 0
         self.new_threads: int = 1
         self.thread_new_download = None
-        self.actualizar_url: bool = False
 
         self.cached_list_DB: list[tuple] = []
         self.cola: list[int] = []
-        self.descargando: list[int] = []
 
-        self.data_actualizacion = {}
         self.updates: list[pag.Rect] = []
         self.extenciones: list[str] = []
-        self.url_actualizacion: str = ''
-        self.save_dir = user_downloads_dir()
+        self.save_dir = './'
+        self.url = ''
         self.threads: int = 4
         self.velocidad_limite = 0
+        self.allow_particles = True
         self.apagar_al_finalizar_cola = False
         self.can_add_new_download = False
         self.drawing: bool = True
         self.enfoques: bool = True
         self.detener_5min: bool = True
         self.low_detail_mode: bool = False
-        self.mini_ventana_captar_extencion: bool = True
         self.draw_background = True
         self.redraw: bool = True
+        self.hitboxes = False
+        self.running = True
         self.loading = 0
         self.framerate: int = 60
+        self.last_update = time.time()
+        self.last_click = time.time()
         self.relog: pag.time.Clock = pag.time.Clock()
         self.delta_time: Deltatime = Deltatime(60)
+        self.socket_client: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.logger = Logger('Acelerador de descargas(UI)', user_log_path('Acelerador de descargas', 'Edouard Sandoval'))
-        
+
         self.idioma: str = 'español'
         self.txts = idiomas[self.idioma]
 
         self.Func_pool = Funcs_pool()
-        self.Func_pool.add('actualizacion', self.buscar_acualizaciones)
         self.Func_pool.add('reload list',self.reload_lista_descargas)
+        self.Func_pool.add('get sockets clients',self.get_server_updates)
 
         self.logger.write(f"Acelerador de descargas iniciado en {datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
 
         self.load_resources()
         self.generate_objs()
-        self.Func_pool.start('reload list')
         self.move_objs()
-        
-        self.Func_pool.start('actualizacion')
+        self.Func_pool.start('reload list')
+        self.Func_pool.start('get sockets clients')
 
         self.screen_main_bool: bool = True
         self.screen_new_download_bool: bool = False
@@ -102,6 +99,7 @@ class DownloadManager:
 
         self.ciclo_general = [self.main_cycle, self.screen_configs, self.screen_extras,self.screen_new_download]
         self.cicle_try = 0
+
         if self.enfoques:
             win32_tools.front2(pag.display.get_wm_info()['window'], sw_code=1)
 
@@ -110,12 +108,14 @@ class DownloadManager:
             for x in self.ciclo_general:
                 x()
 
+        self.running = False
+        self.Func_pool.join('get sockets clients')
         pag.quit()
 
 
     def load_resources(self):
         try:
-            self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
+            self.configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
         self.threads = self.configs.get('hilos',DICT_CONFIG_DEFAULT['hilos'])
@@ -124,10 +124,13 @@ class DownloadManager:
         self.low_detail_mode = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
         self.velocidad_limite = self.configs.get('velocidad_limite',DICT_CONFIG_DEFAULT['velocidad_limite'])
 
-        self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
         self.save_dir = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
         self.apagar_al_finalizar_cola = self.configs.get('apagar al finalizar cola',DICT_CONFIG_DEFAULT['apagar al finalizar cola'])
         self.extenciones = self.configs.get('extenciones',DICT_CONFIG_DEFAULT['extenciones'])
+
+        self.allow_particles = self.configs.get('particulas',DICT_CONFIG_DEFAULT['particulas'])
+
+        self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
         self.txts = idiomas[self.idioma]
 
         self.save_json()
@@ -143,14 +146,16 @@ class DownloadManager:
         self.configs['apagar al finalizar cola'] = self.apagar_al_finalizar_cola
         self.configs['extenciones'] = self.extenciones
         self.configs['velocidad_limite'] = self.velocidad_limite
+        self.configs['particulas'] = self.allow_particles
 
-        json.dump(self.configs, open(self.carpeta_config.joinpath('./configs.json'), 'w'))
+        json.dump(self.configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
 
     def generate_objs(self) -> None:
         # Cosas varias
-        GUI.configs['fuente_simbolos'] = FONT_SIMBOLS
         self.GUI_manager = GUI.GUI_admin()
         self.Mini_GUI_manager = mini_GUI.mini_GUI_admin(self.ventana_rect)
+
+        self.particulas_mouse = Particles((0,0), radio=10, radio_dispersion=5, color=(255,255,255), velocity=1, vel_dispersion=2, angle=-90, angle_dispersion=60, radio_down=.2, gravity=0.15, max_particles=100, time_between_spawns=1, max_distance=1000, spawn_count=5, auto_spawn=False)
 
         # Loader
         self.loader = Loader((self.ventana_rect.w, self.ventana_rect.h))
@@ -249,7 +254,7 @@ class DownloadManager:
             (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
-        self.select_change_hilos: Select_box = Select_box(self.btn_change_hilos, [1,2,4,8,16,32], auto_open=False, position='bottom', animation_dir='vertical', text_size=20, padding=5, func=self.func_select_box_hilos)
+        self.select_change_hilos: Select_box = Select_box(self.btn_change_hilos, [1,2,4,8,16,32], auto_open=False, position='right', animation_dir='vertical', text_size=20, padding_horizontal=20, func=self.func_select_box_hilos)
 
         self.text_config_idioma = Text(self.txts['config-idioma'], 16, FONT_MONONOKI, (30, 130), 'left', padding=10,with_rect=True, color_rect=(20,20,20))
         self.btn_config_idioma_es = Button('Español', 14, FONT_MONONOKI, (30, 160), (20, 10), 'left',
@@ -287,14 +292,20 @@ class DownloadManager:
                                                 'white',with_rect=True, color_rect=(20,20,20),color_rect_active=(40, 40, 40),
                                                 border_width=-1, func=self.toggle_detener_5min)
 
-        self.text_limitador_velocidad = Text(self.txts['limitar-velocidad']+': '+format_size_bits_to_bytes_str(self.velocidad_limite), 16, FONT_MONONOKI, (30, 340), 'left', 'white',padding=10)
+        self.text_limitador_velocidad = Text(self.txts['limitar-velocidad']+': '+format_size_bits_to_bytes_str(self.velocidad_limite), 16, FONT_MONONOKI, (30, 335), 'left', 'white',padding=10)
         self.btn_config_velocidad = Button(
             self.txts['cambiar'],16, FONT_MONONOKI,
             (self.text_limitador_velocidad.right + 60, self.text_limitador_velocidad.centery),
             (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
-        self.select_config_velocidad = Select_box(self.btn_config_velocidad, ['off']+[format_size_bits_to_bytes_str(2**x) for x in [15,16,17,19,20,23,24]], auto_open=False, position='right', animation_dir='vertical', padding=5, func=self.func_select_box_velocidad)
+        self.select_config_velocidad = Select_box(self.btn_config_velocidad, ['off']+[format_size_bits_to_bytes_str(2**x) for x in [15,16,17,19,20,23,24]], auto_open=False, position='right', animation_dir='vertical', padding_horizontal=10, func=self.func_select_box_velocidad)
+
+        self.text_config_particulas = Text(self.txts['particulas']+': ', 16, FONT_MONONOKI, (30, 375), 'left', 'white', with_rect=True, color_rect=(20,20,20), padding=10)
+        self.btn_config_particulas = Button('' if self.allow_particles else '', 16, FONT_SIMBOLS, (self.text_config_particulas.right, 375),
+                                     10, 'left', 'white', with_rect=True, color_rect=(20,20,20), color_rect_active=(40, 40, 40),
+                                     border_width=-1, func=self.toggle_particles)
+        
 
         self.list_config_extenciones = List(
             (self.ventana_rect.w*.3,self.ventana_rect.h*.7), (self.ventana_rect.w*.80,self.ventana_rect.centery),
@@ -348,7 +359,7 @@ con su navegador de preferencia"),
         # Pantalla principal
         self.list_to_draw: list[Text|Button|Input|Multi_list|Select_box]  = [
             self.txt_title, self.btn_extras, self.btn_configs, self.btn_new_descarga,
-            self.btn_change_dir, self.lista_descargas, self.btn_reload_list
+            self.btn_change_dir, self.lista_descargas, self.btn_reload_list, self.particulas_mouse
         ]
         self.list_to_click = [self.lista_descargas,self.btn_new_descarga, self.btn_configs, self.btn_reload_list, self.btn_extras,
                               self.btn_change_dir]
@@ -372,10 +383,11 @@ con su navegador de preferencia"),
                                     self.text_config_LDM,self.btn_config_LDM,self.btn_change_hilos,self.text_config_enfoques,
                                     self.btn_config_enfoques,self.text_config_detener_5min,self.btn_config_detener_5min,
                                     self.list_config_extenciones,self.btn_config_añair_extencion,self.select_change_hilos,
-                                    self.btn_config_eliminar_extencion,self.text_limitador_velocidad,
-                                    self.btn_config_velocidad,self.select_config_velocidad]
+                                    self.btn_config_eliminar_extencion,self.text_limitador_velocidad,self.text_config_particulas,
+                                    self.btn_config_velocidad,self.select_config_velocidad,self.btn_config_particulas,
+                                    self.particulas_mouse]
         self.list_to_click_config = [self.list_config_extenciones,self.btn_config_exit, 
-                                     self.btn_config_idioma_en, self.btn_config_idioma_es,
+                                     self.btn_config_idioma_en, self.btn_config_idioma_es,self.btn_config_particulas,
                                      self.btn_config_apagar_al_finalizar_cola,self.btn_config_LDM,
                                      self.btn_config_enfoques,self.btn_config_detener_5min,self.btn_config_añair_extencion,
                                      self.btn_config_eliminar_extencion,self.select_change_hilos,
@@ -385,7 +397,7 @@ con su navegador de preferencia"),
         self.list_to_draw_extras = [self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
                                     self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version,
                                     self.btn_extras_install_extension,self.btn_extras_borrar_todo,
-                                    self.btn_extras_read_version_notes]
+                                    self.btn_extras_read_version_notes, self.particulas_mouse]
         self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube,
                                      self.btn_extras_install_extension,self.btn_extras_borrar_todo,
                                      self.btn_extras_read_version_notes]
@@ -449,56 +461,6 @@ con su navegador de preferencia"),
         self.btn_config_velocidad.pos = (self.text_limitador_velocidad.right + 60, self.text_limitador_velocidad.centery)
 
         self.redraw = True
-
-
-    def buscar_acualizaciones(self):
-        try:
-            sera = check_update('acelerador de descargas', VERSION, 'last')
-        except:
-            return
-        try:
-            if not sera:
-                return
-            self.logger.write(f"\nSe a encontrado una nueva actualizacion\nObteniendo link...")
-            self.logger.write(f"{sera}")
-
-            self.Mini_GUI_manager.clear_group('actualizaciones')
-            self.Mini_GUI_manager.add(mini_GUI.simple_popup(self.ventana_rect.bottomright, 'bottomright', self.txts['actualizacion'], 'Se a encontrado una nueva actualizacion\n\nObteniendo link...', (260,100)),group='actualizaciones')
-        
-            self.data_actualizacion['url'] = get_mediafire_url(sera['url'])
-            self.logger.write(f"Obteniendo informacion de {self.data_actualizacion['url']}")
-            response2 = requests.get(self.data_actualizacion['url'], stream=True, allow_redirects=True, timeout=30)
-
-            self.data_actualizacion['file_type'] = response2.headers.get('Content-Type', 'text/plain;a').split(';')[0]
-            if self.data_actualizacion['file_type'] in ['text/plain', 'text/html']:
-                raise TrajoHTML('No paginas')
-            self.data_actualizacion['size'] = int(response2.headers.get('content-length'))
-            self.data_actualizacion['file_name'] = response2.headers.get('content-disposition').split('filename=')[1].replace('"', '')
-
-            self.Mini_GUI_manager.clear_group('actualizaciones')
-            self.Mini_GUI_manager.add(
-                mini_GUI.desicion_popup(Vector2(50000,50000), self.txts['actualizacion'], self.txts['gui-desea descargar la actualizacion'], (250,100), self.txts['agregar'], 'bottomright'),
-                lambda _: (requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.data_actualizacion['url'], "tipo": self.data_actualizacion['file_type'], 'hilos': self.threads, 'nombre': self.data_actualizacion['file_name'], 'size':self.data_actualizacion['size']}),self.Func_pool.start('reload list')),
-                group='actualizaciones'
-            )
-        except Exception as err:
-            self.Mini_GUI_manager.clear_group('actualizaciones')
-            self.Mini_GUI_manager.add(
-                mini_GUI.desicion_popup(
-                    Vector2(50000,50000),
-                    self.txts['actualizacion'], 
-                    'Error al obtener actualizacion.',
-                    (250,100),
-                    "abrir link",
-                    'bottomright',
-                ),
-                func=lambda x: (os.startfile(sera['url']) if x != 'exit' else None),
-                group='actualizaciones'
-            )
-            print(type(err))
-            print(err)
-        self.redraw = True
-
 
     def comprobar_url(self) -> None:
         if not self.url:
@@ -595,7 +557,11 @@ con su navegador de preferencia"),
             self.screen_extras_bool: bool = False
         elif evento.type == pag.KEYDOWN and evento.key == pag.K_F12:
             momento = datetime.datetime.today().strftime('%d-%m-%y %f')
-            pag.image.save(self.ventana,self.carpeta_screenshots.joinpath('Download Manager {}.png'.format(momento)))
+            result = win32_tools.take_window_snapshot(self.hwnd)
+            surf = pag.image.frombuffer(result['buffer'],(result['bmpinfo']['bmWidth'], result['bmpinfo']['bmHeight']),'BGRA')
+            pag.image.save(surf,SCREENSHOTS_DIR.joinpath('Download Manager {}.png'.format(momento)))
+        elif evento.type == pag.KEYDOWN and evento.key == pag.K_F11:
+            self.hitboxes = not self.hitboxes
         if evento.type == pag.WINDOWRESTORED:
             return True
         elif evento.type == MOUSEBUTTONDOWN and evento.button in [1,3] and self.Mini_GUI_manager.click(evento.pos):
@@ -614,7 +580,7 @@ con su navegador de preferencia"),
                 size.x = MIN_RESOLUTION[0]
             if size.y < MIN_RESOLUTION[1]:
                 size.y = MIN_RESOLUTION[1]
-            self.ventana = pag.display.set_mode(size, pag.RESIZABLE|pag.DOUBLEBUF)
+            self.ventana = pag.display.set_mode(size, pag.RESIZABLE|pag.DOUBLEBUF|pag.HWACCEL)
             self.ventana_rect = self.ventana.get_rect()
             self.move_objs()
             return True
@@ -647,6 +613,9 @@ con su navegador de preferencia"),
             r = x.draw(self.ventana)
             for s in r:
                 self.updates.append(s)
+            if self.hitboxes:
+                for x in r:
+                    pag.draw.rect(self.ventana, 'green', x, 1)
             for y in r:
                 for p in lista[i+1:]:
                     if p.collide(y) and p.redraw < 1:
@@ -691,6 +660,9 @@ con su navegador de preferencia"),
                     #         if x.typing:
                     #             x.set(pyperclip.paste())
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    if not self.low_detail_mode and self.allow_particles:
+                        self.particulas_mouse.spawn_pos = (mx,my)
+                        self.particulas_mouse.spawn_particles()
                     for i,x in sorted(enumerate(self.list_to_click_config), reverse=True):
                         if isinstance(x, List) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
                             self.redraw = True
@@ -773,7 +745,6 @@ con su navegador de preferencia"),
 
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
-            self.GUI_manager.input_update(eventos)
 
 
             for evento in eventos:
@@ -783,12 +754,17 @@ con su navegador de preferencia"),
                 elif evento.type == KEYDOWN and evento.key == K_ESCAPE:
                     self.screen_main_bool = False
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    self.last_click = time.time()
+                    if not self.low_detail_mode and self.allow_particles:
+                        self.particulas_mouse.spawn_pos = (mx,my)
+                        self.particulas_mouse.spawn_particles()
                     for i,x in sorted(enumerate(self.list_to_click), reverse=True):
                         if isinstance(x, Multi_list) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
                             break
                         elif x.click((mx, my)):
                             break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
+                    self.last_click = time.time()
                     if self.lista_descargas.click((mx, my),pag.key.get_pressed()[pag.K_LCTRL],button=3) and (result := self.lista_descargas.get_selects()):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx+1, my+1),
                                                                   [self.txts['descargar'], self.txts['eliminar'],
@@ -797,7 +773,7 @@ con su navegador de preferencia"),
                                                                   captured=result),
                                                   self.func_select_box)
                 elif evento.type == MOUSEBUTTONUP:
-                    self.lista_descargas.detener_scroll()
+                    self.lista_descargas.scroll = False
                 elif evento.type == MOUSEWHEEL and self.lista_descargas.rect.collidepoint((mx,my)):
                     self.lista_descargas.rodar(evento.y*15)
                 elif evento.type == MOUSEMOTION and self.lista_descargas.scroll:
@@ -829,6 +805,9 @@ con su navegador de preferencia"),
                         self.screen_extras_bool = False
                         self.screen_main_bool = True
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
+                    if not self.low_detail_mode and self.allow_particles:
+                        self.particulas_mouse.spawn_pos = (mx,my)
+                        self.particulas_mouse.spawn_particles()
                     for x in self.list_to_click_extras:
                         if x.click((mx, my)):
                             break
@@ -911,7 +890,7 @@ con su navegador de preferencia"),
             # 7 reiniciar descarga
             response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
             if response['downloading'] == False and requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached[0]}/esperando').json()['status'] == 'ok':
-                shutil.rmtree(self.carpeta_cache.joinpath(f'./{obj_cached[0]}'), True)
+                shutil.rmtree(CACHE_DIR.joinpath(f'./{obj_cached[0]}'), True)
                 self.lista_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         elif respuesta['index'] == 8:
             # 8 cambiar nombre
@@ -996,13 +975,10 @@ con su navegador de preferencia"),
             1: 2**15,
             2: 2**16,
             3: 2**17,
-            # 4: 2**18,
-            5: 2**19,
-            6: 2**20,
-            # 7: 2**21,
-            # 8: 2**22,
-            9: 2**23,
-            10: 2**24,
+            4: 2**19,
+            5: 2**20,
+            6: 2**23,
+            7: 2**24,
         }
         self.velocidad_limite = diccionario_velocidades[respuesta['index']]
 
@@ -1026,13 +1002,7 @@ con su navegador de preferencia"),
     def func_add_download(self):
         if not self.can_add_new_download:
             return 0
-        if self.actualizar_url:
-            response = requests.get(f'http://127.0.0.1:5000/descargas/update/url/{self.new_url_id}/{self.url}')
-            self.actualizar_url = False
-            if response.json().get('status') == 'error':
-                self.mini_ventana(1)
-        else:
-            requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
+        requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
 
         self.Func_pool.start('reload list')
         self.screen_new_download_bool = False
@@ -1118,6 +1088,26 @@ con su navegador de preferencia"),
         requests.get('http://127.0.0.1:5000/descargas/delete_all',timeout=5)
         self.Func_pool.start('reload list')
 
+    def get_server_updates(self):
+        self.socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_client.connect(('127.0.0.1', 5001))
+        try:
+            while True:
+                if not self.running:
+                    break
+                self.socket_client.send(b'a')
+                respuesta = json.loads(self.socket_client.recv(1024).decode())
+                if (respuesta["last_update"]) - self.last_update > 3 and time.time()-self.last_click > 4:
+                    self.last_update = int(respuesta["last_update"])
+                    self.reload_lista_descargas()
+                time.sleep(0.1)
+        except Exception as err:
+            print(err)
+        finally:
+            self.socket_client.close()
+            self.socket_client = None
+           
+
 
     def func_paste_url(self, url=False):
         """Pegar la url en el input"""
@@ -1130,6 +1120,9 @@ con su navegador de preferencia"),
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
         self.btn_config_apagar_al_finalizar_cola.text = ''if self.apagar_al_finalizar_cola else ''
 
+    def toggle_particles(self):
+        self.allow_particles = not self.allow_particles
+        self.btn_config_particulas.text = ''if self.allow_particles else ''
     def toggle_ldm(self):
         self.low_detail_mode = not self.low_detail_mode
         self.btn_config_LDM.text = ''if self.low_detail_mode else ''
@@ -1193,7 +1186,7 @@ con su navegador de preferencia"),
         self.screen_configs_bool = False
         self.screen_new_download_bool = True
         self.screen_extras_bool = False
-
+ 
 
 if __name__ == '__main__':
     os.chdir(Path(__file__).parent)
@@ -1201,10 +1194,11 @@ if __name__ == '__main__':
         try:
             requests.get('http://127.0.0.1:5000/open_program')
         except requests.exceptions.ConnectionError:
-            os.startfile(Path(__file__).parent / 'listener.exe')
+            os.startfile(Path(__file__).parent / 'Download Manager.exe')
             time.sleep(3)
             requests.get('http://127.0.0.1:5000/open_program')
         finally:
             sys.exit()
 
     clase = DownloadManager()
+    sys.exit()
