@@ -1,4 +1,21 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.8 - 25/1/2025
+
+Cosas nuevas:
+ - Ahora aprendi el como hacen en los juegos para que los botones se vayan seleccionando con las flechas del teclado.
+ - Nueva ventana para cuando la cola finaliza, y otra para cuando la cola al finalizar va a apagar la computadora.
+
+Cambios:
+ - Las configuraciones al cambiarse actualizan el archivo de configuracion inmediatamente.
+
+Correcciones:
+ - Corregido bug cuando se cierra la ventada de descarga, tenia un parametro mal puesto.
+ - Corregido que detenia a los 5 minutos aunque no se hubiera seleccionado la opcion de detener a los 5min.
+ - Mejorado el algoritmo para recargar la lista de descargas, ahora sera menos molesto si se esta haciendo clicks y usando la lista en general.
+
+y algunos mas txts (traducciones).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.7 - 22/1/2025
 
 Cosas nuevas:

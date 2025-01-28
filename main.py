@@ -14,7 +14,7 @@ from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 from threading import Thread
 from urllib.parse import urlparse, unquote
-from Utilidades_pygame import Text, Button, List, Multi_list, GUI, mini_GUI, Input, Select_box, Particles
+from Utilidades_pygame import Text, Button, List, Multi_list, GUI, mini_GUI, Input, Select_box, Particles, Bloque
 from Utilidades import Funcs_pool, win32_tools, Deltatime,  UNIDADES_BYTES
 from Utilidades import format_size_bits_to_bytes, format_size_bits_to_bytes_str
 from Utilidades.logger import Logger
@@ -68,6 +68,8 @@ class DownloadManager:
         self.redraw: bool = True
         self.hitboxes = False
         self.running = True
+        self.navegate_with_keys = True
+        self.click = False
         self.loading = 0
         self.framerate: int = 60
         self.last_update = time.time()
@@ -86,18 +88,47 @@ class DownloadManager:
 
         self.logger.write(f"Acelerador de descargas iniciado en {datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
 
+
+        self.lists_screens = {
+            "main":{
+                "func": self.main_cycle,
+                "draw": [],
+                "update": [],
+                "click": [],
+                "inputs": [],
+                "active": True
+                },
+            "config":{
+                "func": self.screen_configs,
+                "draw": [],
+                "update": [],
+                "click": [],
+                "inputs": [],
+                "active": False
+                },
+            "extras":{
+                "func": self.screen_extras,
+                "draw": [],
+                "update": [],
+                "click": [],
+                "inputs": [],
+                "active": False
+                },
+            "new_download":{
+                "func": self.screen_new_download,
+                "draw": [],
+                "update": [],
+                "click": [],
+                "inputs": [],
+                "active": False
+                }
+            }
         self.load_resources()
         self.generate_objs()
         self.move_objs()
         self.Func_pool.start('reload list')
         self.Func_pool.start('get sockets clients')
 
-        self.screen_main_bool: bool = True
-        self.screen_new_download_bool: bool = False
-        self.screen_configs_bool: bool = False
-        self.screen_extras_bool: bool = False
-
-        self.ciclo_general = [self.main_cycle, self.screen_configs, self.screen_extras,self.screen_new_download]
         self.cicle_try = 0
 
         if self.enfoques:
@@ -105,9 +136,12 @@ class DownloadManager:
 
         while self.cicle_try < 5:
             self.cicle_try += 1
-            for x in self.ciclo_general:
-                x()
-
+            for x in self.lists_screens.keys():
+                if not self.lists_screens[x]["active"]:
+                    continue
+                self.redraw = True
+                self.lists_screens[x]["func"]()
+                self.cicle_try = 0
         self.running = False
         self.Func_pool.join('get sockets clients')
         pag.quit()
@@ -162,11 +196,14 @@ class DownloadManager:
 
         # Pantalla principal
         self.txt_title = Text(self.txts['title'], 26, FONT_MONONOKI, (self.ventana_rect.centerx, 30),with_rect=True,color_rect=(20,20,20))
-        self.btn_extras = Button('', 26, FONT_SIMBOLS, (self.ventana_rect.w, 0), 10, 'topright', 'white',
-                                       (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
-                                       func=self.func_main_to_extras)
-        self.btn_configs = Button('', 26, FONT_SIMBOLS, (0, 0), 10, 'topleft', 'white', (20, 20, 20),
-                                        (50, 50, 50), 0, -1, border_width=-1, func=self.func_main_to_config)
+        self.btn_extras = Button(
+            '', 26, FONT_SIMBOLS, (self.ventana_rect.w, 0), 10, 'topright', 'white',
+            (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,func=self.func_main_to_extras
+            )
+        self.btn_configs = Button(
+            '', 26, FONT_SIMBOLS, (0, 0), 10, 'topleft', 'white', (20, 20, 20),
+            (50, 50, 50), 0, -1, border_width=-1, func=self.func_main_to_config
+            )
 
         self.btn_new_descarga = Button(self.txts['btn-nueva_descarga'], 16, FONT_MONONOKI, (30, 80), 20,
                                              'topleft', 'white', (50, 50, 50), (90, 90, 90), 0, 20,
@@ -357,51 +394,131 @@ con su navegador de preferencia"),
         )
 
         # Pantalla principal
-        self.list_to_draw: list[Text|Button|Input|Multi_list|Select_box]  = [
+        self.lists_screens['main']["draw"] = [
             self.txt_title, self.btn_extras, self.btn_configs, self.btn_new_descarga,
             self.btn_change_dir, self.lista_descargas, self.btn_reload_list, self.particulas_mouse
         ]
-        self.list_to_click = [self.lista_descargas,self.btn_new_descarga, self.btn_configs, self.btn_reload_list, self.btn_extras,
-                              self.btn_change_dir]
+        self.lists_screens['main']["click"] = [
+            self.lista_descargas,self.btn_new_descarga, self.btn_configs, self.btn_reload_list, self.btn_extras,
+            self.btn_change_dir
+        ]
+        self.lists_screens['main']["update"].extend(self.lists_screens['main']["draw"])
 
         # Ventana de nueva descarga
-        self.list_to_draw_new_download = [
+        self.lists_screens['new_download']["draw"] = [
             self.text_newd_title, self.boton_newd_aceptar, self.boton_newd_cancelar,
             self.input_newd_paste, self.btn_comprobar_url, self.text_newd_title_details,
             self.text_newd_filename, self.text_newd_size, self.text_newd_status,
             self.text_newd_file_type, self.text_newd_hilos, self.btn_newd_hilos, self.input_newd_url,
         ]
-
-        self.list_to_click_newd = [self.boton_newd_aceptar, self.boton_newd_cancelar, self.input_newd_paste,
-                                   self.btn_comprobar_url, self.btn_newd_hilos]
-        self.list_inputs_newd = [self.input_newd_url]
+        self.lists_screens['new_download']["click"] = [
+            self.boton_newd_aceptar, self.boton_newd_cancelar, self.input_newd_paste,
+            self.btn_comprobar_url, self.btn_newd_hilos, self.input_newd_url
+        ]
+        self.lists_screens['new_download']["inputs"] = [self.input_newd_url]
+        self.lists_screens['new_download']["update"].extend(self.lists_screens['new_download']["draw"])
 
         # Pantalla de configuraciones
-        self.list_to_draw_config = [self.text_config_title, self.btn_config_exit, self.text_config_hilos,
-                                    self.text_config_idioma, self.btn_config_idioma_en, self.btn_config_idioma_es,
-                                    self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola,
-                                    self.text_config_LDM,self.btn_config_LDM,self.btn_change_hilos,self.text_config_enfoques,
-                                    self.btn_config_enfoques,self.text_config_detener_5min,self.btn_config_detener_5min,
-                                    self.list_config_extenciones,self.btn_config_añair_extencion,self.select_change_hilos,
-                                    self.btn_config_eliminar_extencion,self.text_limitador_velocidad,self.text_config_particulas,
-                                    self.btn_config_velocidad,self.select_config_velocidad,self.btn_config_particulas,
-                                    self.particulas_mouse]
-        self.list_to_click_config = [self.list_config_extenciones,self.btn_config_exit, 
-                                     self.btn_config_idioma_en, self.btn_config_idioma_es,self.btn_config_particulas,
-                                     self.btn_config_apagar_al_finalizar_cola,self.btn_config_LDM,
-                                     self.btn_config_enfoques,self.btn_config_detener_5min,self.btn_config_añair_extencion,
-                                     self.btn_config_eliminar_extencion,self.select_change_hilos,
-                                     self.select_config_velocidad]
+        self.lists_screens['config']["draw"] = [
+            self.text_config_title, self.btn_config_exit, self.text_config_hilos,
+            self.text_config_idioma, self.btn_config_idioma_en, self.btn_config_idioma_es,
+            self.btn_config_apagar_al_finalizar_cola,self.text_config_apagar_al_finalizar_cola,
+            self.text_config_LDM,self.btn_config_LDM,self.btn_change_hilos,self.text_config_enfoques,
+            self.btn_config_enfoques,self.text_config_detener_5min,self.btn_config_detener_5min,
+            self.list_config_extenciones,self.btn_config_añair_extencion,self.select_change_hilos,
+            self.btn_config_eliminar_extencion,self.text_limitador_velocidad,self.text_config_particulas,
+            self.btn_config_velocidad,self.select_config_velocidad,self.btn_config_particulas,
+            self.particulas_mouse
+        ]
+        self.lists_screens['config']["click"] = [
+            self.list_config_extenciones,self.btn_config_exit, 
+            self.btn_config_idioma_en, self.btn_config_idioma_es,self.btn_config_particulas,
+            self.btn_config_apagar_al_finalizar_cola,self.btn_config_LDM,
+            self.btn_config_enfoques,self.btn_config_detener_5min,self.btn_config_añair_extencion,
+            self.btn_config_eliminar_extencion,self.btn_change_hilos,self.btn_config_velocidad,
+            self.select_config_velocidad,self.select_change_hilos,
+        ]
+        self.lists_screens['config']["update"].extend(self.lists_screens['config']["draw"])
 
         # Pantalla de Extras
-        self.list_to_draw_extras = [self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
-                                    self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version,
-                                    self.btn_extras_install_extension,self.btn_extras_borrar_todo,
-                                    self.btn_extras_read_version_notes, self.particulas_mouse]
-        self.list_to_click_extras = [self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube,
-                                     self.btn_extras_install_extension,self.btn_extras_borrar_todo,
-                                     self.btn_extras_read_version_notes]
+        self.lists_screens['extras']["draw"] = [
+            self.text_extras_title, self.btn_extras_exit, self.text_extras_mi_nombre,
+            self.btn_extras_link_github, self.btn_extras_link_youtube, self.text_extras_version,
+            self.btn_extras_install_extension,self.btn_extras_borrar_todo,
+            self.btn_extras_read_version_notes, self.particulas_mouse
+        ]
+        self.lists_screens['extras']["click"] = [
+            self.btn_extras_exit, self.btn_extras_link_github, self.btn_extras_link_youtube,
+            self.btn_extras_install_extension,self.btn_extras_borrar_todo,
+            self.btn_extras_read_version_notes
+        ]
+        self.lists_screens['extras']["update"].extend(self.lists_screens['extras']["draw"])
         self.move_objs()
+
+
+        # Controles de los botones de la pantalla principal
+        self.btn_new_descarga.controles_adyacentes = {
+            'top': self.btn_configs,
+            'left': self.btn_configs,
+            'right': self.btn_change_dir
+        }
+        self.btn_change_dir.controles_adyacentes = {
+            'top': self.btn_configs,
+            'left': self.btn_new_descarga,
+            'right': self.btn_extras
+        }
+        self.btn_extras.controles_adyacentes = {
+            'bottom': self.btn_change_dir,
+            'left': self.btn_configs,
+            'right': self.btn_configs
+        }
+        self.btn_configs.controles_adyacentes = {
+            'bottom': self.btn_new_descarga,
+            'left': self.btn_extras,
+            'right': self.btn_extras
+        }
+
+        # Controles de los botones de configuracion
+        self.btn_config_idioma_es.controles_adyacentes = {
+            'right': self.btn_config_idioma_en,
+            'bottom': self.btn_config_apagar_al_finalizar_cola,
+            'top': self.btn_config_exit
+        }
+        self.btn_config_idioma_en.controles_adyacentes = {
+            'left': self.btn_config_idioma_es,
+            'bottom': self.btn_config_apagar_al_finalizar_cola,
+            'top': self.btn_config_exit
+        }
+        self.btn_config_apagar_al_finalizar_cola.controles_adyacentes = {
+            'top': self.btn_config_idioma_en,
+            'left': self.btn_config_idioma_en,
+            'right': self.btn_config_exit,
+            'bottom': self.btn_config_LDM
+        }
+        self.btn_config_LDM.controles_adyacentes = {
+            'top': self.btn_config_apagar_al_finalizar_cola,
+            'bottom': self.btn_config_enfoques,
+        }
+        self.btn_config_enfoques.controles_adyacentes = {
+            'top': self.btn_config_LDM,
+            'bottom': self.btn_config_detener_5min,
+            'right': self.btn_config_exit
+        }
+        self.btn_config_detener_5min.controles_adyacentes = {
+            'top': self.btn_config_enfoques,
+            'bottom': self.btn_config_particulas,
+            'right': self.btn_config_exit
+        }
+        self.btn_config_particulas.controles_adyacentes = {
+            'top': self.btn_config_detener_5min,
+            'bottom': self.btn_config_exit,
+            'right': self.btn_config_exit
+        }
+        self.btn_config_exit.controles_adyacentes = {
+            'bottom': self.btn_config_idioma_en,
+            'left': self.btn_config_idioma_en,
+            'top': self.btn_config_particulas
+        }
 
     def move_objs(self):
         self.Mini_GUI_manager.limit = self.ventana_rect
@@ -547,22 +664,78 @@ con su navegador de preferencia"),
         finally:
             self.redraw = True
 
-    def eventos_en_comun(self, evento: pag.event.Event):
+    def exit(self):
+        self.cicle_try = 20
+        for x in self.lists_screens.keys():
+            self.lists_screens[x]["active"] = False
+
+    def select_inputs_with_TAB(self, evento: pag.event.Event, screen_alias: str):
+        if len(self.lists_screens[screen_alias]["inputs"]) == 0:
+            return False
+        if evento.key == pag.K_TAB:
+            next_typ = False
+            for x in self.lists_screens[screen_alias]["inputs"]:
+                if x.typing:
+                    x.typing = False
+                    next_typ = True
+                elif next_typ:
+                    x.typing = True
+                    break
+            else:
+                return False # ojojojojojooojojojojojojojojojojojojojojojojo
+            return True
+        else: 
+            return False
+        
+    def move_hover(self, direccion: str, lista):
+        for i,x in sorted(enumerate(lista), reverse=True):
+            if isinstance(x, (Button)) and x.controles_adyacentes.get(direccion,False) and x.hover:
+                if not x.controles_adyacentes.get(direccion,False):
+                    break
+                x.hover = False
+                x.controles_adyacentes.get(direccion,False).hover = True
+                break
+        else:
+            for x in lista:
+                if isinstance(x, Button):
+                    x.hover = False
+            for x in lista:
+                if isinstance(x, (Button)):
+                    x.hover = True
+                    break
+
+    def select_btns_with_arrows(self, evento: pag.event.Event, screen_alias: str):
+        if evento.key == pag.K_RIGHT:
+            self.move_hover('right',self.lists_screens[screen_alias]["click"])
+        elif evento.key == pag.K_LEFT:
+            self.move_hover('left',self.lists_screens[screen_alias]["click"])
+        elif evento.key == pag.K_UP:
+            self.move_hover('top',self.lists_screens[screen_alias]["click"])
+        elif evento.key == pag.K_DOWN:
+            self.move_hover('bottom',self.lists_screens[screen_alias]["click"])
+        else: return False
+        return True
+
+    def eventos_en_comun(self, evento: pag.event.Event, screen_alias: str):
         mx, my = pag.mouse.get_pos()
+        if evento.type == pag.MOUSEBUTTONDOWN:
+            self.last_click = time.time()
+            if evento.button == 1:
+                self.click = True
+        elif evento.type == pag.MOUSEBUTTONUP:
+            self.click = False
+            
         if evento.type == QUIT:
-            self.cicle_try = 20
-            self.screen_main_bool: bool = False
-            self.screen_new_download_bool: bool = False
-            self.screen_configs_bool: bool = False
-            self.screen_extras_bool: bool = False
-        elif evento.type == pag.KEYDOWN and evento.key == pag.K_F12:
-            momento = datetime.datetime.today().strftime('%d-%m-%y %f')
-            result = win32_tools.take_window_snapshot(self.hwnd)
-            surf = pag.image.frombuffer(result['buffer'],(result['bmpinfo']['bmWidth'], result['bmpinfo']['bmHeight']),'BGRA')
-            pag.image.save(surf,SCREENSHOTS_DIR.joinpath('Download Manager {}.png'.format(momento)))
-        elif evento.type == pag.KEYDOWN and evento.key == pag.K_F11:
-            self.hitboxes = not self.hitboxes
-        if evento.type == pag.WINDOWRESTORED:
+            self.exit()
+        elif evento.type == pag.KEYDOWN:
+            if evento.key == pag.K_F12:
+                momento = datetime.datetime.today().strftime('%d-%m-%y %f')
+                result = win32_tools.take_window_snapshot(self.hwnd)
+                surf = pag.image.frombuffer(result['buffer'],(result['bmpinfo']['bmWidth'], result['bmpinfo']['bmHeight']),'BGRA')
+                pag.image.save(surf,SCREENSHOTS_DIR.joinpath('Download Manager {}.png'.format(momento)))
+            elif evento.key == pag.K_F11:
+                self.hitboxes = not self.hitboxes
+        elif evento.type == pag.WINDOWRESTORED:
             return True
         elif evento.type == MOUSEBUTTONDOWN and evento.button in [1,3] and self.Mini_GUI_manager.click(evento.pos):
             return True
@@ -587,6 +760,7 @@ con su navegador de preferencia"),
         elif self.loading > 0:
             return True
         elif self.GUI_manager.active >= 0:
+            self.GUI_manager.update_hover(evento.pos)
             if evento.type == KEYDOWN and evento.key == K_ESCAPE:
                 self.GUI_manager.pop()
             elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
@@ -635,61 +809,50 @@ con su navegador de preferencia"),
             except:
                 print('error')
                 print(self.updates)
-
+    
     def screen_configs(self):
-        if self.screen_configs_bool:
-            self.cicle_try = 0
-            self.draw_background = True
-            self.redraw = True
-        while self.screen_configs_bool:
+        while self.lists_screens['config']["active"]:
             self.relog.tick(self.framerate)
             self.delta_time.update()
 
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
             for evento in eventos:
-                if self.eventos_en_comun(evento):
+                if self.eventos_en_comun(evento, 'config'):
                     self.redraw = True
                     continue
-                elif evento.type == KEYDOWN:
-                    if evento.key == K_ESCAPE:
-                        self.screen_configs_bool = False
-                        self.screen_main_bool = True
-                    # elif evento.key == pag.K_v and pag.key.get_pressed()[pag.K_LCTRL]:
-                    #     for x in self.list_inputs:
-                    #         if x.typing:
-                    #             x.set(pyperclip.paste())
+                elif evento.type == pag.KEYDOWN:
+                    if evento.key == pag.K_ESCAPE:
+                        self.lists_screens['config']["active"] = False
+                        self.lists_screens['main']["active"] = True
+                    elif evento.key == pag.K_TAB:
+                        self.select_inputs_with_TAB(evento, 'config') # Opcional para que se puedan usar TAB para seleccionar otro input de la lista
+                    elif self.select_btns_with_arrows(evento, 'config') and self.navegate_with_keys: # Opcional
+                        continue
+                    elif evento.key == pag.K_SPACE and self.navegate_with_keys:
+                        for i,x in sorted(enumerate(self.lists_screens['config']["click"]),reverse=True):
+                            if isinstance(x, Button) and x.hover:
+                                x.click((mx,my))
+                                break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if not self.low_detail_mode and self.allow_particles:
                         self.particulas_mouse.spawn_pos = (mx,my)
                         self.particulas_mouse.spawn_particles()
-                    for i,x in sorted(enumerate(self.list_to_click_config), reverse=True):
-                        if isinstance(x, List) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
-                            self.redraw = True
-                            break
-                        elif x.click((mx, my)):
-                            self.redraw = True
-                            break
+                    self.on_mouse_click_general(evento, 'config')
                 elif evento.type == MOUSEBUTTONUP:
                     self.list_config_extenciones.scroll = False
                 elif evento.type == MOUSEWHEEL and self.list_config_extenciones.rect.collidepoint((mx,my)):
                     self.list_config_extenciones.rodar(evento.y*15)
-                elif evento.type == MOUSEMOTION and self.list_config_extenciones.scroll:
-                    self.list_config_extenciones.rodar_mouse(evento.rel[1])
+                elif evento.type == MOUSEMOTION:
+                    self.mouse_motion_event_general(evento, 'config')
             
-            self.update_general(self.list_to_draw_config, (mx,my))
+            self.update_general(self.lists_screens['config']["update"], (mx,my))
 
             if not self.drawing:
                 continue
-            self.draw_objs(self.list_to_draw_config)
+            self.draw_objs(self.lists_screens['config']["draw"])
 
     def screen_new_download(self):
-        if self.screen_new_download_bool:
-            self.cicle_try = 0
-            self.redraw = True
-        else:
-            return
-
         self.input_newd_url.clear()
         self.text_newd_filename.text = self.txts['nombre']+': ----------'
         self.text_newd_size.text = self.txts['tamaño']+': -------'
@@ -701,70 +864,75 @@ con su navegador de preferencia"),
         self.redraw = True
         self.draw_background = False
 
-        while self.screen_new_download_bool:
+        while self.lists_screens['new_download']["active"]:
             self.relog.tick(self.framerate)
 
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
 
-            for x in self.list_inputs_newd:
+            for x in self.lists_screens['new_download']["inputs"]:
                 x.eventos_teclado(eventos)
             for evento in eventos:
-                if self.eventos_en_comun(evento):
+                if self.eventos_en_comun(evento, 'new_download'):
                     self.redraw = True
                     continue
-                elif evento.type == KEYDOWN:
-                    if evento.key == K_ESCAPE:
+                elif evento.type == pag.KEYDOWN:
+                    if evento.key == pag.K_ESCAPE:
                         self.func_newd_close()
+                    elif evento.key == pag.K_TAB:
+                        self.select_inputs_with_TAB(evento, 'new_download') # Opcional para que se puedan usar TAB para seleccionar otro input de la lista
+                    elif self.select_btns_with_arrows(evento, 'new_download') and self.navegate_with_keys: # Opcional
+                        continue
+                    elif evento.key == pag.K_SPACE and self.navegate_with_keys:
+                        for i,x in sorted(enumerate(self.lists_screens['new_download']["click"]),reverse=True):
+                            if isinstance(x, Button) and x.hover:
+                                x.click((mx,my))
+                                break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                    for x in self.list_to_click_newd:
-                        if x.click((mx, my)):
-                            self.redraw = True
-                            break
+                    self.on_mouse_click_general(evento, 'new_download')
+                elif evento.type == MOUSEMOTION:
+                    self.mouse_motion_event_general(evento, 'new_download')
             
-            self.update_general(self.list_to_draw_new_download, (mx,my))
+            self.update_general(self.lists_screens['new_download']["update"], (mx,my))
             if not self.drawing:
                 continue
             self.ventana.fill((20, 20, 20))
             pag.draw.rect(self.ventana, (50, 50, 50), self.new_download_rect, 0, 20)
-            self.draw_objs(self.list_to_draw_new_download)
+            self.draw_objs(self.lists_screens['new_download']["draw"])
 
         self.draw_background = True
         self.ventana.fill((20, 20, 20))
         pag.display.update()
 
     def main_cycle(self) -> None:
-        if self.screen_main_bool:
-            self.cicle_try = 0
-            self.draw_background = True
-            self.redraw = True
-
-        while self.screen_main_bool:
+        while self.lists_screens['main']["active"]:
             self.relog.tick(self.framerate)
             self.delta_time.update()
 
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
-
-
             for evento in eventos:
-                if self.eventos_en_comun(evento):
+                if self.eventos_en_comun(evento, 'main'):
                     self.redraw = True
                     continue
-                elif evento.type == KEYDOWN and evento.key == K_ESCAPE:
-                    self.screen_main_bool = False
+                elif evento.type == pag.KEYDOWN:
+                    if evento.key == pag.K_ESCAPE:
+                        self.lists_screens['main']["active"] = False
+                    elif evento.key == pag.K_TAB:
+                        self.select_inputs_with_TAB(evento, 'main') # Opcional para que se puedan usar TAB para seleccionar otro input de la lista
+                    elif self.select_btns_with_arrows(evento, 'main') and self.navegate_with_keys: # Opcional
+                        continue
+                    elif evento.key == pag.K_SPACE and self.navegate_with_keys:
+                        for i,x in sorted(enumerate(self.lists_screens['main']["click"]),reverse=True):
+                            if isinstance(x, Button) and x.hover:
+                                x.click((mx,my))
+                                break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
-                    self.last_click = time.time()
                     if not self.low_detail_mode and self.allow_particles:
                         self.particulas_mouse.spawn_pos = (mx,my)
                         self.particulas_mouse.spawn_particles()
-                    for i,x in sorted(enumerate(self.list_to_click), reverse=True):
-                        if isinstance(x, Multi_list) and x.click((mx,my),pag.key.get_pressed()[pag.K_LCTRL]):
-                            break
-                        elif x.click((mx, my)):
-                            break
+                    self.on_mouse_click_general(evento, 'main')
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 3:
-                    self.last_click = time.time()
                     if self.lista_descargas.click((mx, my),pag.key.get_pressed()[pag.K_LCTRL],button=3) and (result := self.lista_descargas.get_selects()):
                         self.Mini_GUI_manager.add(mini_GUI.select((mx+1, my+1),
                                                                   [self.txts['descargar'], self.txts['eliminar'],
@@ -776,52 +944,89 @@ con su navegador de preferencia"),
                     self.lista_descargas.scroll = False
                 elif evento.type == MOUSEWHEEL and self.lista_descargas.rect.collidepoint((mx,my)):
                     self.lista_descargas.rodar(evento.y*15)
-                elif evento.type == MOUSEMOTION and self.lista_descargas.scroll:
-                    self.lista_descargas.rodar_mouse(evento.rel[1])
+                elif evento.type == MOUSEMOTION:
+                    self.mouse_motion_event_general(evento, 'main')
 
-            self.update_general(self.list_to_draw, (mx,my))
+            
+            self.update_general(self.lists_screens['main']["update"], (mx,my))
 
             if not self.drawing:
                 continue
-            self.draw_objs(self.list_to_draw)
+            self.draw_objs(self.lists_screens['main']["draw"])
 
     def screen_extras(self):
-        if self.screen_extras_bool:
-            self.cicle_try = 0
-            self.redraw = True
-
-        while self.screen_extras_bool:
+        while self.lists_screens['extras']["active"]:
             self.relog.tick(self.framerate)
 
             mx, my = pag.mouse.get_pos()
             eventos = pag.event.get()
 
             for evento in eventos:
-                if self.eventos_en_comun(evento):
+                if self.eventos_en_comun(evento, 'extras'):
                     self.redraw = True
                     continue
-                elif evento.type == KEYDOWN:
-                    if evento.key == K_ESCAPE:
-                        self.screen_extras_bool = False
-                        self.screen_main_bool = True
+                elif evento.type == pag.KEYDOWN:
+                    if evento.key == pag.K_ESCAPE:
+                        self.lists_screens['extras']["active"] = False
+                        self.lists_screens['main']["active"] = True
+                    elif evento.key == pag.K_TAB:
+                        self.select_inputs_with_TAB(evento, 'extras') # Opcional para que se puedan usar TAB para seleccionar otro input de la lista
+                    elif self.select_btns_with_arrows(evento, 'extras') and self.navegate_with_keys: # Opcional
+                        continue
+                    elif evento.key == pag.K_SPACE and self.navegate_with_keys:
+                        for i,x in sorted(enumerate(self.lists_screens['extras']["click"]),reverse=True):
+                            if isinstance(x, Button) and x.hover:
+                                x.click((mx,my))
+                                break
                 elif evento.type == MOUSEBUTTONDOWN and evento.button == 1:
                     if not self.low_detail_mode and self.allow_particles:
                         self.particulas_mouse.spawn_pos = (mx,my)
                         self.particulas_mouse.spawn_particles()
-                    for x in self.list_to_click_extras:
-                        if x.click((mx, my)):
-                            break
+                    self.on_mouse_click_general(evento, 'extras')
+                elif evento.type == MOUSEMOTION:
+                    self.mouse_motion_event_general(evento, 'extras')
 
-            self.update_general(self.list_to_draw_extras, (mx,my))
+            self.update_general(self.lists_screens['extras']["update"], (mx,my))
             if not self.drawing:
                 continue
-            self.draw_objs(self.list_to_draw_extras)
+            self.draw_objs(self.lists_screens['extras']["draw"])
 
     def update_general(self,lista,mouse_pos):
         for i,x in sorted(enumerate(lista), reverse=True):
             x.update(dt=self.delta_time.dt,mouse_pos=mouse_pos)
         self.GUI_manager.update(mouse_pos=mouse_pos)
         self.Mini_GUI_manager.update(mouse_pos=mouse_pos)
+        if self.loading > 0 and self.loader:
+            self.loader.update(self.delta_time.dt)
+
+    def wheel_event_general(self,evento,screen_alias: str) -> bool:
+        for i,x in sorted(enumerate(self.lists_screens[screen_alias]["click"]), reverse=True):
+            if isinstance(x, (Multi_list,List,Bloque)) and not x.scroll and x.rect.collidepoint(pag.mouse.get_pos()):
+                x.rodar(evento.y*self.scroll_speed)
+                return True
+        return False
+
+    def mouse_motion_event_general(self,evento, screen_alias: str) -> bool:
+        if self.click:
+            for i,x in sorted(enumerate(self.lists_screens[screen_alias]["click"]), reverse=True):
+                if isinstance(x, (Multi_list, List, Bloque)) and x.scroll:
+                    x.rodar_mouse(evento.rel[1])
+                    return True
+        self.Mini_GUI_manager.update_hover(evento.pos)
+        for i,x in sorted(enumerate(self.lists_screens[screen_alias]["click"]), reverse=True):
+            if isinstance(x, Button):
+                x.update_hover(evento.pos)
+        return False
+    
+    def on_mouse_click_general(self,evento,screen_alias: str) -> bool:
+        for i,x in sorted(enumerate(self.lists_screens[screen_alias]["click"]), reverse=True):
+            if isinstance(x, (Multi_list,List)) and x.click(evento.pos,pag.key.get_pressed()[pag.K_LCTRL]):
+                self.redraw = True
+                return True
+            elif x.click(mouse_pos=evento.pos):
+                self.redraw = True
+                return True
+        return False
 
     def func_select_box(self, respuesta) -> None:
         if not self.cached_list_DB: return
@@ -961,9 +1166,9 @@ con su navegador de preferencia"),
 
     def func_select_box_hilos(self, respuesta) -> None:
         self.threads = 2**respuesta['index']
-
         self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
-
+        self.save_json()
+        
     def func_select_box_hilos_newd(self, respuesta) -> None:
         self.new_threads = 2**respuesta['index']
 
@@ -984,6 +1189,7 @@ con su navegador de preferencia"),
 
         self.text_limitador_velocidad.text = self.txts['limitar-velocidad']+': '+format_size_bits_to_bytes_str(self.velocidad_limite)
         self.btn_config_velocidad.pos = (self.text_limitador_velocidad.right + 60, self.text_limitador_velocidad.centery)
+        self.save_json()
 
     def del_download(self, index):
         response = requests.get(f'http://127.0.0.1:5000/descargas/delete/{index}')
@@ -1005,8 +1211,8 @@ con su navegador de preferencia"),
         requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
 
         self.Func_pool.start('reload list')
-        self.screen_new_download_bool = False
-        self.screen_main_bool = True
+        self.lists_screens['new_download']["active"] = False
+        self.lists_screens['main']["active"] = True
 
     def func_descargar(self, obj_cached):
         self.loading += 1
@@ -1119,21 +1325,26 @@ con su navegador de preferencia"),
     def toggle_apagar_al_finalizar_cola(self):
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
         self.btn_config_apagar_al_finalizar_cola.text = ''if self.apagar_al_finalizar_cola else ''
+        self.save_json()
 
     def toggle_particles(self):
         self.allow_particles = not self.allow_particles
         self.btn_config_particulas.text = ''if self.allow_particles else ''
+        self.save_json()
     def toggle_ldm(self):
         self.low_detail_mode = not self.low_detail_mode
         self.btn_config_LDM.text = ''if self.low_detail_mode else ''
         self.lista_descargas.smothscroll = not self.low_detail_mode  
         self.list_config_extenciones.smothscroll = not self.low_detail_mode  
+        self.save_json()
     def toggle_enfoques(self):
         self.enfoques = not self.enfoques
         self.btn_config_enfoques.text = '' if self.enfoques else ''
+        self.save_json()
     def toggle_detener_5min(self):
         self.detener_5min = not self.detener_5min
         self.btn_config_detener_5min.text = '' if self.detener_5min else ''
+        self.save_json()
 
     def func_comprobar_url(self):
         self.url = self.input_newd_url.get_text()
@@ -1149,43 +1360,36 @@ con su navegador de preferencia"),
         self.Func_pool.start('reload list')
         self.move_objs()
         self.redraw = True
+        self.save_json()
 
     def func_newd_close(self):
-        self.screen_new_download_bool = False
+        self.lists_screens['new_download']["active"] = False
         if self.thread_new_download and self.thread_new_download.is_alive():
             self.thread_new_download.join(.1)
             
-        self.screen_main_bool = True
+        self.lists_screens['main']["active"] = True
 
     def func_main_to_config(self):
-        self.screen_main_bool = False
-        self.screen_configs_bool = True
-        self.screen_new_download_bool = False
+        self.lists_screens['main']["active"] = False
+        self.lists_screens['config']["active"] = True
 
     def func_exit_configs(self):
-        self.screen_configs_bool = False
-        self.screen_main_bool = True
-        self.screen_new_download_bool = False
+        self.lists_screens['config']["active"] = False
+        self.lists_screens['main']["active"] = True
 
         self.save_json()
 
     def func_extras_to_main(self):
-        self.screen_main_bool = True
-        self.screen_configs_bool = False
-        self.screen_new_download_bool = False
-        self.screen_extras_bool = False
+        self.lists_screens['main']["active"] = True
+        self.lists_screens['extras']["active"] = False
 
     def func_main_to_extras(self):
-        self.screen_main_bool = False
-        self.screen_configs_bool = False
-        self.screen_new_download_bool = False
-        self.screen_extras_bool = True
+        self.lists_screens['main']["active"] = False
+        self.lists_screens['extras']["active"] = True
 
     def func_main_to_new_download(self):
-        self.screen_main_bool = False
-        self.screen_configs_bool = False
-        self.screen_new_download_bool = True
-        self.screen_extras_bool = False
+        self.lists_screens['main']["active"] = False
+        self.lists_screens['new_download']["active"] = True
  
 
 if __name__ == '__main__':

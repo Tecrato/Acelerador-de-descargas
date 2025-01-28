@@ -27,7 +27,7 @@ RESOLUTION = (700, 300)
 RETURNCODE = 0
 
 class Downloader:
-    def __init__(self, id, modificador=0) -> None:
+    def __init__(self, id, modificador=0):
         pag.init()
         self.ventana = pag.display.set_mode(RESOLUTION)
         self.ventana_rect = self.ventana.get_rect()
@@ -293,7 +293,7 @@ class Downloader:
 
         pag.display.update()
 
-    def screen_main(self) -> None:
+    def screen_main(self):
         if self.screen_main_bool:
             self.cicle_try: int = 0
             self.redraw = True
@@ -355,8 +355,10 @@ class Downloader:
                     self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
 
 
-            self.GUI_manager.update(mouse_pos=(mx,my))
-            self.Mini_GUI_manager.update(mouse_pos=(mx,my))
+            self.GUI_manager.update()
+            self.Mini_GUI_manager.update()
+            self.GUI_manager.update_hover(mouse_pos=(mx,my))
+            self.Mini_GUI_manager.update_hover(mouse_pos=(mx,my))
 
     def wheel_event_main(self,evento,lista):
         for i,x in sorted(enumerate(lista), reverse=True):
@@ -393,7 +395,7 @@ class Downloader:
 
     def calc_velocity(self):
         if not self.downloading:
-            return 0
+            return
         
         vel = self.peso_descargado_vel / (time.time() - self.last_velocity_update)
         self.last_velocity_update = time.time()
@@ -410,7 +412,7 @@ class Downloader:
         
         if self.current_velocity > 0:
             self.last_change = time.time()
-        elif time.time() - self.last_change > 300:
+        elif time.time() - self.last_change > 300 and self.detener_5min:
             self.func_pausar()
             self.GUI_manager.add(
                 uti_pag.GUI.Desicion(self.ventana_rect.center, 'Error',
@@ -443,7 +445,7 @@ class Downloader:
         progreso = (self.peso_descargado / self.peso_total)
         self.prepared_session.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
 
-    def func_pausar(self) -> None:
+    def func_pausar(self):
         self.paused = True
         self.last_change = time.time()
         self.downloading = False
@@ -452,14 +454,14 @@ class Downloader:
         self.list_vels.clear()
         self.text_estado_general.text = f'{self.txts["estado"]}: {self.txts["pausado"]}'
 
-    def func_cancelar(self, result) -> None:
+    def func_cancelar(self, result):
         if result == 'cancelar':
             return
         self.paused = False
         self.canceled = True
         self.cerrar_todo('aceptar')
 
-    def func_reanudar(self) -> None:
+    def func_reanudar(self):
         if not self.can_download: return
         self.paused = False
         self.canceled = False
@@ -480,7 +482,7 @@ class Downloader:
         self.text_finalizando_hilos.pos = pag.Vector2(RESOLUTION)//2
         self.text_finalizando_hilos2.pos = (self.text_finalizando_hilos.centerx, self.text_finalizando_hilos.bottom+10)
         self.loading += 1
-        self.pool_hilos.shutdown(True, True)
+        self.pool_hilos.shutdown(True, cancel_futures=True)
         self.update_progress_db()
         self.screen_main_bool: bool = False
 
@@ -570,8 +572,7 @@ class Downloader:
                 lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
             )
 
-
-    def start_download(self) -> None:
+    def start_download(self):
         if not self.can_download:
             return
         if self.downloading:

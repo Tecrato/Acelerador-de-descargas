@@ -17,7 +17,7 @@ from pathlib import Path
 from threading import Thread
 from platformdirs import user_log_path
 
-from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR
+from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config
 
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
@@ -27,6 +27,8 @@ from Utilidades import win32_tools, Logger, check_update
 from main import DownloadManager
 from Downloader import Downloader
 from ventana_actualizar import Ventana_actualizar
+from ventana_cola_finalizada import Ventana_cola_finalizada
+from ventana_detener_apago_automatico import Ventana_detener_apago_automatico
 
 os.chdir(Path(__file__).parent)
 app = Flask("Acelerador de descargas(API)")
@@ -74,7 +76,7 @@ def set_conf(key: str, value: str):
 
 lista_descargas = []
 cola: list[int] = []
-cola_iniciada = 0
+cola_iniciada = False
 program_opened = False
 program_thread = None
 last_update = time.time()
@@ -193,10 +195,10 @@ def download(id: int):
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     
-    if id in cola and cola_iniciada > 0:
+    if id in cola and cola_iniciada:
         return jsonify({"message": "Descarga en cola", "code":2, 'status':'error'})
     elif id in cola:
-        cola_iniciada += 1
+        cola_iniciada = True
     Thread(target=init_download,args=(id,)).start()
     
     
@@ -226,8 +228,9 @@ def init_download(id):
         if get_conf('apagar al finalizar cola'):
             get_logger().write(f'Logger: Apagando el sistema por finalizar la cola de descargas {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")} \n')
             os.system('shutdown /s /t 30 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"')
-    if id in cola:
-        cola_iniciada -= 1
+            Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
+        else:
+            Process(target=Ventana_cola_finalizada, args=(Config(window_resize=False, resolution=(350, 130)),), daemon=True).start()
     del p
     lista_descargas.remove(id)
     
@@ -354,7 +357,7 @@ def buscar_actualizacion(confirm=False):
     try:
         sera = check_update('acelerador de descargas', VERSION, 'last')
         if sera:
-            Process(target=Ventana_actualizar,args=(sera['url'],)).start()
+            Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True).start()
         elif confirm:
             notifypy.Notify('Acelerador de descargas', f"No hay actualizaciones disponibles", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
     except:

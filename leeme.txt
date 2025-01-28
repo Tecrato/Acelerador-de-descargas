@@ -1,11 +1,7 @@
-ejecutar el "cerrar_listener.exe" si ya tiene una version instalada del acelerador de descargas y quiere instalar otra.
+ejecutar el "cerrar_listener.bat" si ya tiene una version instalada del acelerador de descargas y quiere instalar otra.
 
 si el listener continua activo y intenta instalar una actualizacion, dara error.
 
 el archivo "extension.crx" se debe ejecutar con el navegador, 
-de momento es para los navegadores basados en chromiun (opera, chrome, edge)
-
-Psdt: 
-debo subirlo a chrome web store, ya los navegadores lo bloquean. 
-aunque tambien voy a dejar la carpeta de la extension descomprimida,
-por si alguno quiere incluir la extension igualmente.
+de momento es para opera, si no funciona en ningun otro navegador
+instalar la extension descomprimida.

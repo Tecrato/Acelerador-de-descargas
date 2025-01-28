@@ -1,7 +1,6 @@
 # Errores:
- - parchear la url cuando se manda desde la extencion.
  - no actualiza la url
-    - hacer que el siguiente link que resiva cambie el url de una descarga.
+    - hacer que el siguiente link que resiva, cambie el url de una descarga.
 
 # Cambios:
  - que cuando no cambie por 1 minuto (mas o menos), cambiar la sesion con la que se esta descargando.
@@ -23,3 +22,5 @@
 
 # Otras notas:
  - probar el rendimiento de los Texts con el graficador.
+ - los botones de los bloques deberian tener adyacente los botones dentro del mismo bloque,
+ pero como es una referencia a una variable, quizas si sirva llamando a cualquier boton de cualquier sitio.

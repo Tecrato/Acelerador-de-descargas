@@ -119,6 +119,8 @@ textos_español = {
     'gui-cancelar descarga': '¿Desea cancelar la descarga en curso?',
     'gui-no se puede reanudar': 'La descarga no se puede reanudar:\nEl link no permite reanudar la descarga',
 
+    'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
+
     # Downloader
     
     'title_hilos': 'Hilos de descarga',
@@ -183,6 +185,8 @@ textos_ingles = {
     'Desea_apagar': 'Do you want to turn off at the end of the download?',
     'Desea_ejecutar': 'Do you want execute this file at the end of the download?',
     'detalles': 'Details',
+    'detener': 'Stop',
+    'detenido': 'Stopped',
     'dia': 'Day',
     'disponible': 'Disponible',
     'eliminar': 'Delete',
@@ -260,6 +264,8 @@ textos_ingles = {
     'gui-solo una descarga': 'Opcion only valid for\none download at a time...',
     'gui-cancelar descarga': 'Do you want cancel the current download?',
     'gui-no se puede reanudar': 'This download can\'t continue:\nIs not alowed to resume',
+
+    'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
 
     # Downloader
     'title_hilos': 'Downloads threads',
