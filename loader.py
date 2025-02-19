@@ -4,15 +4,18 @@ class Loader:
     def __init__(self, pos) -> None:
         self.__pos = pos
         self.redraw = 1
+        self.updates = []
 
         self.engranajes: list[Engranaje] = [
-            Engranaje((self.__pos[0] - 40, self.__pos[1] - 50), 8, 5, 20, 20),
-            Engranaje((self.__pos[0] - 70, self.__pos[1] - 20), 8, 5, 20, 0),
-            Engranaje((self.__pos[0] - 90, self.__pos[1] - 55), 4, 5, 10, 30),
+            Engranaje((0,0), 8, 5, 20, 20),
+            Engranaje((0,0), 8, 5, 20, 0),
+            Engranaje((0,0), 4, 5, 10, 75),
         ]
-        self.engranajes[0].color = (153,44,170)
-        self.engranajes[1].color = (190,70,210)
-        self.engranajes[2].color = (190,60,230)
+        self.posicionar_engranajes()
+        self.engranajes[0].color = (140,30,160)
+        self.engranajes[1].color = (200,80,220)
+        self.engranajes[2].color = (150,120,200)
+        self.rect = self.engranajes[0].rect.unionall([r.rect for r in self.engranajes[1:]])
 
     def update(self, dt=1) -> None:
         self.engranajes[0].angle += 1
@@ -20,14 +23,16 @@ class Loader:
         self.engranajes[2].angle += 2
 
     def draw(self, surface) -> pag.Rect:
-        if self.redraw:
-            for x in self.engranajes:
-                for y in x.dientes:
-                    pag.draw.polygon(surface, x.color, y.figure)
-                pag.draw.circle(surface, x.color, x.pos, x.radio)
-            self.redraw = 0
-        # return (pag.Rect(0, 0, 200, 200).move(self.pos[0] - 200, self.pos[1] - 200),)
-        return []
+        self.updates.clear()
+        for x in self.engranajes:
+            x.draw(surface)
+            self.updates.append(x.rect)
+        return self.updates
+
+    def posicionar_engranajes(self):
+        self.engranajes[0].pos = self.pos[0] - 40, self.pos[1] - 50
+        self.engranajes[1].pos = self.pos[0] - 70, self.pos[1] - 20
+        self.engranajes[2].pos = self.pos[0] - 91, self.pos[1] - 46
 
     @property
     def pos(self):
@@ -35,16 +40,15 @@ class Loader:
     @pos.setter
     def pos(self,pos):
         self.__pos = pos
-        self.engranajes[0].pos = self.__pos[0] - 40, self.__pos[1] - 50
-        self.engranajes[1].pos = self.__pos[0] - 70, self.__pos[1] - 20
-        self.engranajes[2].pos = self.__pos[0] - 90, self.__pos[1] - 45
+        self.posicionar_engranajes()
 
-        
+        self.rect = self.engranajes[0].rect.unionall([r for r in self.engranajes[1:]])
+
     @property
     def collide_rect(self):
-        return pag.Rect(0, 0, 200, 200).move(self.pos[0] - 100, self.pos[1] - 100)
+        return self.rect
     def collide(self, rect: pag.Rect) -> bool:
-        return self.collide_rect.collidepoint(rect)
+        return self.collide_rect.colliderect(rect)
     def collide_all(self, lista) -> str:
         lista = []
         for i,x in enumerate(lista):

@@ -3,12 +3,10 @@ import os
 import requests
 import shutil
 import multiprocessing
-import notifypy
 import pystray
 import datetime
 import time
 import socket as sk
-
 
 from multiprocessing import Process
 from PIL import Image
@@ -17,14 +15,14 @@ from pathlib import Path
 from threading import Thread
 from platformdirs import user_log_path
 
-from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config
+from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config, DICT_CONFIG_DEFAULT_TYPES
 
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
 from Utilidades import win32_tools, Logger, check_update
 
-from main import DownloadManager
+from main import Downloads_manager
 from Downloader import Downloader
 from ventana_actualizar import Ventana_actualizar
 from ventana_cola_finalizada import Ventana_cola_finalizada
@@ -74,17 +72,30 @@ def set_conf(key: str, value: str):
     configs[key] = value
     json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
 
+
+image = Image.open("descargas.png")
 lista_descargas = []
+descargas_process: dict[int,Process] = {}
 cola: list[int] = []
 cola_iniciada = False
 program_opened = False
 program_thread = None
 last_update = time.time()
+last_update_type = 0
+last_download_changed = 0
 
 
 def update_last_update():
-    global last_update
+    global last_update, last_update_type
     last_update = float(time.time())
+    last_update_type = 2
+def update_last_download_update(download_id):
+    global last_update, last_update_type, last_download_changed
+    last_update = float(time.time())
+    if last_update_type < 1:
+        last_update_type = 1
+    last_download_changed = download_id
+
 
 @app.route("/check", methods=["GET"])
 @cross_origin()
@@ -95,10 +106,15 @@ def hello_world():
 def close():
     if program_thread and program_thread.is_alive():
         program_thread.join(.1)
-    if lista_descargas:
-        notifypy.Notify('Cerrar', f"Cierre todas las descargas antes de continuar", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
-        return
-    get_logger().write(f'Logger: Cerrando el programa {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+
+    for i,key in sorted(enumerate(lista_descargas), reverse = True):
+        try:
+            lista_descargas.remove(key)
+            descargas_process[key].kill()
+        except Exception as err:
+            print(type(err))
+            print(err)
+            pass
     icon.stop()
     os._exit(0)
     raise Exception('adadad')
@@ -119,16 +135,46 @@ def open_program():
 def open_program_thread():
     global program_opened
     program_opened = True
-    DownloadManager()
+    Downloads_manager(Config(resolution=(800, 550), min_resolution=(600,450)))
     program_opened = False
 
 @app.route("/extencion/check/<name>")
 def check_extencion(name: str):
     return jsonify({"message": "busqueda de extension", "code":0, 'status':'ok', "respuesta":name in get_conf('extenciones')}), 200, {'Access-Control-Allow-Origin':'*'}
 
-@app.route("/configurations")
+@app.route("/get_configurations")
 def get_configurations():
     return jsonify(get_all_conf()), 200, {'Access-Control-Allow-Origin':'*'}
+@app.route("/configuration/<key>")
+def get_configuration(key: str):
+    return jsonify(get_conf(key)), 200, {'Access-Control-Allow-Origin':'*'}
+@app.route("/set_configuration", methods=["POST"])
+def set_configuration():
+    if request.is_json:
+        response = request.get_json()
+    else:
+        response = request.form
+    print(response)
+    try:
+        if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
+            raise TypeError('Troliado mi pana')
+        set_conf(response['key'], DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']))
+        get_logger().write(f"Logger: Configuracion {response['key']} cambaiada a '{response['value']}'")
+        return jsonify({"message": "Configuracion actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+    except TypeError as err:
+        print(err)
+        get_logger().write(f'Logger: Error al actualizar la configuracion {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+        get_logger().write(type(err))
+        get_logger().write('No es el tipo que necesita')
+        get_logger().write(err)
+        return jsonify({"message": "Valor de tipo invalido", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+    except Exception as err:
+        print(err)
+        get_logger().write(f'Logger: Error al actualizar la configuracion {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+        get_logger().write(type(err))
+        get_logger().write(err)
+        return jsonify({"message": "Error al actualizar la configuracion", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+
 
 def get_sockets_clients():
     socket = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
@@ -144,7 +190,7 @@ def get_sockets_clients():
 def __comunicacion(client: sk.socket):
     try:
         while True:
-            message = json.dumps({'status': 'idle', 'last_update':last_update}).encode()
+            message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': last_update_type, 'last_download_changed': last_download_changed}).encode()
             client.send(message)
             time.sleep(1)
             client.recv(1024).decode()
@@ -178,7 +224,7 @@ def update_url(id:int, url: str):
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
 def update_estado(id:int, estado: str) -> Response:
     get_db().update_estado(id, estado)
-    update_last_update()
+    update_last_download_update(id)
     return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/nombre/<int:id>/<nombre>", methods=["GET"])
@@ -186,7 +232,7 @@ def update_name(id:int, nombre: str):
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
     get_db().update_nombre(id, nombre)
-    update_last_update()
+    update_last_download_update(id)
     return jsonify({"message": "nombre actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/download/<int:id>", methods=["GET"])
@@ -208,20 +254,19 @@ def init_download(id):
     global cola, cola_iniciada
     lista_descargas.append(id)
     get_logger().write(f'Logger: Iniciando descarga {id} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
-
-    p = Process(name=f'Descarga {id} - Download Manager by Edouard Sandoval',target=Downloader,args=(id,'2' if id in cola else '0'),daemon=True)
-    p.start()
-    p.join()
+    descargas_process[id] = Process(name=f'Descarga {id} - Download Manager by Edouard Sandoval',target=Downloader,args=(Config(window_resize=False,resolution=(700, 300)),id,'2' if id in cola else '0'),daemon=True)
+    descargas_process[id].start()
+    descargas_process[id].join()
     # c = Downloader(id,'2' if id in cola else '0')
-    print("Termino " + str(id))
-    print(p.exitcode)
+    print(f"Termino {id} -> {descargas_process[id].exitcode}")
 
-    if id in cola and p.exitcode == 3:
+    if id in cola and descargas_process[id].exitcode == 3:
         cola.remove(id)
         update_last_update()
 
         if len(cola) > 0:
             lista_descargas.remove(id)
+            del descargas_process[id]
             return init_download(cola[0])
 
         cola_iniciada = False
@@ -231,7 +276,7 @@ def init_download(id):
             Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
         else:
             Process(target=Ventana_cola_finalizada, args=(Config(window_resize=False, resolution=(350, 130)),), daemon=True).start()
-    del p
+    del descargas_process[id]
     lista_descargas.remove(id)
     
 @app.route("/descargas/add_from_program" , methods=["GET"])
@@ -254,26 +299,23 @@ def add_descarga_web():
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])
 
     try:
-        notifypy.Notify('Descargar', f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+        icon.notify(f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
 
         response = requests.get(response1['url'], stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}, timeout=30)
         print(response.headers)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         peso = int(response.headers.get('content-length', 1))
-        if 'bytes' in response.headers.get('Accept-Ranges', ''):
-            hilos = get_conf('hilos')
-        else:
-            hilos = 1
-
-        if tipo in ['text/plain', 'text/html'] or peso < 128 * hilos:
+        hilos = get_conf('hilos') if 'bytes' in response.headers.get('Accept-Ranges', '') else 1
+        
+        if tipo in ['text/plain', 'text/html']:
             get_logger().write(response.headers)
-            notifypy.Notify('Descargar', f"Error al Obtener informacion de \n\n{response1['nombre']}", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+            icon.notify(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
             return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
         print(err)
         get_logger().write(type(err))
         get_logger().write(err)
-        notifypy.Notify('Descargar', f"Error al Obtener informacion de \n\n{response1['nombre']}", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+        icon.notify(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
         return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
     
@@ -306,13 +348,17 @@ def delete_all():
 
     return jsonify({"message": "Descargas eliminadas", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-# --------------------------------------- Cola --------------------------------------- #
+# --------------------------------------- Cola --------------------------------------- #}
+@app.route("/cola/get_all", methods=["GET"])
+def get_toda_la_cola():
+    return jsonify({"cola": cola, "message": "Descarga añadida a la cola", "code":0, 'status':'ok'})
+
 @app.route("/cola/add/<int:id>", methods=["GET"])
 def add_cola(id: int):
     if id in cola:
         return jsonify({"message": "Descarga en progreso", "code":2, 'status':'error'})
     cola.append(id)
-    update_last_update()
+    update_last_download_update(id)
     return jsonify({"message": "Descarga añadida a la cola", "code":0, 'status':'ok'})
 
 @app.route("/cola/delete/<int:id>", methods=["GET"])
@@ -323,7 +369,7 @@ def delete_cola(id: int):
         return jsonify({"message": "Descarga no esta en la cola", "code":2, 'status':'error'})
     
     cola.remove(id)
-    update_last_update()
+    update_last_download_update(id)
     return jsonify({"message": "Descarga eliminada de la cola", "code":0, 'status':'ok'})
 
 @app.route("/cola/clear", methods=["GET"])
@@ -331,9 +377,6 @@ def clear_cola():
     cola.clear()
     update_last_update()
     return jsonify({"message": "Cola limpiada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
-
-
-image = Image.open("descargas.png")
 
 
 def after_click(icon, query):
@@ -359,10 +402,10 @@ def buscar_actualizacion(confirm=False):
         if sera:
             Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True).start()
         elif confirm:
-            notifypy.Notify('Acelerador de descargas', f"No hay actualizaciones disponibles", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+            icon.notify(f"No hay actualizaciones disponibles", "Acelerador de descargas")
     except:
         if confirm:
-            notifypy.Notify('Acelerador de descargas', f"Error al buscar actualizaciones", "Acelerador de descargas", 'normal', "./descargas.ico").send(False)
+            icon.notify(f"Error al buscar actualizaciones", "Acelerador de descargas")
 
 def borrar_carpetas_vacias():
     cosas = os.listdir(CACHE_DIR)
@@ -370,6 +413,20 @@ def borrar_carpetas_vacias():
         if os.path.isdir(CACHE_DIR / i) and len(os.listdir(CACHE_DIR / i)) == 0:
             shutil.rmtree(CACHE_DIR / i)
             print(f"Se ha eliminado {CACHE_DIR / i}")
+
+def borrar_logs_vacios():
+    path = user_log_path('Acelerador de descargas', 'Edouard Sandoval')
+    cosas = os.listdir(path)
+    r = False
+    for i in cosas:
+        if os.path.isfile and (path/i).stat().st_size == 0:
+            os.remove(path/i)
+            print(f"'{path/i}' Eliminado")
+            r = True
+
+    if r:
+        print("logs vacios eliminados")
+
 
 icon = pystray.Icon("AdD", image, "Acelerador de descargas",
                     menu=pystray.Menu(
@@ -387,7 +444,7 @@ def init():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    
+
     try:
         requests.get('http://127.0.0.1:5000/open_program')
         os._exit(0)
@@ -404,6 +461,7 @@ if __name__ == '__main__':
     Thread(target=buscar_actualizacion).start()
     Thread(target=borrar_carpetas_vacias).start()
     Thread(target=get_sockets_clients).start()
+    Thread(target=borrar_logs_vacios).start()
     
     # app.run('0.0.0.0', 5000, debug=True)
     from waitress import serve

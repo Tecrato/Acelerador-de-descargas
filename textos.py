@@ -37,6 +37,7 @@ textos_español = {
     'descargando': 'Descargando',
     'Desea_apagar': 'Desea apagar al finalizar la descarga?',
     'Desea_ejecutar': 'Desea ejecutar el archivo al finalizar la descarga?',
+    'desicion': 'Desicion',
     'detalles': 'Detalles',
     'detener': 'Detener',
     'detenido': 'Detenido',
@@ -54,6 +55,7 @@ textos_español = {
     'finalizado': 'Finalizado',
     'hilos': 'Hilos',
     'hora': 'Hora',
+    'informacion': 'Informacion',
     'iniciar': 'Iniciar',
     'instalar': 'Instalar',
     'la': 'La',
@@ -102,6 +104,7 @@ textos_español = {
     'config-idioma': 'Idioma:',
 
     # GUI's
+    'gui-servidor no responde': 'El servidor no responde\nDesea volver a intentarlo?',
     'gui-desea_abrir_la_carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
     'gui-url no sirve': "El URL a dejado de funcionar\n\nActualize la URL o intente mas tarde",
     "gui-error inesperado":"A ocurrido un error inesperado\nCompruebe su conexion a internet\n\nDesea volver a intentarlo?",
@@ -118,6 +121,7 @@ textos_español = {
     'gui-solo una descarga': 'Opcion solo valida para\nuna descarga a la vez...',
     'gui-cancelar descarga': '¿Desea cancelar la descarga en curso?',
     'gui-no se puede reanudar': 'La descarga no se puede reanudar:\nEl link no permite reanudar la descarga',
+    'gui-cerrar la ventana descarga': 'Desea cerrar la ventana de descarga?\nLa descarga se podrá reanudar luego.',
 
     'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
 
@@ -184,6 +188,7 @@ textos_ingles = {
     'descargando': 'Downloading',
     'Desea_apagar': 'Do you want to turn off at the end of the download?',
     'Desea_ejecutar': 'Do you want execute this file at the end of the download?',
+    'desicion': 'Desicion',
     'detalles': 'Details',
     'detener': 'Stop',
     'detenido': 'Stopped',
@@ -201,6 +206,7 @@ textos_ingles = {
     'finalizado': 'Finished',
     'hilos': 'Threads',
     'hora': 'Hour',
+    'informacion': 'Information',
     'iniciar': 'init',
     'instalar': 'Install',
     'la': 'The',
@@ -248,6 +254,7 @@ textos_ingles = {
     'config-idioma': 'Lenguaje:',
 
     #GUI's
+    'gui-servidor no responde': 'Timeout!\nTry again?',
     'gui-desea_abrir_la_carpeta': "Download Finished\n\nDo you want open the downloads dir?",
     'gui-url no sirve': "The URL it's not working\n\nUpdate it or try again later.",
     "gui-error inesperado": "An unexpected error has occurred\n\nDo you want to try again?",
@@ -264,6 +271,7 @@ textos_ingles = {
     'gui-solo una descarga': 'Opcion only valid for\none download at a time...',
     'gui-cancelar descarga': 'Do you want cancel the current download?',
     'gui-no se puede reanudar': 'This download can\'t continue:\nIs not alowed to resume',
+    'gui-cerrar la ventana descarga': 'Do you want close the download?\nYou can resume later',
 
     'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
 

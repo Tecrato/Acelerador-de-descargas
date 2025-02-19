@@ -1,3 +1,5 @@
+import pygame as pag
+from pathlib import Path
 from platformdirs import user_downloads_path, user_pictures_path, user_config_path, user_cache_path
 
 DICT_CONFIG_DEFAULT = {
@@ -12,9 +14,21 @@ DICT_CONFIG_DEFAULT = {
     'velocidad_limite': 0, # Límite de velocidad en kb/s para las descargas. Si se establece en 0, no se aplicará ningún límite.
     'particulas': True, # Particulas de la interfaz.
 }
+DICT_CONFIG_DEFAULT_TYPES = {
+    'hilos': int,
+    'enfoques': bool,
+    'detener_5min': bool,
+    'ldm': bool,
+    'idioma': str,
+    'save_dir': str,
+    'apagar al finalizar cola': bool,
+    'extenciones': list,
+    'velocidad_limite': int,
+    'particulas': bool,
+}
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.8'
+VERSION = '3.9'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
@@ -25,8 +39,10 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 FONT_MONONOKI = "./Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
 FONT_SIMBOLS = "./Assets/fuentes/Symbols.ttf"
 
-# FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
-# FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"
+FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
+FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"
+
+ICON = './descargas.png'
 
 class Config:
     def __init__(self, window_resize=True, window_title=TITLE, resolution=None, min_resolution=(100,100), **kwargs):
@@ -41,8 +57,14 @@ class Config:
         self.min_resolution = min_resolution
         self.returncode = 0
         self.max_fps = 60
+        self.min_fps = 60
         self.screenshots_dir = SCREENSHOTS_DIR
         self.config_dir = CONFIG_DIR
         self.cache_dir = CACHE_DIR
         self.font_mononoki = FONT_MONONOKI
         self.font_symbols = FONT_SIMBOLS
+
+        self.icon = ICON
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)

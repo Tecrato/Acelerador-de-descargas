@@ -1,17 +1,19 @@
 # Errores:
  - no actualiza la url
     - hacer que el siguiente link que resiva, cambie el url de una descarga.
+ - el select(False) de las listas al clickar en otro lado.
+
 
 # Cambios:
  - que cuando no cambie por 1 minuto (mas o menos), cambiar la sesion con la que se esta descargando.
  - colocar los textos en un archiv json.
- - Hacer las GUI y mini_GUI denuevo pero con los bloques.
+ - Hacer las mini_GUI denuevo pero con los bloques.
+ - Los bloques ...
 
 
 # Cosas nuevas:
  - hacer que separe los archivos descargados en carpetas
  - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
- - Ventana para cancelar el apagado automatico.
  - comprobacion al iniciar el programa para eliminar las carpetas vacias.
  - Que el programa pueda dar mensages a travez del listener con una lista de los cambios hechos, para no recargar toda la lista.
 
@@ -21,6 +23,5 @@
 
 
 # Otras notas:
- - probar el rendimiento de los Texts con el graficador.
  - los botones de los bloques deberian tener adyacente los botones dentro del mismo bloque,
  pero como es una referencia a una variable, quizas si sirva llamando a cualquier boton de cualquier sitio.
