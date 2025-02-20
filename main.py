@@ -568,7 +568,6 @@ class Downloads_manager(Base_class):
                 self.func_select_box({'obj': [x], 'index': respuesta['index']})
             return
         else:
-            print(respuesta)
             obj_cached = self.cached_list_DB[respuesta['obj'][0]['index']]
 
         if respuesta['index'] == 0:

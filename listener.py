@@ -3,13 +3,11 @@ import os
 import requests
 import shutil
 import multiprocessing
-import pystray
 import datetime
 import time
 import socket as sk
 
 from multiprocessing import Process
-from PIL import Image
 from DB import Data_Base
 from pathlib import Path
 from threading import Thread
@@ -73,7 +71,6 @@ def set_conf(key: str, value: str):
     json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
 
 
-image = Image.open("descargas.png")
 lista_descargas = []
 descargas_process: dict[int,Process] = {}
 cola: list[int] = []
@@ -126,7 +123,7 @@ def open_program():
     global program_opened, program_thread
     if not program_opened:
         program_thread = Thread(target=open_program_thread,daemon=True)
-        program_thread.start()
+        program_thread.start() 
         return jsonify({"message": "Programa iniciado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     else:
         win32_tools.front(TITLE)
@@ -154,7 +151,6 @@ def set_configuration():
         response = request.get_json()
     else:
         response = request.form
-    print(response)
     try:
         if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
             raise TypeError('Troliado mi pana')
@@ -192,7 +188,7 @@ def __comunicacion(client: sk.socket):
         while True:
             message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': last_update_type, 'last_download_changed': last_download_changed}).encode()
             client.send(message)
-            time.sleep(1)
+            time.sleep(.2)
             client.recv(1024).decode()
     except Exception as err:
         print(err)
@@ -299,7 +295,7 @@ def add_descarga_web():
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])
 
     try:
-        icon.notify(f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
+        icon.show_notification(f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
 
         response = requests.get(response1['url'], stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}, timeout=30)
         print(response.headers)
@@ -309,13 +305,13 @@ def add_descarga_web():
         
         if tipo in ['text/plain', 'text/html']:
             get_logger().write(response.headers)
-            icon.notify(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
+            icon.show_notification(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
             return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
         print(err)
         get_logger().write(type(err))
         get_logger().write(err)
-        icon.notify(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
+        icon.show_notification(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
         return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
     
@@ -379,22 +375,11 @@ def clear_cola():
     return jsonify({"message": "Cola limpiada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 
-def after_click(icon, query):
-    global app, program_opened
-    if str(query) == "Abrir programa":
-        if not program_opened:
-            Thread(target=open_program_thread).start()
-        else:
-            win32_tools.front(TITLE)
-    elif str(query) == "Buscar actualizaciones":
-        buscar_actualizacion(confirm=True)
-    elif str(query) == "Open log":
-        get_logger().open()
-    elif str(query) == "Salir":
-        # icon.stop()
-        requests.get("http://127.0.0.1:5000/api_close")
-
-        # raise Exception('adadad')
+def func_open_program():
+    if not program_opened:
+        Thread(target=open_program_thread).start()
+    else:
+        win32_tools.front(TITLE)
 
 def buscar_actualizacion(confirm=False):
     try:
@@ -402,10 +387,10 @@ def buscar_actualizacion(confirm=False):
         if sera:
             Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True).start()
         elif confirm:
-            icon.notify(f"No hay actualizaciones disponibles", "Acelerador de descargas")
+            icon.show_notification(f"No hay actualizaciones disponibles", "Acelerador de descargas")
     except:
         if confirm:
-            icon.notify(f"Error al buscar actualizaciones", "Acelerador de descargas")
+            icon.show_notification(f"Error al buscar actualizaciones", "Acelerador de descargas")
 
 def borrar_carpetas_vacias():
     cosas = os.listdir(CACHE_DIR)
@@ -428,18 +413,12 @@ def borrar_logs_vacios():
         print("logs vacios eliminados")
 
 
-icon = pystray.Icon("AdD", image, "Acelerador de descargas",
-                    menu=pystray.Menu(
-                        pystray.MenuItem("Abrir programa", action=after_click,default=True),
-                        pystray.MenuItem("Buscar actualizaciones", after_click),
-                        pystray.MenuItem("Open log", after_click),
-                        pystray.MenuItem("Salir", after_click),
-                    )
-)
-
 def init():
-    time.sleep(2)
-    requests.get('http://127.0.0.1:5000/open_program')
+    icon.run()
+    # icon.show_notification("Acelerador de descargas", "Acelerador de descargas abierto", 5)
+
+    # time.sleep(2)
+    # requests.get('http://127.0.0.1:5000/open_program')
     
 
 if __name__ == '__main__':
@@ -456,12 +435,26 @@ if __name__ == '__main__':
         get_logger().write(type(err))
         get_logger().write(err)
 
-    icon.run_detached()
+
+    icon = win32_tools.Win32TrayIcon(
+        "descargas.ico",
+        "Acelerador de descargas",
+        [
+            ("Abrir programa", func_open_program),
+            ("Buscar actualizaciones", lambda: buscar_actualizacion(confirm=True)),
+            ("Open logs", lambda: get_logger().open_folder()),
+            ("Salir", lambda: requests.get("http://127.0.0.1:5000/api_close")),
+        ],
+        func_open_program
+    )
+
+    
 
     Thread(target=buscar_actualizacion).start()
     Thread(target=borrar_carpetas_vacias).start()
     Thread(target=get_sockets_clients).start()
     Thread(target=borrar_logs_vacios).start()
+    Thread(target=init).start()
     
     # app.run('0.0.0.0', 5000, debug=True)
     from waitress import serve

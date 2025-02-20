@@ -1,4 +1,10 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.9.1 - 20/2/2025
+
+Cambios:
+ - nueva clase de icono de notificaciones en las Utilidades, Asi que no se usara mas pystray ni Pillow, por lo que el programa pesa un poco menos.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.9 - 18/2/2025
 
 Cambios:
