@@ -298,6 +298,9 @@ def add_descarga_web():
     else:
         response1 = request.args.to_dict()
     print(response1)
+
+    if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):
+        return jsonify({"message": "La extensión no esta permitida", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     
     get_logger().write(response1)
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])

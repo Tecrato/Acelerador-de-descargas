@@ -1,5 +1,11 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
-3.10 - 23/2/2025
+3.10.0.1 - 27/2/2025
+
+Correcciones:
+ - No tomaba en cuenta si la extencion estaba en la lista de extenciones permitidas.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.10 - 27/2/2025
 
 Cosas nuevas:
  - Ahora se puede cambiar la velocidad de descarga a una velocidad personalizada.
