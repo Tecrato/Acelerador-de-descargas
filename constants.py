@@ -26,7 +26,7 @@ DICT_CONFIG_DEFAULT_TYPES = {
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.10'
+VERSION = '3.10.0.1'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
@@ -37,8 +37,8 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 FONT_MONONOKI = "./Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
 FONT_SIMBOLS = "./Assets/fuentes/Symbols.ttf"
 
-FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
-FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"
+# FONT_MONONOKI = "C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf"
+# FONT_SIMBOLS = "C:/Users/Edouard/Documents/fuentes/Symbols.ttf"
 
 ICON = './descargas.png'
 

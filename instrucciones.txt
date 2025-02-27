@@ -1,5 +1,10 @@
 Español:
 
+Para instalar la extension:
+ - Activar el modo desarrollador en el  apartado de extensiones del navegador.
+ - Buscar la carpeta de la extencion al lado del instalador.
+ - Instalar extension descomprimida.
+
 Botones Generales:
 
  - Esc -> salir de la pantalla actual o del programa.
@@ -16,6 +21,11 @@ Limitantes:
  - Problemas para que los navegadores instalen la extension, dejare la extension descomprimida en el archivo comprimido, total, ni que fuera mucho.
 
 English:
+
+To install the extension:
+ - Activate the developer mode in the browser's extension section.
+ - Search the folder of the extension beside the installer.
+ - Install the compressed extension.
 
 General Buttons:
  - Esc -> Exit from the current screen or the program.
