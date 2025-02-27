@@ -1,4 +1,19 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.10 - 23/2/2025
+
+Cosas nuevas:
+ - Ahora se puede cambiar la velocidad de descarga a una velocidad personalizada.
+
+Cambios:
+ - Anadido algoritmo para calcular el chunk de descarga, se ajusta segun la velocidad de descarga.
+
+Correcciones:
+ - Arreglado el bug que no traia las configuraciones al iniciar la descarga.
+ - Arreglado bug que evitaba que se cancelara la descarga al darle click en la X de la ventana.
+ - Arreglada ventana de confirmar salir de la descarga (no ejecutaba la funcion para salir).
+ - Solucionado bug que siempre capturaba las descargas de mediafire como HTML.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.9.1 - 20/2/2025
 
 Cambios:

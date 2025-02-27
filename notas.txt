@@ -2,6 +2,8 @@
  - no actualiza la url
     - hacer que el siguiente link que resiva, cambie el url de una descarga.
  - el select(False) de las listas al clickar en otro lado.
+ - Cuando falla la llamada a la API del listener, la extension deberia des-pausar la descarga.
+ - Error cuando intenta cargar el logger.
 
 
 # Cambios:

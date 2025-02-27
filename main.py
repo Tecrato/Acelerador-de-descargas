@@ -195,7 +195,7 @@ class Downloads_manager(Base_class):
             (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
-        self.select_config_velocidad = uti_pag.Select_box(self.btn_config_velocidad, ['off']+[uti.format_size_bits_to_bytes_str(2**x) for x in [15,16,17,19,20,23,24]], auto_open=False, position='right', animation_dir='vertical', padding_horizontal=10, func=self.func_select_box_velocidad)
+        self.select_config_velocidad = uti_pag.Select_box(self.btn_config_velocidad, ['off']+[uti.format_size_bits_to_bytes_str(2**x) for x in [15,16,17,19,20,23,24]]+['Otro'], auto_open=False, position='right', animation_dir='vertical', padding_horizontal=10, func=self.func_select_box_velocidad)
 
         self.text_config_particulas = uti_pag.Text(self.txts['particulas']+': ', 16, self.config.font_mononoki, (30, 375), 'left')
         self.btn_config_particulas = uti_pag.Button(
@@ -649,17 +649,29 @@ class Downloads_manager(Base_class):
         self.redraw = True
 
     def func_select_box_velocidad(self, respuesta) -> None:
-        diccionario_velocidades = {
-            0: 0,
-            1: 2**15,
-            2: 2**16,
-            3: 2**17,
-            4: 2**19,
-            5: 2**20,
-            6: 2**23,
-            7: 2**24,
-        }
-        self.velocidad_limite = diccionario_velocidades[respuesta['index']]
+        print(respuesta)
+        if respuesta['index'] == 8:
+            num = askstring('Velocidad limite', 'Ingrese la velocidad limite en kb/s')
+            if not num:
+                return
+            try:
+                self.velocidad_limite = int(num) * 1024
+            except Exception as err:
+                print(err)
+                self.open_info('Error',self.txts['numero invalido'])
+        else:
+            diccionario_velocidades = {
+                0: 0,
+                1: 2**15,
+                2: 2**16,
+                3: 2**17,
+                4: 2**19,
+                5: 2**20,
+                6: 2**23,
+                7: 2**24,
+                8: 'Otro'
+            }
+            self.velocidad_limite = diccionario_velocidades[respuesta['index']]
 
         self.text_config_limitador_velocidad.text = self.txts['limitar-velocidad']+': '+uti.format_size_bits_to_bytes_str(self.velocidad_limite)
         self.btn_config_velocidad.pos = (self.text_config_limitador_velocidad.right + 60, self.text_config_limitador_velocidad.centery)
@@ -842,7 +854,7 @@ class Downloads_manager(Base_class):
                 nuevo_nombre = a.split(';')
                 for x in nuevo_nombre:
                     if 'filename=' in x:
-                        nuevo_nombre = x.replace('filename=').replace('"', '').strip()
+                        nuevo_nombre = x.replace('filename=', '').replace('"', '').strip()
                         break
                 if isinstance(nuevo_nombre, str):
                     self.new_filename = unquote(nuevo_nombre)
@@ -895,11 +907,11 @@ class Downloads_manager(Base_class):
                 self.socket_client.send(b'a')
                 respuesta = json.loads(self.socket_client.recv(1024).decode())
                 # print(respuesta)
-                if (respuesta["last_update"]) - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
-                    self.func_reload_lista_descargas()
-                    self.last_update = int(respuesta["last_update"])
-                elif (respuesta["last_update"]) - self.last_update > .5 and respuesta["last_update_type"] <= 1:
+                if (respuesta["last_update"]) - self.last_update > .5 and respuesta["last_update_type"] <= 1:
                     self.reload_elemento_individual(respuesta['last_download_changed'])
+                    self.last_update = int(respuesta["last_update"])
+                elif (respuesta["last_update"]) - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
+                    self.func_reload_lista_descargas()
                     self.last_update = int(respuesta["last_update"])
                 time.sleep(0.1)
         except Exception as err:

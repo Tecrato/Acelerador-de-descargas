@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 import requests
 import shutil
 import multiprocessing
@@ -22,6 +23,7 @@ from Utilidades import win32_tools, Logger, check_update
 
 from main import Downloads_manager
 from Downloader import Downloader
+from my_warnings import TrajoHTML
 from ventana_actualizar import Ventana_actualizar
 from ventana_cola_finalizada import Ventana_cola_finalizada
 from ventana_detener_apago_automatico import Ventana_detener_apago_automatico
@@ -80,6 +82,11 @@ program_thread = None
 last_update = time.time()
 last_update_type = 0
 last_download_changed = 0
+
+request_session = requests.Session()
+request_session.headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
+}
 
 
 def update_last_update():
@@ -151,6 +158,7 @@ def set_configuration():
         response = request.get_json()
     else:
         response = request.form
+    print(response)
     try:
         if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
             raise TypeError('Troliado mi pana')
@@ -297,16 +305,21 @@ def add_descarga_web():
     try:
         icon.show_notification(f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
 
-        response = requests.get(response1['url'], stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}, timeout=30)
+        response = func_probar_link(response1['url'])
+        if not response:
+            response = func_probar_link(response1['url'])
+        if not response:
+            raise Exception('No se pudo obtener la informacion')
+        # response = request_session.get(response1['url'], stream=True, timeout=30)
         print(response.headers)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         peso = int(response.headers.get('content-length', 1))
         hilos = get_conf('hilos') if 'bytes' in response.headers.get('Accept-Ranges', '') else 1
         
         if tipo in ['text/plain', 'text/html']:
-            get_logger().write(response.headers)
-            icon.show_notification(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
-            return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+            with open(CACHE_DIR.joinpath(f'./last_download_error{response1["nombre"]}.html'), 'w') as f:
+                f.write(response.text)
+            raise TrajoHTML('No paginas')
     except Exception as err:
         print(err)
         get_logger().write(type(err))
@@ -374,6 +387,21 @@ def clear_cola():
     update_last_update()
     return jsonify({"message": "Cola limpiada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
+
+def func_probar_link(url):
+    try:
+        response = request_session.get(url, stream=True, timeout=15)
+        print(response.headers)
+        tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
+        if tipo in ['text/plain', 'text/html']:
+            with open(CACHE_DIR.joinpath(f'./last_download_error{url}.html'), 'w') as f:
+                f.write(response.text)
+            raise TrajoHTML('No paginas')
+    except Exception as err:
+        print(err)
+        print(traceback.format_exc())
+        return False
+    return response
 
 def func_open_program():
     if not program_opened:

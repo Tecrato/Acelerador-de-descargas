@@ -100,8 +100,9 @@ class Downloader(Base_class):
 
     def load_resources(self):
         try:
-            self.configs = self.request_session.get('http://127.0.0.1:5000/get_configurations').json()
-        except:
+            self.configs = self.prepared_session.get('http://127.0.0.1:5000/get_configurations').json()
+        except Exception as err:
+            print(err)
             self.configs = DICT_CONFIG_DEFAULT
 
         self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
@@ -180,14 +181,17 @@ class Downloader(Base_class):
             self.select_more_options, self.list_textos_hilos
         ]
 
+    def exit(self):
+        self.cerrar_todo('aceptar')
+        return super().exit()
+
     def on_exit(self):
-        pag.quit()
         sys.exit(self.config.returncode)
 
 
     def otro_evento(self, actual_screen, evento):
         if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:
-            self.open_GUI_dialog(self.txts['gui-cerrar la ventana descarga'],self.cerrar_todo)
+            self.open_GUI_dialog(self.txts['gui-cerrar la ventana descarga'],func=self.cerrar_todo)
             ...
 
     def update(self, actual_screen='main'):
@@ -315,6 +319,8 @@ class Downloader(Base_class):
 
         self.current_velocity = (sum(self.list_vels)/len(self.list_vels)) if self.list_vels else 0
 
+        self.calc_chunk()
+
         if self.velocidad_limite > 0 and self.current_velocity > self.velocidad_limite:
             self.current_velocity = self.velocidad_limite
         
@@ -327,6 +333,18 @@ class Downloader(Base_class):
                 'Error',
                 lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
             )
+
+    def calc_chunk(self):
+        if self.current_velocity < 1024*250:
+            self.chunk = 128
+        elif self.current_velocity < 1024*900:
+            self.chunk = 1024
+        elif self.current_velocity < 1024*1024:
+            self.chunk = 1024*100
+        elif self.current_velocity < 1024*1024*10:
+            self.chunk = 1024*1024*10
+        else:
+            self.chunk = 1024*1024*100
 
     def calc_tiempo_restante(self):
         if self.current_velocity > 0:
@@ -372,6 +390,12 @@ class Downloader(Base_class):
             response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
             print(response.headers)
 
+            if response.headers.get('Content-Type', 'text/plain').split(';')[0] in ['text/plain', 'text/html']:
+                response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
+                print(response.headers)
+            if response.headers.get('Content-Type', 'text/plain').split(';')[0] in ['text/plain', 'text/html']:
+                raise TrajoHTML('No paginas')
+
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
                 raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
@@ -402,7 +426,7 @@ class Downloader(Base_class):
                     'Error', 
                     lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
                 )
-        except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError) as err:
+        except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError, TrajoHTML) as err:
             print(type(err))
             print(err)
             self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2)
@@ -523,19 +547,18 @@ class Downloader(Base_class):
                     self.peso_descargado += tanto
                     file_p.write(data)
 
-                    if self.velocidad_limite <= 0:
-                        continue
-
-                    self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
-                    actual_time = time.perf_counter()
-                    if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/self.downloading_threads:
-                        time.sleep(self.lista_status_hilos[num]['actual_chunk_to_limit'] / (self.velocidad_limite/self.downloading_threads))
-                        self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
-                        self.lista_status_hilos[num]['time_chunk'] = actual_time
-                    elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
-                        self.lista_status_hilos[num]['time_chunk'] = actual_time
-                        self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
-
+                    if self.velocidad_limite > 0:
+                        self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
+                        actual_time = time.perf_counter()
+                        if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/self.downloading_threads:
+                            time.sleep(self.lista_status_hilos[num]['actual_chunk_to_limit'] / (self.velocidad_limite/self.downloading_threads))
+                            self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+                            self.lista_status_hilos[num]['time_chunk'] = actual_time
+                        elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
+                            self.lista_status_hilos[num]['time_chunk'] = actual_time
+                            self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+    
+            
             # codigo para comprobar que la parte pese lo mismo que el tamaño que se le asigno, sino borra lo descargado y vulve a empezar
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'rb') as file_p:
                 if self.lista_status_hilos[num]['local_count'] != os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size and self.lista_status_hilos[num]['local_count'] != self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
