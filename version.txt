@@ -1,4 +1,16 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.11 - 9/3/2025
+
+Correcciones:
+ - Arreglado el bug que no actualizaba el progresso de descargas cuando se cierra la ventana de descarga.
+ - Eliminada la sesion en los hilos de descarga y en la conexion de la ventana de descarga.
+
+Cambios:
+ - Nuevo algoritmo para actualizar el progresso de descargas que permite actualizar mas de una descarga en la lista de descargas.
+ - Abilitada la opcion para actualizar la url de las descargas, como el IDM xD, ahora se muestra una ventana y la siguiente url que capture la extencion actualizara la url de la descarga.
+ - Nuevo texto que indica que se estan uniendo las partes del archivo final.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.10.0.1 - 27/2/2025
 
 Correcciones:

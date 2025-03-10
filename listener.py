@@ -11,7 +11,7 @@ import socket as sk
 from multiprocessing import Process
 from DB import Data_Base
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Lock
 from platformdirs import user_log_path
 
 from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config, DICT_CONFIG_DEFAULT_TYPES
@@ -27,12 +27,27 @@ from my_warnings import TrajoHTML
 from ventana_actualizar import Ventana_actualizar
 from ventana_cola_finalizada import Ventana_cola_finalizada
 from ventana_detener_apago_automatico import Ventana_detener_apago_automatico
+from ventana_actualizar_url import Ventana_actualizar_url
 
 os.chdir(Path(__file__).parent)
 app = Flask("Acelerador de descargas(API)")
 CORS(app)
 
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+    l = g.pop("logger", None)
+    if l is not None:
+        l.close()
 
+
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Variables       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -45,15 +60,6 @@ def get_logger():
         ctx.logger = Logger('Acelerador de descargas', user_log_path('Acelerador de descargas', 'Edouard Sandoval'))
     return ctx.logger
 
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-    l = g.pop("logger", None)
-    if l is not None:
-        l.close()
-
 def get_all_conf():
     try:
         configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
@@ -64,8 +70,12 @@ def get_all_conf():
 def get_conf(key: str):
     try:
         configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
-    except Exception:
-        configs = DICT_CONFIG_DEFAULT
+    except Exception as err:
+        print(f"No se pudo cargar la configuracion {key}")
+        print(err)
+        get_logger().write(f"No se pudo cargar la configuracion {key}")
+        get_logger().write(err)
+        return DICT_CONFIG_DEFAULT.get(key)
     return configs.get(key, DICT_CONFIG_DEFAULT.get(key))
 def set_conf(key: str, value: str):
     configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
@@ -82,23 +92,19 @@ program_thread = None
 last_update = time.time()
 last_update_type = 0
 last_download_changed = 0
+list_changes_to_sockets = {}
+lock = Lock()
+
+updating_url = False
+updating_id = -1
+updating_url_window = Process
+
 
 request_session = requests.Session()
 request_session.headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
 }
 
-
-def update_last_update():
-    global last_update, last_update_type
-    last_update = float(time.time())
-    last_update_type = 2
-def update_last_download_update(download_id):
-    global last_update, last_update_type, last_download_changed
-    last_update = float(time.time())
-    if last_update_type < 1:
-        last_update_type = 1
-    last_download_changed = download_id
 
 
 @app.route("/check", methods=["GET"])
@@ -108,8 +114,16 @@ def hello_world():
 
 @app.route("/api_close", methods=["GET"])
 def close():
+    global updating_url, updating_url_window
     if program_thread and program_thread.is_alive():
         program_thread.join(.1)
+    
+    if updating_url:
+        updating_url = False
+        try:
+            updating_url_window.kill()
+        except:
+            pass
 
     for i,key in sorted(enumerate(lista_descargas), reverse = True):
         try:
@@ -122,7 +136,12 @@ def close():
     icon.stop()
     os._exit(0)
     raise Exception('adadad')
-# --------------------------------------- Programa --------------------------------------- #
+
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Funciones programas       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
 
 @app.route("/open_program", methods=["GET"])
 @cross_origin()
@@ -188,23 +207,34 @@ def get_sockets_clients():
         time.sleep(1)
         client, address = socket.accept()
         print(f"Connection from {address}")
-        Thread(target=__comunicacion, args=(client,)).start()
+        list_changes_to_sockets[address] = {
+            'last_downloads_changed': []
+        }
+        Thread(target=__comunicacion, args=(client,address)).start()
 
         
-def __comunicacion(client: sk.socket):
+def __comunicacion(client: sk.socket, address):
     try:
         while True:
-            message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': last_update_type, 'last_download_changed': last_download_changed}).encode()
+            lock.acquire()
+            message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': last_update_type,'last_downloads_changed': list_changes_to_sockets[address]['last_downloads_changed']}).encode()
             client.send(message)
+            list_changes_to_sockets[address]['last_downloads_changed'] = []
+            lock.release()
             time.sleep(.2)
             client.recv(1024).decode()
     except Exception as err:
         print(err)
     finally:
         client.close()
+        del list_changes_to_sockets[address]
 
 
-# --------------------------------------- Downloads --------------------------------------- #
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Descargas       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
 
 @app.route('/descargas/check/<int:id>', methods=["GET"])
 def check_download(id: int):
@@ -218,12 +248,30 @@ def read_item(id: int):
 def read_items():
     return jsonify({'cola':cola,'lista':get_db().buscar_descargas()}), 200, {'Access-Control-Allow-Origin':'*'}
 
-@app.route("/descargas/update/url/<int:id>/<url>", methods=["GET"])
-def update_url(id:int, url: str):
+@app.route("/descargas/update/url/<int:id>", methods=["GET"])
+def update_url(id:int):
+    global updating_url, updating_url_window, updating_id
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
-    get_db().actualizar_url(id, url)
-    return jsonify({"message": "URL actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+    if updating_url:
+        return jsonify({"message": "Ya se esta actualizando", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+    updating_url = True
+    updating_id = id
+    updating_url_window = Process(target=Ventana_actualizar_url, args=(Config(window_resize=False, resolution=(400, 150)),id))
+    updating_url_window.start()
+    return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+
+@app.route("/descargas/cancel_update/url", methods=["GET"])
+def cancel_update_url():
+    global updating_url, updating_url_window
+    if updating_url:
+        updating_url = False
+        try:
+            updating_url_window.kill()
+        except:
+            pass
+        print("actualizacion de url cancelada")
+    return jsonify({"message": "actualizacion de url cancelada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
 def update_estado(id:int, estado: str) -> Response:
@@ -293,6 +341,7 @@ def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:i
 
 @app.route("/descargas/add_web", methods=["POST"])
 def add_descarga_web():
+    global updating_url
     if request.is_json:
         response1 = request.get_json()
     else:
@@ -313,6 +362,10 @@ def add_descarga_web():
             response = func_probar_link(response1['url'])
         if not response:
             raise Exception('No se pudo obtener la informacion')
+        if updating_url:
+            func_update_url_download(updating_id, response1["url"], response1['nombre'])
+            updating_url = False
+            return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
         # response = request_session.get(response1['url'], stream=True, timeout=30)
         print(response.headers)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
@@ -360,7 +413,11 @@ def delete_all():
 
     return jsonify({"message": "Descargas eliminadas", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-# --------------------------------------- Cola --------------------------------------- #}
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Cola       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
 @app.route("/cola/get_all", methods=["GET"])
 def get_toda_la_cola():
     return jsonify({"cola": cola, "message": "Descarga añadida a la cola", "code":0, 'status':'ok'})
@@ -391,6 +448,32 @@ def clear_cola():
     return jsonify({"message": "Cola limpiada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Funciones varias       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
+
+
+def update_last_update():
+    global last_update, last_update_type
+    lock.acquire()
+    last_update = float(time.time())
+    last_update_type = 2
+    lock.release()
+def update_last_download_update(download_id):
+    global last_update, last_update_type
+    last_update = float(time.time())
+    if last_update_type < 1:
+        last_update_type = 1
+    lock.acquire()
+    try:
+        for i,x in list_changes_to_sockets.items():
+            x['last_downloads_changed'].append(download_id)
+    finally:
+        lock.release()
+
+
 def func_probar_link(url):
     try:
         response = request_session.get(url, stream=True, timeout=15)
@@ -405,6 +488,16 @@ def func_probar_link(url):
         print(traceback.format_exc())
         return False
     return response
+
+def func_update_url_download(download_id, url, nombre):
+    get_db().update_url(download_id, url)
+    try:
+        updating_url_window.kill()
+    except:
+        pass
+    icon.show_notification(f"URL cambiada para \n{download_id} -> {nombre}", 'Acelerador de descargas')
+    get_logger().write(f"Logger ({datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}): URL cambiada para {download_id} -> {nombre}: [{url}]")
+
 
 def func_open_program():
     if not program_opened:
@@ -452,6 +545,11 @@ def init():
     # requests.get('http://127.0.0.1:5000/open_program')
     
 
+#-------------------------------------------------------------------------------------------------
+
+#        ---------------------      Init       ---------------------------------
+
+#-------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 

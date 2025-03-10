@@ -91,6 +91,7 @@ class Downloader(Base_class):
         self.Func_pool.add('descargar', self.crear_conexion, self.start_download)
         self.Func_pool.start('descargar')
         self.Func_pool.add('__terminar_programa', self.__terminar_de_cerrar)
+        self.Func_pool.add('finalizar descarga', self.finish_download)
         self.class_intervals.add('actualizar_progress', self.update_progress_db, 1, start=True)
         self.class_intervals.add('actualizar_vel', self.calc_velocity, .4, start=True)
         self.class_intervals.add('actualizar_tiempo_restante', self.calc_tiempo_restante, 1, start=True)
@@ -124,6 +125,7 @@ class Downloader(Base_class):
         self.text_finalizando_hilos = uti_pag.Text(f'Finalizando los {self.num_hilos} hilos...' if self.num_hilos > 1 else 'Finalizando el hilo...', 16, self.config.font_mononoki, (-1000,-1111), 'center', with_rect=True, color_rect='white', padding=20, color='black')
         self.text_finalizando_hilos2 = uti_pag.Text(f'Restantes: {self.downloading_threads}' if self.num_hilos > 1 else 'Finalizando el hilo...', 16, self.config.font_mononoki, (-1000,-1111), 'center', with_rect=True, color_rect='white', padding=20, color='black')
         
+        self.text_juntando_partes = uti_pag.Text(f'Juntando archivo final...', 16, self.config.font_mononoki, (-1000,-1111), 'center', with_rect=True, color_rect='white', padding=20, color='black')
         
         # ------------------------------------------- Textos y botones -----------------------------------
         self.Titulo = uti_pag.Text((self.file_name if len(self.file_name) < 36 else (self.file_name[:38] + '...')), 14, self.config.font_mononoki, (10, 50), 'left')
@@ -173,7 +175,9 @@ class Downloader(Base_class):
             self.text_porcentaje, self.text_estado_general, self.btn_cancelar_descarga,
             self.text_title_hilos, self.text_vel_descarga,self.text_peso_progreso,
             self.text_tiempo_restante, self.btn_pausar_y_reanudar_descarga, self.btn_more_options,
-            self.select_more_options, self.text_finalizando_hilos, self.text_finalizando_hilos2
+            self.select_more_options, 
+            
+            self.text_finalizando_hilos, self.text_finalizando_hilos2,self.text_juntando_partes
         ]
         self.lists_screens['main']['update'] = self.lists_screens['main']['draw']
         self.lists_screens['main']['click'] = [
@@ -196,7 +200,8 @@ class Downloader(Base_class):
 
     def update(self, actual_screen='main'):
         if self.hilos_listos == self.num_hilos:
-            self.finish_download()
+            self.hilos_listos = 0
+            self.Func_pool.start('finalizar descarga')
         
         self.text_vel_descarga.text = self.txts['velocidad']+': ' + uti.format_size_bits_to_bytes_str(self.current_velocity)
         self.text_porcentaje.text = f'{(self.peso_descargado / self.peso_total) * 100:.2f}%'
@@ -368,17 +373,17 @@ class Downloader(Base_class):
     def cerrar_todo(self, result):
         if result == 'cancelar' or self.cerrando:
             return
-        self.cerrando = True
-        self.paused = False
-        self.canceled = True
         self.Func_pool.start('__terminar_programa')
         
     def __terminar_de_cerrar(self):
+        self.loading += 1
+        self.update_progress_db()
+        self.cerrando = True
+        self.paused = False
+        self.canceled = True
         self.text_finalizando_hilos.pos = self.ventana_rect.center
         self.text_finalizando_hilos2.pos = (self.text_finalizando_hilos.centerx, self.text_finalizando_hilos.bottom+10)
-        self.loading += 1
         self.pool_hilos.shutdown(True, cancel_futures=True)
-        self.update_progress_db()
         self.exit()
 
 
@@ -387,7 +392,8 @@ class Downloader(Base_class):
         self.downloading = False
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
-            response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
+            # response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
+            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
             print(response.headers)
 
             if response.headers.get('Content-Type', 'text/plain').split(';')[0] in ['text/plain', 'text/html']:
@@ -429,7 +435,7 @@ class Downloader(Base_class):
         except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError, TrajoHTML) as err:
             print(type(err))
             print(err)
-            self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2)
+            self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2, func=self.cerrar_todo)
         except Exception as err:
             print(type(err))
             print(err)
@@ -520,19 +526,20 @@ class Downloader(Base_class):
                 time.sleep(.1)
 
         this_header = self.default_headers.copy()
-        if self.can_reanudar:
-            this_header['Range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
+        if self.can_reanudar and self.num_hilos > 1:
+            this_header['range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
 
         try:
             self.list_textos_hilos[0][num] = self.txts['status_hilo[conectando]'].format(num)
             
-            response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
+            # response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
+            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
                 raise DifferentTypeError('ay')
 
-            tiempo_reset = 2
+            tiempo_reset = 1
             self.list_textos_hilos[0][num] = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
@@ -591,6 +598,9 @@ class Downloader(Base_class):
             return
              
     def finish_download(self):
+        self.loading += 1
+        self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
+
         self.save_dir = Path(self.prepared_session.get('http://127.0.0.1:5000/configuration/save_dir').json())
         try:
             file = open(Path(self.save_dir)/self.file_name, 'wb')
@@ -608,6 +618,9 @@ class Downloader(Base_class):
         shutil.rmtree(self.carpeta_cache, True)
 
         self.pool_hilos.shutdown(False,cancel_futures=True)
+
+        self.loading -= 1
+        self.text_juntando_partes.pos = (-1000,-1000)
 
         self.peso_descargado = self.peso_total
         self.update_progress_db()

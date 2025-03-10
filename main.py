@@ -586,15 +586,13 @@ class Downloads_manager(Base_class):
             )
         elif respuesta['index'] == 2:
             # Cambiar la url
-            return
             response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
             if response['downloading'] == True or response['cola'] == True:
                 self.mini_ventana(1)
                 return
-            self.new_url_id = obj_cached[0]
-            self.goto('main')
-            self.func_main_to_new_download()
-            self.redraw = True
+            response = requests.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached[0]}').json()
+            if response['status'] != 'ok':
+                self.mini_ventana(5)
         elif respuesta['index'] == 3:
             # copiar url al portapapeles
             pyperclip.copy(obj_cached[4])
@@ -759,6 +757,14 @@ class Downloads_manager(Base_class):
                                         self.txts['gui-solo una descarga'],(200,90)),
                 group='solo una descarga'
             )
+        elif num == 5:
+            # Mini ventana para cuando a ocurrido un error
+            self.Mini_GUI_manager.clear_group("error")
+            self.Mini_GUI_manager.add(
+                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', 'Error',
+                                        self.txts['gui-error inesperado'],(200,120)),
+                group='error'
+            )
 
     def func_add_download(self):
         if not self.can_add_new_download:
@@ -907,8 +913,9 @@ class Downloads_manager(Base_class):
                 self.socket_client.send(b'a')
                 respuesta = json.loads(self.socket_client.recv(1024).decode())
                 # print(respuesta)
-                if (respuesta["last_update"]) - self.last_update > .5 and respuesta["last_update_type"] <= 1:
-                    self.reload_elemento_individual(respuesta['last_download_changed'])
+                if (respuesta["last_update"]) - self.last_update > .5 and respuesta["last_update_type"] <= 1 and len(respuesta['last_downloads_changed']) > 0:
+                    for i in respuesta['last_downloads_changed']:
+                        self.reload_elemento_individual(i)
                     self.last_update = int(respuesta["last_update"])
                 elif (respuesta["last_update"]) - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
                     self.func_reload_lista_descargas()
