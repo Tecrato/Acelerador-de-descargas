@@ -1,4 +1,3 @@
-
 textos_español = {
     # Traducciones literales
     'aceptar': 'Aceptar',
@@ -79,9 +78,9 @@ textos_español = {
     'tiempo restante': 'Tiempo restante',
     'tipo': 'Tipo',
     'velocidad': 'Velocidad',
+    'id': 'ID',
 
 
-    
     # Titulo principal
     'title': 'Acelerador de descargas',
 
@@ -112,6 +111,7 @@ textos_español = {
     'gui-desea borrar el elemento': '¿Desea borrar el elemento seleccionado!?',
     'gui-desea borrar los elementos': '¿Desea borrar los elementos seleccionados!?',
     'gui-carpeta cambiada con exito': 'Carpeta para guardar archivos\ncambiada con exito.',
+    'gui-desea borrar todos los datos?': 'Desea borrar todas las descargas y\nlas configuraciones?',
     'gui-descarga eliminada': 'La descarga ha sido eliminada',
     'gui-descarga en curso':'La descarga esta en curso',
     'gui-descarga en cola':'La descarga esta en la cola',
@@ -122,8 +122,12 @@ textos_español = {
     'gui-cancelar descarga': '¿Desea cancelar la descarga en curso?',
     'gui-no se puede reanudar': 'La descarga no se puede reanudar:\nEl link no permite reanudar la descarga',
     'gui-cerrar la ventana descarga': 'Desea cerrar la ventana de descarga?\nLa descarga se podrá reanudar luego.',
+    'gui-actualizando url': 'La siguiente descarga de su navegador\nactualizará la url de la descarga seleccionada',
 
     'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
+
+    'gui-borrar todas': 'Borrar todas las descargas',
+    'gui-borrar todas pregunta': '¿Desea borrar todas las descargas?\nEsto no borrará los archivos descargados',
 
     # Downloader
     
@@ -226,10 +230,11 @@ textos_ingles = {
     'remover de la cola': 'Remove of the Queue',
     'segundo': 'Second',
     'si': 'Yes',
-    'tiempo restante': 'Remaining time',
     'tamaño': 'Size',
+    'tiempo restante': 'Remaining time',
     'tipo': 'Type',
     'velocidad': 'Velocity',
+    'id': 'ID',
 
 
     # Titulo principal
@@ -262,6 +267,7 @@ textos_ingles = {
     'gui-desea borrar los elementos': 'Do you want delete this downloads?!',
     'gui-desea borrar el elemento': 'Do you want delete this download?!',
     'gui-carpeta cambiada con exito': 'folder changed\nsuccessfully',
+    'gui-desea borrar todos los datos?': 'Do you want to delete all downloads and\nconfigurations?',
     'gui-descarga eliminada': 'Download deleted',
     'gui-descarga en curso':'Download in progress',
     'gui-descarga en cola':'Download in the Queue',
@@ -272,8 +278,12 @@ textos_ingles = {
     'gui-cancelar descarga': 'Do you want cancel the current download?',
     'gui-no se puede reanudar': 'This download can\'t continue:\nIs not alowed to resume',
     'gui-cerrar la ventana descarga': 'Do you want close the download?\nYou can resume later',
+    'gui-actualizando url': 'The following download will\nupdate the url of the selected download',
 
     'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
+
+    'gui-borrar todas': 'Delete all downloads',
+    'gui-borrar todas pregunta': 'Do you want to delete all downloads?\nThis will not delete downloaded files',
 
     # Downloader
     'title_hilos': 'Downloads threads',

@@ -1,4 +1,6 @@
+from io import BufferedWriter
 import pygame as pag
+import urllib.request
 import os
 import sys
 import time
@@ -9,9 +11,10 @@ import Utilidades as uti
 import Utilidades_pygame as uti_pag
 
 from pathlib import Path
-from Utilidades import win32_tools
+from Utilidades import win32_tools, LinearRegressionSimple
 from tkinter.simpledialog import askstring
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 from my_warnings import *
 from textos import idiomas
@@ -57,7 +60,6 @@ class Downloader(Base_class):
         self.paused: bool = True
 
         # Integers
-        self.chunk: int = 128
         self.current_velocity: int = 0
         self.division: int = self.peso_total // self.num_hilos
         self.downloading_threads: int = 0
@@ -67,23 +69,49 @@ class Downloader(Base_class):
         self.peso_descargado_vel: int = 0
         self.velocidad_limite: int = 0
         self.last_updated_progress = 0
+        
+        # Chunk
+        self.chunk: int = 128
+        self.max_chunk_change: float = 0.25
+        self.min_chunk: int = 64
+        self.max_chunk: int = 1024*1024*10
 
         # Strings
 
         # Listas
         self.list_vels: list[float] = []
         self.lista_status_hilos: list[dict] = []
+        self.list_to_train_chunk_regressor: list[list[int]] = [
+            [
+                1024*100,
+                1024*500,
+                1024*1024,
+                1024*1024*2
+            ],
+            [
+                256,
+                512,
+                1024*100,
+                1024*200
+            ]
+        ]
 
         # Otros
         self.db_update: float = time.time()
         self.last_change: float = time.time()
         self.last_velocity_update: float = time.time()
+        self.lock: Lock = Lock()
 
-        self.default_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'}
-        self.pool_hilos = ThreadPoolExecutor(self.num_hilos, 'downloads_threads')
-        self.prepared_session = requests.Session()
+        self.default_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
+            'Accept-Encoding': 'identity'
+            }
+        self.pool_hilos: ThreadPoolExecutor = ThreadPoolExecutor(self.num_hilos, 'downloads_threads')
+        self.prepared_session: requests.Session = requests.Session()
         
-        self.carpeta_cache = self.config.cache_dir.joinpath(f'./{self.download_id}')
+        self.chunk_regressor: LinearRegressionSimple = LinearRegressionSimple(*self.list_to_train_chunk_regressor)
+        
+        self.carpeta_cache: Path = self.config.cache_dir.joinpath(f'./{self.download_id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
 
     def post_init(self):
@@ -101,19 +129,20 @@ class Downloader(Base_class):
 
     def load_resources(self):
         try:
-            self.configs = self.prepared_session.get('http://127.0.0.1:5000/get_configurations').json()
+            self.configs: dict = requests.get('http://127.0.0.1:5000/get_configurations').json()
         except Exception as err:
-            print(err)
-            self.configs = DICT_CONFIG_DEFAULT
+            uti.debug_print(type(err), priority=3)
+            uti.debug_print(err, priority=3)
+            self.configs: dict = DICT_CONFIG_DEFAULT
 
-        self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
-        self.detener_5min = self.configs.get('detener_5min',DICT_CONFIG_DEFAULT['detener_5min'])
-        self.low_detail_mode = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
-        self.velocidad_limite = self.configs.get('velocidad_limite',DICT_CONFIG_DEFAULT['velocidad_limite'])
+        self.enfoques: bool = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
+        self.detener_5min: bool = self.configs.get('detener_5min',DICT_CONFIG_DEFAULT['detener_5min'])
+        self.low_detail_mode: bool = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
+        self.velocidad_limite: int = self.configs.get('velocidad_limite',DICT_CONFIG_DEFAULT['velocidad_limite'])
         
-        self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
-        self.save_dir = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
-        self.txts = idiomas[self.idioma]
+        self.idioma: str = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
+        self.save_dir: Path = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
+        self.txts: dict = idiomas[self.idioma]
 
     def generate_objs(self):
         
@@ -308,7 +337,7 @@ class Downloader(Base_class):
         if progreso == self.last_updated_progress:
             return
         self.last_updated_progress = progreso
-        self.prepared_session.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
+        requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
 
     def calc_velocity(self):
         if not self.downloading:
@@ -340,16 +369,29 @@ class Downloader(Base_class):
             )
 
     def calc_chunk(self):
-        if self.current_velocity < 1024*250:
-            self.chunk = 128
-        elif self.current_velocity < 1024*900:
-            self.chunk = 1024
-        elif self.current_velocity < 1024*1024:
-            self.chunk = 1024*100
-        elif self.current_velocity < 1024*1024*10:
-            self.chunk = 1024*1024*10
-        else:
-            self.chunk = 1024*1024*100
+        """Calcula el tamaño óptimo del chunk basado en regresión lineal de velocidades históricas"""
+        actual_time = time.time()
+        
+        # Actualiza el tiempo de la última actualización
+        self.last_velocity_update = actual_time
+        
+        # Si no hay suficientes datos, usa un valor base
+        if len(self.list_vels) < 3:
+            self.chunk = self.min_chunk
+            return 
+        
+        try:
+            # Usa regresión lineal para predecir el próximo chunk
+            predicted_chunk = int(self.chunk_regressor.predict(self.current_velocity))
+            
+            # Limita el cambio máximo del chunk para suavizar transiciones
+            chunk_change_diff = (self.chunk - predicted_chunk) * self.max_chunk_change
+            new_chunk = max(self.min_chunk, min(self.chunk - chunk_change_diff, self.max_chunk))
+            
+            self.chunk = int(new_chunk)
+        except Exception as err:
+            uti.debug_print(f"Error en regresión lineal: {err}", priority=3)
+            self.chunk = self.min_chunk
 
     def calc_tiempo_restante(self):
         if self.current_velocity > 0:
@@ -393,23 +435,20 @@ class Downloader(Base_class):
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
             # response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
-            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
-            print(response.headers)
+            intentos = 0
 
-            if response.headers.get('Content-Type', 'text/plain').split(';')[0] in ['text/plain', 'text/html']:
-                response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
-                print(response.headers)
-            if response.headers.get('Content-Type', 'text/plain').split(';')[0] in ['text/plain', 'text/html']:
-                raise TrajoHTML('No paginas')
+            while intentos < 10:
+                intentos += 1
+                try:
+                    response = requests.get(url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
+                    if (int(response.headers.get('content-length', 0)) != self.peso_total) or (response.headers.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
+                        raise TrajoHTML('No paginas')
+                    else:
+                        break
+                except requests.exceptions.RequestException:
+                    continue
 
-            tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
-            if tipo != self.type:
-                raise DifferentTypeError(f'No es el tipo de archivo {tipo}')
-
-            peso = int(response.headers.get('content-length', 0))
-            if peso < self.chunk * self.num_hilos or peso != self.peso_total:
-                raise LowSizeError('Peso muy pequeño')
-
+            uti.debug_print(response.headers, priority=0)
             self.intentos = 0
             self.can_download = True
             self.last_change = time.time()
@@ -433,12 +472,12 @@ class Downloader(Base_class):
                     lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
                 )
         except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError, TrajoHTML) as err:
-            print(type(err))
-            print(err)
+            uti.debug_print(type(err), priority=3)
+            uti.debug_print(err, priority=3)
             self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2, func=self.cerrar_todo)
         except Exception as err:
-            print(type(err))
-            print(err)
+            uti.debug_print(type(err), priority=3)
+            uti.debug_print(err, priority=3)
             self.open_GUI_dialog(
                 self.txts['gui-error inesperado'], 
                 'Error',
@@ -492,8 +531,8 @@ class Downloader(Base_class):
             try:
                 self.download_thread(num)
             except Exception as err:
-                print(type(err))
-                print(err)
+                uti.debug_print(type(err), priority=3)
+                uti.debug_print(err, priority=3)
                 raise err
         self.downloading_threads -= 1
 
@@ -531,9 +570,8 @@ class Downloader(Base_class):
 
         try:
             self.list_textos_hilos[0][num] = self.txts['status_hilo[conectando]'].format(num)
-            
-            # response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
-            response = requests.get(self.url, stream=True, allow_redirects=True, timeout=15, headers=this_header)
+            r = urllib.request.Request(self.url, headers=this_header)
+            response = urllib.request.urlopen(r, timeout=15)
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
@@ -543,16 +581,20 @@ class Downloader(Base_class):
             self.list_textos_hilos[0][num] = self.txts['status_hilo[descargando]'].format(num)
 
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'ab') as file_p:
-                for data in response.iter_content(self.chunk):
-                    if self.paused or self.canceled:
-                        raise Exception('')
+                buffered_write = BufferedWriter(file_p, 1024*1024)
+                while True:
+                    data = response.read(self.chunk)
                     if not data:
-                        continue
+                        break
+                    if self.paused or self.canceled:
+                        raise Exception('Paused or Canceled')
                     tanto = len(data)
+                    self.lock.acquire()
                     self.lista_status_hilos[num]['local_count'] += tanto
                     self.peso_descargado_vel += tanto
                     self.peso_descargado += tanto
-                    file_p.write(data)
+                    buffered_write.write(data)
+                    self.lock.release()
 
                     if self.velocidad_limite > 0:
                         self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
@@ -564,8 +606,10 @@ class Downloader(Base_class):
                         elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
                             self.lista_status_hilos[num]['time_chunk'] = actual_time
                             self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+                response.close()
     
-            
+                buffered_write.flush()
+                buffered_write.close()
             # codigo para comprobar que la parte pese lo mismo que el tamaño que se le asigno, sino borra lo descargado y vulve a empezar
             with open(self.carpeta_cache.joinpath(f'./parte{num}.tmp'), 'rb') as file_p:
                 if self.lista_status_hilos[num]['local_count'] != os.stat(self.carpeta_cache.joinpath(f'./parte{num}.tmp')).st_size and self.lista_status_hilos[num]['local_count'] != self.lista_status_hilos[num]['end']-self.lista_status_hilos[num]['start']+1:
@@ -577,8 +621,8 @@ class Downloader(Base_class):
             self.hilos_listos += 1
             return
         except Exception as err:
-            print(err)
-            print(type(err))
+            uti.debug_print(type(err), priority=2)
+            uti.debug_print(err, priority=2)
 
             if self.canceled:
                 self.list_textos_hilos[0][num] = self.txts['status_hilo[cancelado]'].format(num)
@@ -601,12 +645,12 @@ class Downloader(Base_class):
         self.loading += 1
         self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
 
-        self.save_dir = Path(self.prepared_session.get('http://127.0.0.1:5000/configuration/save_dir').json())
+        self.save_dir = Path(requests.get('http://127.0.0.1:5000/configuration/save_dir').json())
         try:
             file = open(Path(self.save_dir)/self.file_name, 'wb')
         except Exception as err:
-            print(type(err))
-            print(err)
+            uti.debug_print(type(err), priority=3)
+            uti.debug_print(err, priority=3)
             file = open(DICT_CONFIG_DEFAULT['save_dir'] + '/' + self.file_name, 'wb')
             self.fallo_destino = True
 
@@ -636,7 +680,7 @@ class Downloader(Base_class):
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
-        if self.cerrar_al_finalizar or self.prepared_session.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json()['cola']:
+        if self.cerrar_al_finalizar or requests.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json()['cola']:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
             subprocess.call(f'shutdown /s /t 30 Descarga finalizada - {self.file_name}', shell=True)

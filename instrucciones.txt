@@ -18,7 +18,7 @@ Acciones Generales:
 
 Limitantes:
  - Existen varios links que aún no funcionan con la application, recomendable desactivar mediante la ventana de la extencion en caso de tenerla activada.
- - Problemas para que los navegadores instalen la extension, dejare la extension descomprimida en el archivo comprimido, total, ni que fuera mucho.
+ - Problemas para que los navegadores instalen la extension, dejare la extension descomprimida en el archivo winrar.
 
 English:
 

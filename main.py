@@ -115,7 +115,7 @@ class Downloads_manager(Base_class):
             lista=None,
             text_size=12,
             separation=10,
-            header_text=["id",self.txts['nombre'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
+            header_text=[self.txts['id'],self.txts['nombre'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
             fonts=[self.config.font_mononoki for _ in range(7)],
             colums_witdh=[0, .065, .47, .55, .67, .79, .86],
             padding_left= 10,
@@ -275,8 +275,8 @@ class Downloads_manager(Base_class):
         self.btn_extras_borrar_todo = uti_pag.Button(
             self.txts['borrar datos'], 20, self.config.font_mononoki, (0,self.ventana_rect.h), dire="bottomleft",
             func=lambda: self.open_desicion(
-                "Borrar todas las descargas",
-                "Desea borrar todas las descargas y\nlas configuraciones?",
+                self.txts['borrar datos'],
+                self.txts['gui-desea borrar todos los datos?'],
                 func=lambda e: self.func_borrar_todas_las_descargas() if e == 'aceptar' else None
             )
         )
@@ -495,8 +495,8 @@ class Downloads_manager(Base_class):
 
             self.list_main_descargas.on_wheel(diff)
         except Exception as err:
-            print(type(err))
-            print(err)
+            uti.debug_print(type(err))
+            uti.debug_print(err)
             self.Mini_GUI_manager.clear_group('lista_descargas')
             self.Mini_GUI_manager.add(
                 uti_pag.mini_GUI.more_objs.aviso1((50000, 50000), 'bottomright', 'error updating list',self.config.font_mononoki),
@@ -647,7 +647,7 @@ class Downloads_manager(Base_class):
         self.redraw = True
 
     def func_select_box_velocidad(self, respuesta) -> None:
-        print(respuesta)
+        uti.debug_print(respuesta)
         if respuesta['index'] == 8:
             num = askstring('Velocidad limite', 'Ingrese la velocidad limite en kb/s')
             if not num:
@@ -655,7 +655,7 @@ class Downloads_manager(Base_class):
             try:
                 self.velocidad_limite = int(num) * 1024
             except Exception as err:
-                print(err)
+                uti.debug_print(err)
                 self.open_info('Error',self.txts['numero invalido'])
         else:
             diccionario_velocidades = {
@@ -829,7 +829,7 @@ class Downloads_manager(Base_class):
             
             self.logger.write(f"Informacion obtenida: {self.url}")
             self.logger.write(response.headers)
-            print(response.headers)
+            uti.debug_print(response.headers)
 
             # Validacion de tipo
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
@@ -881,8 +881,8 @@ class Downloads_manager(Base_class):
         except LinkCaido:
             self.text_new_download_status.text = 'Link Caido'
         except Exception as err:
-            print(err)
-            print(type(err))
+            uti.debug_print(err, priority=3)
+            uti.debug_print(type(err), priority=3)
             self.logger.write(f'Error conprobar {self.url} - {type(err)} -> {err}')
             self.text_new_download_status.text = 'Error'
 
@@ -922,8 +922,8 @@ class Downloads_manager(Base_class):
                     self.last_update = int(respuesta["last_update"])
                 time.sleep(0.1)
         except Exception as err:
-            print(err)
-            print(traceback.format_exc())
+            uti.debug_print(err, priority=3)
+            uti.debug_print(traceback.format_exc(), priority=3)
         finally:
             self.socket_client.close()
             self.socket_client = None

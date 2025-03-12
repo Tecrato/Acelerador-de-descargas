@@ -1,4 +1,25 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12 - 11/3/2025
+
+Cuello de botella solucionado y programam mejorado en un 80%.
+
+Correcciones:
+ - Error al cargar las configuraciones en la ventana de actualizar url.
+ - 
+
+Cambios:
+ - Nuevo algoritmo para calcular el chunk de descarga, se ajusta segun la velocidad de descarga mediante regresión lineal.
+ - Uso de nueva funcion de las Utilidades, el debug_print (a nivel de codigo y consola).
+ - La ventana de actualizar url es un poquito mas pequeña.
+ - Ahora al empezar una descarga intenta obtener los datos de la url hasta un maximo de 10 intentos, para paginas como mediafire.
+
+Mejoras:
+ - Nuevo metodo para descargar el archivo, Mejora importante de rendimiento y de velocidad de descarga, 80% de mejora en el uso del CPU.
+ - Mejorado el buffering de la descarga, ahora carga los datos de la descarga cada 10mb, disminuyendo el uso del Disco duro.
+
+sip, y mas traducciones xD.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.11 - 9/3/2025
 
 Correcciones:

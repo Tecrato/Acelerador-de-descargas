@@ -11,8 +11,10 @@ from textos import idiomas
 class Ventana_actualizar_url(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
-        except Exception:
+            self.configs: dict = requests.get('http://127.0.0.1:5000/get_configurations').json()
+        except Exception as err:
+            uti.debug_print("No se pudo cargar la configuracion", priority=2)
+            uti.debug_print(err, priority=2)
             self.configs = DICT_CONFIG_DEFAULT
 
         self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
@@ -21,9 +23,9 @@ class Ventana_actualizar_url(Base_class):
 
     def generate_objs(self):
         # El resto de textos y demas cosas
-        self.text_program_title = uti_pag.Text(self.txts['title'], 18, self.config.font_mononoki, (self.ventana_rect.centerx, 30))
-        self.text_parrafo = uti_pag.Text('La siguiente descarga de su navegador\nactualizará la url de la descarga seleccionada', 14, self.config.font_mononoki, (self.config.resolution[0]//2,50), dire='top')
-        self.btn_aceptar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,120), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.func_cancelar)
+        self.text_program_title = uti_pag.Text(self.txts['title'], 18, self.config.font_mononoki, (self.ventana_rect.centerx, 20))
+        self.text_parrafo = uti_pag.Text(self.txts['gui-actualizando url'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,40), dire='top')
+        self.btn_aceptar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.func_cancelar)
         ...
 
         # Tambien se debe agregar a las respiectivas listas
@@ -53,4 +55,4 @@ class Ventana_actualizar_url(Base_class):
 
 
 if __name__ == '__main__':
-    Ventana_actualizar_url(config=Config(window_resize=False, resolution=(400, 150)))
+    Ventana_actualizar_url(config=Config(window_resize=False, resolution=(400, 125)))

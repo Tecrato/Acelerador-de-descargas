@@ -7,6 +7,7 @@ import multiprocessing
 import datetime
 import time
 import socket as sk
+import Utilidades as uti
 
 from multiprocessing import Process
 from DB import Data_Base
@@ -71,8 +72,8 @@ def get_conf(key: str):
     try:
         configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
     except Exception as err:
-        print(f"No se pudo cargar la configuracion {key}")
-        print(err)
+        uti.debug_print(f"No se pudo cargar la configuracion {key}", priority=2)
+        uti.debug_print(err, priority=2)
         get_logger().write(f"No se pudo cargar la configuracion {key}")
         get_logger().write(err)
         return DICT_CONFIG_DEFAULT.get(key)
@@ -90,8 +91,6 @@ cola_iniciada = False
 program_opened = False
 program_thread = None
 last_update = time.time()
-last_update_type = 0
-last_download_changed = 0
 list_changes_to_sockets = {}
 lock = Lock()
 
@@ -130,8 +129,8 @@ def close():
             lista_descargas.remove(key)
             descargas_process[key].kill()
         except Exception as err:
-            print(type(err))
-            print(err)
+            uti.debug_print(type(err), priority=2)
+            uti.debug_print(err, priority=2)
             pass
     icon.stop()
     os._exit(0)
@@ -177,7 +176,7 @@ def set_configuration():
         response = request.get_json()
     else:
         response = request.form
-    print(response)
+    uti.debug_print(response, priority=0)
     try:
         if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
             raise TypeError('Troliado mi pana')
@@ -185,14 +184,14 @@ def set_configuration():
         get_logger().write(f"Logger: Configuracion {response['key']} cambaiada a '{response['value']}'")
         return jsonify({"message": "Configuracion actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     except TypeError as err:
-        print(err)
+        uti.debug_print(err, priority=2)
         get_logger().write(f'Logger: Error al actualizar la configuracion {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
         get_logger().write(type(err))
         get_logger().write('No es el tipo que necesita')
         get_logger().write(err)
         return jsonify({"message": "Valor de tipo invalido", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
-        print(err)
+        uti.debug_print(err, priority=2)
         get_logger().write(f'Logger: Error al actualizar la configuracion {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
         get_logger().write(type(err))
         get_logger().write(err)
@@ -206,25 +205,26 @@ def get_sockets_clients():
     while True:
         time.sleep(1)
         client, address = socket.accept()
-        print(f"Connection from {address}")
+        uti.debug_print(f"Connection from {address}", priority=0)
         list_changes_to_sockets[address] = {
-            'last_downloads_changed': []
+            'last_downloads_changed': [],
+            'last_update_type': 0
         }
         Thread(target=__comunicacion, args=(client,address)).start()
-
-        
+    
 def __comunicacion(client: sk.socket, address):
     try:
         while True:
             lock.acquire()
-            message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': last_update_type,'last_downloads_changed': list_changes_to_sockets[address]['last_downloads_changed']}).encode()
+            message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': list_changes_to_sockets[address]['last_update_type'],'last_downloads_changed': list_changes_to_sockets[address]['last_downloads_changed']}).encode()
             client.send(message)
             list_changes_to_sockets[address]['last_downloads_changed'] = []
+            list_changes_to_sockets[address]['last_update_type'] = 0
             lock.release()
             time.sleep(.2)
             client.recv(1024).decode()
     except Exception as err:
-        print(err)
+        uti.debug_print(err, priority=1)
     finally:
         client.close()
         del list_changes_to_sockets[address]
@@ -257,7 +257,7 @@ def update_url(id:int):
         return jsonify({"message": "Ya se esta actualizando", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     updating_url = True
     updating_id = id
-    updating_url_window = Process(target=Ventana_actualizar_url, args=(Config(window_resize=False, resolution=(400, 150)),id))
+    updating_url_window = Process(target=Ventana_actualizar_url, args=(Config(window_resize=False, resolution=(400, 125)),id))
     updating_url_window.start()
     return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
@@ -270,7 +270,7 @@ def cancel_update_url():
             updating_url_window.kill()
         except:
             pass
-        print("actualizacion de url cancelada")
+        uti.debug_print("actualizacion de url cancelada", priority=0)
     return jsonify({"message": "actualizacion de url cancelada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/estado/<int:id>/<estado>", methods=["GET"])
@@ -310,7 +310,7 @@ def init_download(id):
     descargas_process[id].start()
     descargas_process[id].join()
     # c = Downloader(id,'2' if id in cola else '0')
-    print(f"Termino {id} -> {descargas_process[id].exitcode}")
+    uti.debug_print(f"Termino {id} -> {descargas_process[id].exitcode}", priority=0)
 
     if id in cola and descargas_process[id].exitcode == 3:
         cola.remove(id)
@@ -346,7 +346,7 @@ def add_descarga_web():
         response1 = request.get_json()
     else:
         response1 = request.args.to_dict()
-    print(response1)
+    uti.debug_print(response1, priority=0)
 
     if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):
         return jsonify({"message": "La extensión no esta permitida", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
@@ -366,8 +366,8 @@ def add_descarga_web():
             func_update_url_download(updating_id, response1["url"], response1['nombre'])
             updating_url = False
             return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
-        # response = request_session.get(response1['url'], stream=True, timeout=30)
-        print(response.headers)
+
+        uti.debug_print(response.headers, priority=0)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         peso = int(response.headers.get('content-length', 1))
         hilos = get_conf('hilos') if 'bytes' in response.headers.get('Accept-Ranges', '') else 1
@@ -377,7 +377,7 @@ def add_descarga_web():
                 f.write(response.text)
             raise TrajoHTML('No paginas')
     except Exception as err:
-        print(err)
+        uti.debug_print(err, priority=2)
         get_logger().write(type(err))
         get_logger().write(err)
         icon.show_notification(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
@@ -456,36 +456,36 @@ def clear_cola():
 
 
 def update_last_update():
-    global last_update, last_update_type
+    global last_update
     lock.acquire()
     last_update = float(time.time())
-    last_update_type = 2
+    for i,x in list_changes_to_sockets.items():
+        x['last_update_type'] = 2
     lock.release()
 def update_last_download_update(download_id):
-    global last_update, last_update_type
+    global last_update
     last_update = float(time.time())
-    if last_update_type < 1:
-        last_update_type = 1
     lock.acquire()
-    try:
-        for i,x in list_changes_to_sockets.items():
-            x['last_downloads_changed'].append(download_id)
-    finally:
-        lock.release()
+    for i,x in list_changes_to_sockets.items():
+        x['last_downloads_changed'].append(download_id)
+        if x['last_update_type'] < 1:
+            x['last_update_type'] = 1
+    lock.release()
 
 
 def func_probar_link(url):
     try:
         response = request_session.get(url, stream=True, timeout=15)
-        print(response.headers)
+        uti.debug_print(response.headers, priority=0)
         tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
-        if tipo in ['text/plain', 'text/html']:
+        peso = int(response.headers.get('content-length', 1))
+        if tipo in ['text/plain', 'text/html'] or peso == 1:
             with open(CACHE_DIR.joinpath(f'./last_download_error{url}.html'), 'w') as f:
                 f.write(response.text)
             raise TrajoHTML('No paginas')
     except Exception as err:
-        print(err)
-        print(traceback.format_exc())
+        uti.debug_print(err, 2)
+        uti.debug_print(traceback.format_exc())
         return False
     return response
 
@@ -521,7 +521,7 @@ def borrar_carpetas_vacias():
     for i in cosas:
         if os.path.isdir(CACHE_DIR / i) and len(os.listdir(CACHE_DIR / i)) == 0:
             shutil.rmtree(CACHE_DIR / i)
-            print(f"Se ha eliminado {CACHE_DIR / i}")
+            uti.debug_print(f"Se ha eliminado {CACHE_DIR / i}")
 
 def borrar_logs_vacios():
     path = user_log_path('Acelerador de descargas', 'Edouard Sandoval')
@@ -530,11 +530,11 @@ def borrar_logs_vacios():
     for i in cosas:
         if os.path.isfile and (path/i).stat().st_size == 0:
             os.remove(path/i)
-            print(f"'{path/i}' Eliminado")
+            uti.debug_print(f"'{path/i}' Eliminado")
             r = True
 
     if r:
-        print("logs vacios eliminados")
+        uti.debug_print("logs vacios eliminados")
 
 
 def init():
@@ -559,7 +559,7 @@ if __name__ == '__main__':
     except requests.exceptions.ConnectionError:
         pass
     except Exception as err:
-        print(err)
+        uti.debug_print(err, 2)
         get_logger().write(f'Logger: Error al iniciar el programa {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
         get_logger().write(type(err))
         get_logger().write(err)
