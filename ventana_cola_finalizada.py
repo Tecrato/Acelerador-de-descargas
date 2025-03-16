@@ -10,7 +10,7 @@ from textos import idiomas
 class Ventana_cola_finalizada(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = json.load(open(self.carpeta_config.joinpath('./configs.json')))
+            self.configs: dict = uti.web_tools.get_json('http://127.0.0.1:5000/get_configurations')
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
 

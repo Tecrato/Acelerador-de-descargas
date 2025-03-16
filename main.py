@@ -1,3 +1,5 @@
+from http.client import InvalidURL
+import urllib
 import pygame as pag
 import os
 import json
@@ -5,19 +7,22 @@ import time
 import shutil
 import socket
 import datetime
-import requests
 import pyperclip
 import traceback
+import urllib.request
+import urllib.error
+import urllib.parse
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
 from threading import Thread
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 
+from Utilidades.web_tools import get_json, head, send_post
 from Utilidades_pygame.GUI import AdC_theme
 from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config
@@ -46,17 +51,15 @@ class Downloads_manager(Base_class):
         self.logger = uti.Logger('Acelerador de descargas(UI)', self.config.config_dir/'Logs')
         # self.logger.write(f"Acelerador de descargas iniciado en {datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
 
-        self.request_session = requests.Session()
-        self.request_session.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
-        }
+        self.prepared_post = urllib.request.Request('http://127.0.0.1:5000/set_configuration', method='POST')
+        self.prepared_post.add_header('Content-Type', 'application/json')
 
         self.Func_pool.add('reload list',self.func_reload_lista_descargas)
         self.Func_pool.add('get sockets clients',self.get_server_updates)
         
     def load_resources(self):
         try:
-            self.configs = self.request_session.get('http://127.0.0.1:5000/get_configurations').json()
+            self.configs = get_json('http://127.0.0.1:5000/get_configurations')
         except:
             self.configs = DICT_CONFIG_DEFAULT
         self.threads = self.configs.get('hilos',DICT_CONFIG_DEFAULT['hilos'])
@@ -77,11 +80,11 @@ class Downloads_manager(Base_class):
         except:
             self.idioma = 'español'
             self.txts = idiomas[self.idioma]
-            self.request_session.post('http://127.0.0.1:5000/set_configuration', json={"key":'idioma', "value":self.idioma})
+            send_post('http://127.0.0.1:5000/set_configuration', data={"key":'idioma', "value":self.idioma})
         self.txts = idiomas[self.idioma]
 
     def save_conf(self, key, value):
-        self.request_session.post('http://127.0.0.1:5000/set_configuration', json={"key":key, "value":value})
+        send_post('http://127.0.0.1:5000/set_configuration', data={"key":key, "value":value})
 
     def post_init(self):
         if self.enfoques:
@@ -124,7 +127,7 @@ class Downloads_manager(Base_class):
             )
         self.btn_main_reload_list = uti_pag.Button('', 13, self.config.font_symbols, self.list_main_descargas.topright, 16,'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,border_radius=0, border_top_right_radius=20, border_color=(100,100,100), func=lambda :self.Func_pool.start('reload list'))
 
-        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 15, self.config.font_mononoki, (30, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: self.goto('new_download'))
+        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 15, self.config.font_mononoki, (30, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: (self.limpiar_textos_new_download(),self.goto('new_download')))
         self.btn_main_change_save_dir = uti_pag.Button(self.txts['btn-cambiar_carpeta'], 15, self.config.font_mononoki, (self.btn_main_new_descarga.right, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_left_radius=0, border_top_left_radius=0, border_width=-1,func=self.func_preguntar_carpeta)
 
         # Pantalla Configuraciones
@@ -235,7 +238,7 @@ class Downloads_manager(Base_class):
         self.btn_new_download_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, dire='bottomleft', border_radius=0, border_top_right_radius=20, func=self.func_salir_nueva_descarga)
         self.btn_new_download_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, dire='bottomright', padding=(20,19), border_radius=0, border_top_left_radius=20, func=self.func_add_download)
 
-        self.input_new_download_url =uti_pag.Input(self.ventana_rect.center, 14, self.config.font_mononoki, 'URL', 1_000, width=300, height=35, dire='center')
+        self.input_new_download_url =uti_pag.Input(self.ventana_rect.center, 14, self.config.font_mononoki, 'URL', 1_000, width=300, height=35, hover_border_color='purple', dire='center')
         self.btn_new_download_paste = uti_pag.Button(
             '', 20, self.config.font_symbols, (0,0), padding=0, dire='topleft',height=34, border_width=2,
             color_rect='purple', color_rect_active='cyan', border_radius=-1, border_top_left_radius=20, border_bottom_left_radius=20,
@@ -467,23 +470,24 @@ class Downloads_manager(Base_class):
 
     
     # Ahora si, funciones del programa
+    # Funciones de botones
     def func_reload_lista_descargas(self):
         try:
             self.loading += 1
-            response = requests.get('http://127.0.0.1:5000/descargas/get_all',timeout=5)
-            self.cached_list_DB = response.json()['lista']
-            self.cola = response.json()['cola']
+            response = get_json('http://127.0.0.1:5000/descargas/get_all',timeout=5)
+            self.cached_list_DB = response['lista']
+            self.cola = response['cola']
             
             diff = self.list_main_descargas.listas[0].desplazamiento
             self.list_main_descargas.clear()
 
             if not self.cached_list_DB:
-                self.list_main_descargas.clear()
                 self.list_main_descargas.append((None, None, None))
                 return
 
+            to_set = [[] for _ in range(self.list_main_descargas.num_list)]
             for row in self.cached_list_DB:
-                id = row[0]
+                id_descarga = row[0]
                 nombre = row[1]
                 peso = uti.format_size_bits_to_bytes_str(row[3])
                 hilos = row[6]
@@ -491,8 +495,10 @@ class Downloads_manager(Base_class):
                 txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
                 estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
                 cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
-                self.list_main_descargas.append((id,nombre, hilos, peso, estado, cola, txt_fecha))
+                for i, j in enumerate((id_descarga, nombre, hilos, peso, estado, cola, txt_fecha)):
+                    to_set[i].append(j)
 
+            self.list_main_descargas.lista_palabras = to_set
             self.list_main_descargas.on_wheel(diff)
         except Exception as err:
             uti.debug_print(type(err))
@@ -517,7 +523,7 @@ class Downloads_manager(Base_class):
         self.goto('main')
 
     def func_borrar_todas_las_descargas(self):
-        self.request_session.get('http://127.0.0.1:5000/descargas/delete_all',timeout=5)
+        get_json('http://127.0.0.1:5000/descargas/delete_all')
         self.Func_pool.start('reload list')
 
     def func_select_box_hilos(self, respuesta) -> None:
@@ -586,11 +592,11 @@ class Downloads_manager(Base_class):
             )
         elif respuesta['index'] == 2:
             # Cambiar la url
-            response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
+            response = get_json(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}')
             if response['downloading'] == True or response['cola'] == True:
                 self.mini_ventana(1)
                 return
-            response = requests.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached[0]}').json()
+            response = get_json(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached[0]}')
             if response['status'] != 'ok':
                 self.mini_ventana(5)
         elif respuesta['index'] == 3:
@@ -599,47 +605,47 @@ class Downloads_manager(Base_class):
             self.mini_ventana(3)
         elif respuesta['index'] == 4:
             # 4 añadir a la cola
-            response = requests.get(f'http://127.0.0.1:5000/cola/add/{obj_cached[0]}').json()
+            response = get_json(f'http://127.0.0.1:5000/cola/add/{obj_cached[0]}')
             if response['status'] == 'ok':
                 self.cola.append(obj_cached[0])
                 self.list_main_descargas[5][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached[0])}]'         
         elif respuesta['index'] == 5:
             # 5 remover de la cola
-            response = requests.get(f'http://127.0.0.1:5000/cola/delete/{obj_cached[0]}').json()
+            response = get_json(f'http://127.0.0.1:5000/cola/delete/{obj_cached[0]}')
             if response['status'] == 'ok':
                 self.cola.remove(obj_cached[0])
                 self.list_main_descargas[5][respuesta['obj'][0]['index']] = f' - '   
         elif respuesta['index'] == 6:
             # 6 limpiar cola
-            response = requests.get(f'http://127.0.0.1:5000/cola/clear').json()
+            response = get_json(f'http://127.0.0.1:5000/cola/clear')
             if response['status'] == 'ok':
                 self.cola.clear()
                 for x in range(len(self.list_main_descargas)):
                     self.list_main_descargas[5][x] = f' - '
         elif respuesta['index'] == 7:
             # 7 reiniciar descarga
-            response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
-            if response['downloading'] == False and requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached[0]}/esperando').json()['status'] == 'ok':
+            response = get_json(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}')
+            if response['downloading'] == False and get_json(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached[0]}/esperando')['status'] == 'ok':
                 shutil.rmtree(self.config.cache_dir.joinpath(f'./{obj_cached[0]}'), True)
                 self.list_main_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         elif respuesta['index'] == 8:
             # 8 cambiar nombre
-            response = requests.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json()
+            response = get_json(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}')
             if response['downloading'] == True:
                 self.mini_ventana(1)
                 return
             nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached[1])
             if not nombre or nombre == '':
                 return
-            response = requests.get(f'http://127.0.0.1:5000/descargas/update/nombre/{obj_cached[0]}/{nombre}').json()
+            response = get_json(f'http://127.0.0.1:5000/descargas/update/nombre/{obj_cached[0]}/{nombre}')
             if response['status'] == 'ok':
                 self.list_main_descargas[1][int(respuesta['obj'][0]['index'])] = nombre
         self.redraw = True
 
     def func_descargar(self, obj_cached):
         self.loading += 1
-        response = requests.get(f'http://localhost:5000/descargas/download/{obj_cached[0]}')
-        if response.json().get('status') == 'ok':
+        response = get_json(f'http://localhost:5000/descargas/download/{obj_cached[0]}')
+        if response.get('status') == 'ok':
             self.mini_ventana(0)
         else:
             self.mini_ventana(1)
@@ -719,73 +725,45 @@ class Downloads_manager(Base_class):
         self.save_conf('particulas', self.allow_particles)
 
 
-
+    # Funciones Variadas
     def mini_ventana(self,num):
-        if num == 0:
-            self.Mini_GUI_manager.clear_group("descarga iniciada")
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', self.txts['descargar'],
-                                    self.txts['gui-descarga iniciada']),
-                group='descarga iniciada'
-            )
-        elif num == 1:
-            self.Mini_GUI_manager.clear_group("descarga en curso")
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', 'Error',
-                                    self.txts['gui-descarga en curso']),
-                group='descarga en curso'
-            )
-        elif num == 2:
-            self.Mini_GUI_manager.clear_group("descarga eliminada")
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', self.txts['eliminar'],
-                                    self.txts['gui-descarga eliminada']),
-                group='descarga eliminada'
-            )
-        elif num == 3:
-            self.Mini_GUI_manager.clear_group('portapapeles')
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', 'Copiado',
-                                      self.txts['copiado al portapapeles']),
-                group='portapapeles'
-            )
-        elif num == 4:
-            # Mini ventana de que solo esta disponible si selecciona 1 descarga
-            self.Mini_GUI_manager.clear_group("solo una descarga")
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', 'Error',
-                                        self.txts['gui-solo una descarga'],(200,90)),
-                group='solo una descarga'
-            )
-        elif num == 5:
-            # Mini ventana para cuando a ocurrido un error
-            self.Mini_GUI_manager.clear_group("error")
-            self.Mini_GUI_manager.add(
-                uti_pag.mini_GUI.simple_popup(pag.Vector2(50000,50000), 'botomright', 'Error',
-                                        self.txts['gui-error inesperado'],(200,120)),
-                group='error'
-            )
+        txts_dict = {
+            0: ('descarga iniciada', 'Descargando', self.txts['gui-descarga iniciada']),
+            1: ('descarga en curso', 'Error', self.txts['gui-descarga en curso']),
+            2: ('descarga eliminada', 'Error', self.txts['gui-descarga eliminada']),
+            3: ('portapapeles', 'Copiado', self.txts['copiado al portapapeles']),
+            4: ('solo una descarga', 'Error', self.txts['gui-solo una descarga']),
+            5: ('error', 'Error', self.txts['gui-error inesperado'])
+        }
+        txt_group, txt_header, txt_body = txts_dict[num]
+        self.Mini_GUI_manager.clear_group(txt_group)
+        self.Mini_GUI_manager.add(
+            uti_pag.mini_GUI.simple_popup(
+                pag.Vector2(50000,50000), 'botomright', txt_header,txt_body,(200,90)
+            ),
+            group=txt_group
+        )
 
     def func_add_download(self):
         if not self.can_add_new_download:
             return
-        requests.get('http://127.0.0.1:5000/descargas/add_from_program', params={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
+        send_post('http://127.0.0.1:5000/descargas/add_from_program', data={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
 
         self.Func_pool.start('reload list')
         self.goto('main')
 
     def del_downloads(self,obj):
         for x in obj:
-            requests.get(f'http://127.0.0.1:5000/descargas/delete/{self.cached_list_DB[x['index']][0]}')
+            get_json(f'http://127.0.0.1:5000/descargas/delete/{self.cached_list_DB[x['index']][0]}')
         self.Func_pool.start('reload list')
         return
 
     def del_download(self, index):
-        response = requests.get(f'http://127.0.0.1:5000/descargas/delete/{index}')
-        if response.json().get('status') == 'ok':
+        response = get_json(f'http://127.0.0.1:5000/descargas/delete/{index}')
+        if response.get('status') == 'ok':
             self.mini_ventana(2)
             self.Func_pool.start('reload list')
-        elif response.json().get('status') == 'error':
+        elif response.get('status') == 'error':
             self.mini_ventana(1)
 
     def open_info(self, title, texto, func=None):
@@ -802,10 +780,22 @@ class Downloads_manager(Base_class):
         self.gui_desicion.func = func
         self.gui_desicion.redraw += 1
 
+    def limpiar_textos_new_download(self):
+        self.text_new_download_filename.text = self.txts['nombre']+': ----------'
+        self.text_new_download_file_type.text = self.txts['tipo']+': ----------'
+        self.text_new_download_size.text = self.txts['tamaño']+': ----------'
+        self.text_new_download_status.text = self.txts['descripcion-state[esperando]']
+        self.btn_new_download_hilos.pos = (-10000,-100000)
+        self.new_threads = self.threads
+        self.can_change_new_threads = False
+        self.new_file_size = 0
+        self.new_filename = ''
+        self.new_file_type = ''
 
     def comprobar_url(self):
         if not self.url:
             return 
+        self.limpiar_textos_new_download()
         self.can_add_new_download = False
 
         url_parsed: str = urlparse(self.url).path
@@ -825,21 +815,25 @@ class Downloads_manager(Base_class):
         self.text_new_download_status.text = self.txts['descripcion-state[conectando]']
 
         try:
-            response = self.request_session.get(self.url, stream=True, timeout=15)
+            url_parsed = urllib.parse.urlparse(self.url)
+            if not url_parsed.scheme or not url_parsed.netloc:
+                raise urllib.error.URLError('URL invalida')
+            
+            response = head(self.url, timeout=15)
             
             self.logger.write(f"Informacion obtenida: {self.url}")
-            self.logger.write(response.headers)
-            uti.debug_print(response.headers)
+            self.logger.write(response)
+            uti.debug_print(response)
 
             # Validacion de tipo
-            tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
+            tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
             self.new_file_type = tipo
             self.text_new_download_file_type.text = self.txts['tipo']+': ' + tipo
             if self.new_file_type in ['text/plain', 'text/html']:
                 raise TrajoHTML('No paginas')
             
             # Validacion de reanudar
-            if 'bytes' in response.headers.get('Accept-Ranges', ''):
+            if 'bytes' in response.get('Accept-Ranges', ''):
                 self.can_change_new_threads = True
                 self.btn_new_download_hilos.pos = (self.ventana_rect.centerx+150,self.ventana_rect.centery+30)
                 self.new_threads = self.threads
@@ -850,13 +844,13 @@ class Downloads_manager(Base_class):
                 self.text_new_download_hilos.text = self.txts['config-hilos'].format(self.new_threads)
 
             # Validacion de tamaño
-            self.new_file_size = int(response.headers.get('content-length', 0))
+            self.new_file_size = int(response.get('content-length', 0))
             if self.new_file_size < 4096:
                 self.new_threads = 1
                 self.can_change_new_threads = False
-            self.text_new_download_size.text = uti.format_size_bits_to_bytes_str(self.new_file_size)
+            self.text_new_download_size.text = f"{self.txts['tamaño']}: {uti.format_size_bits_to_bytes_str(self.new_file_size)}"
             
-            if a := response.headers.get('content-disposition', False):
+            if a := response.get('content-disposition', False):
                 nuevo_nombre = a.split(';')
                 for x in nuevo_nombre:
                     if 'filename=' in x:
@@ -868,27 +862,27 @@ class Downloads_manager(Base_class):
             
             self.text_new_download_status.text = self.txts['estado']+': '+self.txts['disponible']
             self.can_add_new_download = True
-        except requests.URLRequired:
-            return
-        except (requests.exceptions.InvalidSchema,requests.exceptions.MissingSchema,requests.exceptions.InvalidURL):
+        except InvalidURL:
             self.text_new_download_status.text = self.txts['descripcion-state[url invalida]']
-        except (requests.exceptions.ConnectTimeout,requests.exceptions.ReadTimeout):
+        except TimeoutError:
             self.text_new_download_status.text = self.txts['descripcion-state[tiempo agotado]']
-        except requests.exceptions.ConnectionError:
+        except urllib.error.HTTPError:
             self.text_new_download_status.text = self.txts['descripcion-state[error internet]']
+        except urllib.error.URLError:
+            self.text_new_download_status.text = self.txts['descripcion-state[url invalida]']
         except TrajoHTML:
             self.text_new_download_status.text = self.txts['descripcion-state[trajo un html]']
         except LinkCaido:
-            self.text_new_download_status.text = 'Link Caido'
+            self.text_new_download_status.text = self.txts['descripcion-state[link caido]']
         except Exception as err:
             uti.debug_print(err, priority=3)
             uti.debug_print(type(err), priority=3)
             self.logger.write(f'Error conprobar {self.url} - {type(err)} -> {err}')
-            self.text_new_download_status.text = 'Error'
+            self.text_new_download_status.text = self.txts['descripcion-state[error]']
 
     def reload_elemento_individual(self, id):
-        response = requests.get(f'http://127.0.0.1:5000/descargas/get/{id}',timeout=5).json()
-        self.cola = requests.get('http://127.0.0.1:5000/cola/get_all',timeout=5)
+        response = get_json(f'http://127.0.0.1:5000/descargas/get/{id}',timeout=5)
+        self.cola = get_json('http://127.0.0.1:5000/cola/get_all',timeout=5)
         nombre = response[1]
         peso = uti.format_size_bits_to_bytes_str(response[3])
         hilos = response[6]

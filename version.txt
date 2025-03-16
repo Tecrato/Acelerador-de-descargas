@@ -1,4 +1,25 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12.2 - 16/3/2025
+
+Cambios:
+ - Transicion de requests a urllib terminada.
+ - Actualizacion en la libreria que permite navegar en la ventana usando las flechas y el espacio.
+
+Correcciones:
+ - Corregido el texto del tamaño el archivo en el apartado de añadir descarga.
+ - 
+
+Enchantements:
+ - Mejorada la velocidad de generacion de la lista en la libreria, por lo que la lista de descargas ahora ira mucho mas rapido.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12.1 - 12/3/2025
+
+Correcciones:
+ - Error al obtener detalles de la url en la ventana de descarga.
+ - 
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.12 - 11/3/2025
 
 Cuello de botella solucionado y programam mejorado en un 80%.

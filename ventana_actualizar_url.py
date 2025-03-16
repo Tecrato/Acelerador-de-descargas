@@ -1,6 +1,5 @@
 import pygame as pag
 import json
-import requests
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 
@@ -11,7 +10,7 @@ from textos import idiomas
 class Ventana_actualizar_url(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = requests.get('http://127.0.0.1:5000/get_configurations').json()
+            self.configs: dict = uti.web_tools.get_json('http://127.0.0.1:5000/get_configurations')
         except Exception as err:
             uti.debug_print("No se pudo cargar la configuracion", priority=2)
             uti.debug_print(err, priority=2)
@@ -48,7 +47,7 @@ class Ventana_actualizar_url(Base_class):
     def func_cancelar(self):
         print("cancelando actualizacion de url")
         try:
-            requests.get('http://127.0.0.1:5000/descargas/cancel_update/url')
+            uti.web_tools.get_json('http://127.0.0.1:5000/descargas/cancel_update/url')
         except Exception as err:
             print(err)
         self.exit()

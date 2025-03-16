@@ -1,5 +1,5 @@
 import os
-import json
+import Utilidades as uti
 from pathlib import Path
 import Utilidades_pygame as uti_pag
 
@@ -11,7 +11,7 @@ os.chdir(Path(__file__).parent)
 class Ventana_actualizar(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = json.load(open(self.config.config_dir.joinpath('./configs.json')))
+            self.configs: dict = uti.web_tools.get_json('http://127.0.0.1:5000/get_configurations')
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
 
@@ -24,7 +24,7 @@ class Ventana_actualizar(Base_class):
         # El resto de textos y demas cosas
         self.text_program_title = uti_pag.Text(self.txts['title'], 16, self.config.font_mononoki, (self.ventana_rect.centerx, 30))
         self.pregunta = uti_pag.Text(self.txts['nueva descarga disponible'], 20, self.config.font_mononoki, (self.config.resolution[0]//2,50), dire='top')
-        self.btn_aceptar = uti_pag.Button(self.txts['descargar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=lambda:os.startfile(self.args[0]))
+        self.btn_aceptar = uti_pag.Button(self.txts['descargar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=lambda:(os.startfile(self.args[0]),self.exit()))
         self.btn_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4 *3,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
 
         # Tambien se debe agregar a las respiectivas listas

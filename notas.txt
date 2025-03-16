@@ -1,7 +1,9 @@
 # Errores:
-
+ - Arreglar el goto('new_download'), para que limpie los campos siempre.
 
 # Cambios:
+ - Hacer que la ventana de descarga finalizada tenga la opcion de abrir el archivo descargado.
+ - Que en la miniventana de la URL no sirve, poner boton para reintentar.
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...

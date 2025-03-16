@@ -1,15 +1,14 @@
 from io import BufferedWriter
 import pygame as pag
 import urllib.request
+import http.client
 import os
 import sys
 import time
 import shutil
-import requests
 import subprocess
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
-
 from pathlib import Path
 from Utilidades import win32_tools, LinearRegressionSimple
 from tkinter.simpledialog import askstring
@@ -22,8 +21,8 @@ from Utilidades_pygame.GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
 from Utilidades_pygame.base_app_class import Base_class
 
+from Utilidades.web_tools import get_json, head
 
-# Cargo la carpeta de guardado de descarga al inicio y al final
 
 class Downloader(Base_class):
     def otras_variables(self):
@@ -32,7 +31,7 @@ class Downloader(Base_class):
 
         self.config: Config
         
-        self.raw_data = requests.get(f'http://127.0.0.1:5000/descargas/get/{self.download_id}').json()
+        self.raw_data = get_json(f'http://127.0.0.1:5000/descargas/get/{self.download_id}')
         
         self.file_name: str = self.raw_data[1]
         self.type: str = self.raw_data[2]
@@ -67,8 +66,10 @@ class Downloader(Base_class):
         self.intentos: int = 0
         self.peso_descargado: int = 0
         self.peso_descargado_vel: int = 0
+        self.peso_descargado_max_vel: int = 0
         self.velocidad_limite: int = 0
-        self.last_updated_progress = 0
+        self.last_updated_progress: float = 0
+        self.last_updated_max_vel: float = 0
         
         # Chunk
         self.chunk: int = 128
@@ -101,13 +102,13 @@ class Downloader(Base_class):
         self.last_change: float = time.time()
         self.last_velocity_update: float = time.time()
         self.lock: Lock = Lock()
+        self.max_vel_lock: Lock = Lock()
 
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
             'Accept-Encoding': 'identity'
             }
         self.pool_hilos: ThreadPoolExecutor = ThreadPoolExecutor(self.num_hilos, 'downloads_threads')
-        self.prepared_session: requests.Session = requests.Session()
         
         self.chunk_regressor: LinearRegressionSimple = LinearRegressionSimple(*self.list_to_train_chunk_regressor)
         
@@ -129,7 +130,7 @@ class Downloader(Base_class):
 
     def load_resources(self):
         try:
-            self.configs: dict = requests.get('http://127.0.0.1:5000/get_configurations').json()
+            self.configs: dict = get_json('http://127.0.0.1:5000/get_configurations')
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
@@ -337,7 +338,7 @@ class Downloader(Base_class):
         if progreso == self.last_updated_progress:
             return
         self.last_updated_progress = progreso
-        requests.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
+        get_json(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
 
     def calc_velocity(self):
         if not self.downloading:
@@ -434,25 +435,25 @@ class Downloader(Base_class):
         self.downloading = False
         self.text_estado_general.text = self.txts['descripcion-state[conectando]']
         try:
-            # response = self.prepared_session.get(self.url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
             intentos = 0
 
             while intentos < 10:
                 intentos += 1
                 try:
-                    response = requests.get(url, stream=True, allow_redirects=True, timeout=30, headers=self.default_headers)
-                    if (int(response.headers.get('content-length', 0)) != self.peso_total) or (response.headers.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
+                    response = head(self.url, timeout=30)
+                    if (int(response.get('content-length', 0)) != self.peso_total) or (response.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
                         raise TrajoHTML('No paginas')
                     else:
                         break
-                except requests.exceptions.RequestException:
+                except http.client.HTTPException as err:
+                    uti.debug_print(err, priority=3)
                     continue
 
-            uti.debug_print(response.headers, priority=0)
+            uti.debug_print(response, priority=0)
             self.intentos = 0
             self.can_download = True
             self.last_change = time.time()
-            if 'bytes' not in response.headers.get('Accept-Ranges', ''):
+            if 'bytes' not in response.get('Accept-Ranges', ''):
                 self.can_reanudar = False
                 try:
                     os.remove(self.carpeta_cache.joinpath(f'./parte0.tmp'))
@@ -460,7 +461,7 @@ class Downloader(Base_class):
                     pass
                 self.open_GUI_dialog(self.txts['gui-no se puede reanudar'], 'Error', tipo=2)
 
-        except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout):
+        except http.client.HTTPException:
             if self.modificador == 2:
                 self.intentos += 1
                 if self.intentos > 10:
@@ -471,13 +472,14 @@ class Downloader(Base_class):
                     'Error', 
                     lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
                 )
-        except (requests.exceptions.MissingSchema, DifferentTypeError, LowSizeError, TrajoHTML) as err:
+        except (http.client.HTTPException, DifferentTypeError, LowSizeError, TrajoHTML) as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
             self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2, func=self.cerrar_todo)
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
+            uti.debug_print(traceback.format_exc(), priority=3)
             self.open_GUI_dialog(
                 self.txts['gui-error inesperado'], 
                 'Error',
@@ -645,9 +647,9 @@ class Downloader(Base_class):
         self.loading += 1
         self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
 
-        self.save_dir = Path(requests.get('http://127.0.0.1:5000/configuration/save_dir').json())
+        self.save_dir = Path(get_json(f'http://127.0.0.1:5000/configuration/save_dir'))
         try:
-            file = open(Path(self.save_dir)/self.file_name, 'wb')
+            file = open(self.save_dir.joinpath(self.file_name), 'wb')
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
@@ -680,7 +682,7 @@ class Downloader(Base_class):
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
-        if self.cerrar_al_finalizar or requests.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json()['cola']:
+        if self.cerrar_al_finalizar or get_json(f'http://127.0.0.1:5000/descargas/check/{self.download_id}')['cola']:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
             subprocess.call(f'shutdown /s /t 30 Descarga finalizada - {self.file_name}', shell=True)

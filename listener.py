@@ -1,13 +1,15 @@
+import http
 import json
 import os
 import traceback
-import requests
 import shutil
 import multiprocessing
 import datetime
 import time
 import socket as sk
 import Utilidades as uti
+import urllib.error
+import http.client
 
 from multiprocessing import Process
 from DB import Data_Base
@@ -97,12 +99,6 @@ lock = Lock()
 updating_url = False
 updating_id = -1
 updating_url_window = Process
-
-
-request_session = requests.Session()
-request_session.headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
-}
 
 
 
@@ -331,9 +327,12 @@ def init_download(id):
     del descargas_process[id]
     lista_descargas.remove(id)
     
-@app.route("/descargas/add_from_program" , methods=["GET"])
+@app.route("/descargas/add_from_program" , methods=["POST"])
 def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
-    response = request.args.to_dict()
+    if request.is_json:
+        response = request.get_json()
+    else:
+        response = request.args.to_dict()
     get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'])
     update_last_update()
     get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
@@ -367,14 +366,12 @@ def add_descarga_web():
             updating_url = False
             return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-        uti.debug_print(response.headers, priority=0)
-        tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
-        peso = int(response.headers.get('content-length', 1))
-        hilos = get_conf('hilos') if 'bytes' in response.headers.get('Accept-Ranges', '') else 1
+        uti.debug_print(response, priority=0)
+        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+        peso = int(response.get('content-length', 1))
+        hilos = get_conf('hilos') if 'bytes' in response.get('Accept-Ranges', '') else 1
         
         if tipo in ['text/plain', 'text/html']:
-            with open(CACHE_DIR.joinpath(f'./last_download_error{response1["nombre"]}.html'), 'w') as f:
-                f.write(response.text)
             raise TrajoHTML('No paginas')
     except Exception as err:
         uti.debug_print(err, priority=2)
@@ -475,13 +472,11 @@ def update_last_download_update(download_id):
 
 def func_probar_link(url):
     try:
-        response = request_session.get(url, stream=True, timeout=15)
-        uti.debug_print(response.headers, priority=0)
-        tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
-        peso = int(response.headers.get('content-length', 1))
+        response = uti.web_tools.head(url)
+        uti.debug_print(response, priority=0)
+        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+        peso = int(response.get('content-length', 1))
         if tipo in ['text/plain', 'text/html'] or peso == 1:
-            with open(CACHE_DIR.joinpath(f'./last_download_error{url}.html'), 'w') as f:
-                f.write(response.text)
             raise TrajoHTML('No paginas')
     except Exception as err:
         uti.debug_print(err, 2)
@@ -554,15 +549,10 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
 
     try:
-        requests.get('http://127.0.0.1:5000/open_program')
+        uti.web_tools.get_json('http://127.0.0.1:5000/open_program')
         os._exit(0)
-    except requests.exceptions.ConnectionError:
+    except Exception:
         pass
-    except Exception as err:
-        uti.debug_print(err, 2)
-        get_logger().write(f'Logger: Error al iniciar el programa {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
-        get_logger().write(type(err))
-        get_logger().write(err)
 
 
     icon = win32_tools.Win32TrayIcon(
@@ -572,7 +562,7 @@ if __name__ == '__main__':
             ("Abrir programa", func_open_program),
             ("Buscar actualizaciones", lambda: buscar_actualizacion(confirm=True)),
             ("Open logs", lambda: get_logger().open_folder()),
-            ("Salir", lambda: requests.get("http://127.0.0.1:5000/api_close")),
+            ("Salir", lambda: uti.web_tools.get_json("http://127.0.0.1:5000/api_close")),
         ],
         func_open_program
     )
