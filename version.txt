@@ -1,4 +1,24 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12.3 - 17/3/2025
+
+Cambios:
+ - Nuevo boton en la ventana de descarga finalizada que permite abrir el archivo descargado directamente.
+
+Correcciones:
+ - Devuelta la limpieza de los campos en la pantalla de new download, cada vez que entre.
+
+Mejoras:
+ - Personalizacion de los botones de todas las ventanas (GUI) de la aplicacion.
+
+Enchantements:
+ - Mejoras pequeñas de rendimiento en la libreria.
+ - Mejorado el algoritmo para limitar la velocidad de descarga.
+ - Mejora en el algoritmo para juntas las partes de la descarga en el archivo final.
+
+ Y traducciones claro que si.
+ (que no se pierdan las viejas costumbres).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.12.2 - 16/3/2025
 
 Cambios:

@@ -1,5 +1,7 @@
 textos_español = {
     # Traducciones literales
+    'abrir': 'Abrir',
+    'abrirlo': 'Abrirlo',
     'aceptar': 'Aceptar',
     'actualizacion': 'Actualizacion',
     'actualizando': 'Actualizando',
@@ -57,6 +59,7 @@ textos_español = {
     'informacion': 'Informacion',
     'iniciar': 'Iniciar',
     'instalar': 'Instalar',
+    'ir a la carpeta': 'Ir a la carpeta',
     'la': 'La',
     'limpiar cola': 'Limpiar Cola',
     'limitar-velocidad': 'Limitar Velocidad',
@@ -70,6 +73,7 @@ textos_español = {
     'particulas': 'Particulas',
     'reanudar': 'Resumir',
     'redescargar': 'Redescargar',
+    'reintentar': 'Reintentar',
     'reiniciar': 'Reiniciar',
     'remover de la cola': 'Remover de la cola',
     'segundo': 'Segundo',
@@ -105,7 +109,7 @@ textos_español = {
     # GUI's
     'gui-servidor no responde': 'El servidor no responde\nDesea volver a intentarlo?',
     'gui-desea_abrir_la_carpeta': "La descarga ah finalizado\n\nDesea ir a la carpeta de las descargas?",
-    'gui-url no sirve': "El URL a dejado de funcionar\n\nActualize la URL o intente mas tarde",
+    'gui-url no sirve': "El URL a dejado de funcionar\n\nDesea volver a intentarlo?",
     "gui-error inesperado":"A ocurrido un error inesperado\nCompruebe su conexion a internet\n\nDesea volver a intentarlo?",
     'gui-desea descargar la actualizacion': 'Hay una nueva actualizacion disponible\n\nDesea agregar a la lista de descargas?',
     'gui-desea borrar el elemento': '¿Desea borrar el elemento seleccionado!?',
@@ -156,6 +160,8 @@ textos_español = {
 
 textos_ingles = {
     # traducciones literales
+    'abrir': 'Open',
+    'abrirlo': 'Open it',
     'aceptar': 'Accept',
     'actualizacion': 'Update',
     'actualizando': 'Updating',
@@ -213,6 +219,7 @@ textos_ingles = {
     'informacion': 'Information',
     'iniciar': 'init',
     'instalar': 'Install',
+    'ir a la carpeta': 'Go to folder',
     'la': 'The',
     'limpiar cola': 'Clear Queue',
     'limitar-velocidad': 'Limit Speed',
@@ -226,6 +233,7 @@ textos_ingles = {
     'particulas': 'Particles',
     'reanudar': 'Resume',
     'redescargar': 'Re-download',
+    'reintentar': 'Re-try',
     'reiniciar': 'Reset',
     'remover de la cola': 'Remove of the Queue',
     'segundo': 'Second',
@@ -261,7 +269,7 @@ textos_ingles = {
     #GUI's
     'gui-servidor no responde': 'Timeout!\nTry again?',
     'gui-desea_abrir_la_carpeta': "Download Finished\n\nDo you want open the downloads dir?",
-    'gui-url no sirve': "The URL it's not working\n\nUpdate it or try again later.",
+    'gui-url no sirve': "The URL it's not working\n\nDo you want to try again?",
     "gui-error inesperado": "An unexpected error has occurred\n\nDo you want to try again?",
     'gui-desea descargar la actualizacion': 'New update available\n\nDo you want to download it?',
     'gui-desea borrar los elementos': 'Do you want delete this downloads?!',

@@ -171,7 +171,7 @@ class Downloader(Base_class):
 
         self.btn_cancelar_descarga =  uti_pag.Button(
             self.txts['cancelar'], 16, self.config.font_mononoki, ((self.ventana_rect.width / 2) / 3, 20), (20, 10), 'center', 'black','purple', 'cyan', 0, 0, 20, 
-            0, 0, 20, -1, func= lambda: self.open_GUI_dialog(self.txts['gui-cancelar descarga'], (400, 200),self.func_cancelar)
+            0, 0, 20, -1, func= lambda: self.open_GUI_dialog(self.txts['gui-cancelar descarga'], (400, 200),self.func_cancelar, options=[self.txts['aceptar'], self.txts['cancelar']])
         )
         self.btn_pausar_y_reanudar_descarga = uti_pag.Button(
             self.txts['reanudar'], 16, self.config.font_mononoki, (((self.ventana_rect.width / 2) / 3) * 2, 20), (20, 10), 
@@ -225,7 +225,7 @@ class Downloader(Base_class):
 
     def otro_evento(self, actual_screen, evento):
         if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:
-            self.open_GUI_dialog(self.txts['gui-cerrar la ventana descarga'],func=self.cerrar_todo)
+            self.open_GUI_dialog(self.txts['gui-cerrar la ventana descarga'],func=self.cerrar_todo, options=[self.txts['cerrar'], self.txts['cancelar']])
             ...
 
     def update(self, actual_screen='main'):
@@ -239,11 +239,12 @@ class Downloader(Base_class):
         self.barra_progreso.volumen = self.peso_descargado / self.peso_total
 
         if self.cerrando and self.num_hilos > 1:
-            self.text_finalizando_hilos2. text = f'Restantes: {self.downloading_threads}'
+            self.text_finalizando_hilos2.text = f'Restantes: {self.downloading_threads}'
 
-        if self.downloading:
-            for i,x in sorted(enumerate(self.lista_status_hilos), reverse=False):
-                self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
+        if not self.downloading:
+            return
+        for i,x in sorted(enumerate(self.lista_status_hilos), reverse=False):
+            self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
 
 
 
@@ -252,12 +253,14 @@ class Downloader(Base_class):
             pag.draw.line(self.ventana, 'black', x[0], x[1], width=3)
 
     # Ahora si, funciones del programa
-    def open_GUI_dialog(self, texto, title='Acelerador de descargas', func=None,tipo=1):
+    def open_GUI_dialog(self, texto, title='Acelerador de descargas', func=None,tipo=1, options=None):
         p = {
             1:self.gui_desicion,
             2:self.gui_informacion
         }[tipo]
-
+        
+        if options:
+            p.options = options
         p.title.text = title
         p.body.text = texto
         p.func = func
@@ -267,7 +270,7 @@ class Downloader(Base_class):
     # ---------------------------------------------------------------------------------- #
 
     def func_cancelar(self, result):
-        if result == 'cancelar':
+        if result['index'] == 1:
             return
         self.paused = False
         self.canceled = True
@@ -292,12 +295,18 @@ class Downloader(Base_class):
         self.start_download()
 
     def func_abrir_carpeta_antes_de_salir(self, resultado):
-        if resultado == 'aceptar':
+        if resultado['index'] == 0:
             if not self.fallo_destino:
                 file = Path(self.save_dir)/self.file_name
             else:
                 file = DICT_CONFIG_DEFAULT['save_dir']/self.file_name
             subprocess.call(['explorer','/select,{}'.format(file.as_uri())], shell = True)
+        elif resultado['index'] == 1:
+            if not self.fallo_destino:
+                file = Path(self.save_dir)/self.file_name
+            else:
+                file = DICT_CONFIG_DEFAULT['save_dir']/self.file_name
+            os.startfile(file)
         self.cerrar_todo('a')
 
     def func_select_box(self, result):
@@ -366,7 +375,8 @@ class Downloader(Base_class):
             self.open_GUI_dialog(
                 self.txts['gui-servidor no responde'],
                 'Error',
-                lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
+                lambda r: (self.Func_pool.start('descargar') if r['index'] == 0 else self.cerrar_todo({'index':0})), 
+                options=[self.txts['aceptar'], self.txts['cancelar']]
             )
 
     def calc_chunk(self):
@@ -413,8 +423,28 @@ class Downloader(Base_class):
             delta_date = uti.format_date(0,2)
             self.text_tiempo_restante.text = self.txts['tiempo restante'] + f": {self.txts['calculando']}..."
 
+    def max_vel_throttle(self, chunk_size: int):
+        if self.velocidad_limite == 0:
+            return
+
+        with self.max_vel_lock:
+            self.peso_descargado_max_vel += chunk_size
+
+            transcurrido = time.perf_counter() - self.last_updated_max_vel
+
+            if transcurrido > 1:
+                self.last_updated_max_vel = time.perf_counter()
+                self.peso_descargado_max_vel = 0
+            
+            permitido = self.velocidad_limite - self.peso_descargado_max_vel
+            
+            if permitido <= 0:
+                tiempo_reset = 1 * (self.peso_descargado_max_vel / self.velocidad_limite)
+                time.sleep(tiempo_reset if tiempo_reset <= 1 else 1)
+                
+
     def cerrar_todo(self, result):
-        if result == 'cancelar' or self.cerrando:
+        if isinstance(result, dict) and result['index'] == 1 or self.cerrando:
             return
         self.Func_pool.start('__terminar_programa')
         
@@ -426,6 +456,7 @@ class Downloader(Base_class):
         self.canceled = True
         self.text_finalizando_hilos.pos = self.ventana_rect.center
         self.text_finalizando_hilos2.pos = (self.text_finalizando_hilos.centerx, self.text_finalizando_hilos.bottom+10)
+        self.velocidad_limite = 0
         self.pool_hilos.shutdown(True, cancel_futures=True)
         self.exit()
 
@@ -470,12 +501,18 @@ class Downloader(Base_class):
                 self.open_GUI_dialog(
                     self.txts['gui-servidor no responde'], 
                     'Error', 
-                    lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a'))
+                    func=lambda r: (self.Func_pool.start('descargar') if r['index'] == 0 else self.cerrar_todo({'index':0})), 
+                    options=[self.txts['reintentar'], self.txts['cancelar']]
                 )
         except (http.client.HTTPException, DifferentTypeError, LowSizeError, TrajoHTML) as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
-            self.open_GUI_dialog(self.txts['gui-url no sirve'], 'Error', tipo=2, func=self.cerrar_todo)
+            self.open_GUI_dialog(
+                self.txts['gui-url no sirve'], 
+                'Error', 
+                func=self.cerrar_todo,
+                options=[self.txts['reintentar'], self.txts['cancelar']]
+            )
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
@@ -483,8 +520,9 @@ class Downloader(Base_class):
             self.open_GUI_dialog(
                 self.txts['gui-error inesperado'], 
                 'Error',
-                lambda r: (self.Func_pool.start('descargar') if r == 'aceptar' else self.cerrar_todo('a')),
-                1
+                tipo=1,
+                func=lambda r: (self.Func_pool.start('descargar') if r['index'] == 0 else self.cerrar_todo({'index':0})), 
+                options=[self.txts['reintentar'], self.txts['cancelar']]
             )
 
     def start_download(self):
@@ -537,7 +575,6 @@ class Downloader(Base_class):
                 uti.debug_print(err, priority=3)
                 raise err
         self.downloading_threads -= 1
-
 
     def download_thread(self, num):
         tiempo_reset = self.lista_status_hilos[num]['tiempo_reset']
@@ -598,16 +635,8 @@ class Downloader(Base_class):
                     buffered_write.write(data)
                     self.lock.release()
 
-                    if self.velocidad_limite > 0:
-                        self.lista_status_hilos[num]['actual_chunk_to_limit'] += tanto
-                        actual_time = time.perf_counter()
-                        if self.lista_status_hilos[num]['actual_chunk_to_limit'] > self.velocidad_limite/self.downloading_threads:
-                            time.sleep(self.lista_status_hilos[num]['actual_chunk_to_limit'] / (self.velocidad_limite/self.downloading_threads))
-                            self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
-                            self.lista_status_hilos[num]['time_chunk'] = actual_time
-                        elif actual_time - self.lista_status_hilos[num]['time_chunk'] > 1:
-                            self.lista_status_hilos[num]['time_chunk'] = actual_time
-                            self.lista_status_hilos[num]['actual_chunk_to_limit'] = 0
+
+                    self.max_vel_throttle(tanto)
                 response.close()
     
                 buffered_write.flush()
@@ -657,8 +686,13 @@ class Downloader(Base_class):
             self.fallo_destino = True
 
         for x in range(self.num_hilos):
-            with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'), 'rb') as parte:
-                file.write(parte.read())
+            with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'), 'rb') as parte,\
+                memoryview(bytearray(1024*1024)) as buffer:
+                while True:
+                    buffer_read = parte.readinto(buffer)
+                    if not buffer_read:
+                        break
+                    file.write(buffer[:buffer_read])
             os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
         file.close()
         shutil.rmtree(self.carpeta_cache, True)
@@ -692,7 +726,12 @@ class Downloader(Base_class):
             os.startfile(Path(self.save_dir)/self.file_name)
             self.cerrar_todo('aceptar')
             return
-        self.open_GUI_dialog(self.txts['gui-desea_abrir_la_carpeta'],self.txts['enhorabuena'],self.func_abrir_carpeta_antes_de_salir)
+        self.open_GUI_dialog(
+            self.txts['gui-desea_abrir_la_carpeta'],
+            self.txts['enhorabuena'],
+            self.func_abrir_carpeta_antes_de_salir,
+            options=[self.txts['ir a la carpeta'], self.txts['abrirlo'], self.txts['cerrar']]
+            )
         if self.enfoques:
             win32_tools.front2(self.hwnd)
 

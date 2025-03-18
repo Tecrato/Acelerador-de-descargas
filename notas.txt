@@ -1,19 +1,15 @@
 # Errores:
- - Arreglar el goto('new_download'), para que limpie los campos siempre.
 
 # Cambios:
- - Hacer que la ventana de descarga finalizada tenga la opcion de abrir el archivo descargado.
- - Que en la miniventana de la URL no sirve, poner boton para reintentar.
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
  - el select(False) de las listas al clickar en otro lado.
-
+ - Poner un texto de que se esta abriendo el archivo de las versiones, que la gente al no ver cambios se desespera rapido.
 
 # Cosas nuevas:
  - hacer que separe los archivos descargados en carpetas
  - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
- - Que el programa pueda dar mensages a travez del listener con una lista de los cambios hechos, para no recargar toda la lista.
 
 # Exagerado:
  - descargar Torrent's

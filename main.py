@@ -1,4 +1,5 @@
 from http.client import InvalidURL
+from typing import override
 import urllib
 import pygame as pag
 import os
@@ -127,7 +128,7 @@ class Downloads_manager(Base_class):
             )
         self.btn_main_reload_list = uti_pag.Button('', 13, self.config.font_symbols, self.list_main_descargas.topright, 16,'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,border_radius=0, border_top_right_radius=20, border_color=(100,100,100), func=lambda :self.Func_pool.start('reload list'))
 
-        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 15, self.config.font_mononoki, (30, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: (self.limpiar_textos_new_download(),self.goto('new_download')))
+        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 15, self.config.font_mononoki, (30, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: self.goto('new_download'))
         self.btn_main_change_save_dir = uti_pag.Button(self.txts['btn-cambiar_carpeta'], 15, self.config.font_mononoki, (self.btn_main_new_descarga.right, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_left_radius=0, border_top_left_radius=0, border_width=-1,func=self.func_preguntar_carpeta)
 
         # Pantalla Configuraciones
@@ -224,7 +225,8 @@ class Downloads_manager(Base_class):
             (50, 50, 50), border_radius=0, border_bottom_right_radius=20, 
             func=lambda: self.open_desicion(
                 self.txts['confirmar'], self.txts['gui-desea borrar los elementos'],
-                self.func_eliminar_extencion
+                self.func_eliminar_extencion,
+                options=['Eliminar', 'Cancelar']
             )
         )
 
@@ -280,7 +282,8 @@ class Downloads_manager(Base_class):
             func=lambda: self.open_desicion(
                 self.txts['borrar datos'],
                 self.txts['gui-desea borrar todos los datos?'],
-                func=lambda e: self.func_borrar_todas_las_descargas() if e == 'aceptar' else None
+                func=lambda e: self.func_borrar_todas_las_descargas() if e['index'] == 0 else None,
+                options=['Borrar todo', 'Cancelar']
             )
         )
 
@@ -468,6 +471,13 @@ class Downloads_manager(Base_class):
         if actual_screen == 'new_download':
             pag.draw.rect(self.ventana, (50,50,50),self.rect_new_download_fondo, border_radius=20)
 
+    @override
+    def goto(self, screen):
+        if screen == 'new_download':
+            self.limpiar_textos_new_download()
+            self.input_new_download_url.clear()
+        super().goto(screen)
+
     
     # Ahora si, funciones del programa
     # Funciones de botones
@@ -562,7 +572,8 @@ class Downloads_manager(Base_class):
 
         if len(respuesta['obj']) > 1 and respuesta['index'] == 1:
             self.open_desicion(self.txts['confirmar'], self.txts['gui-desea borrar los elementos'],
-                lambda r: (self.del_downloads(respuesta['obj']) if r == 'aceptar' else None)
+                lambda r: (self.del_downloads(respuesta['obj']) if r['index'] == 0 else None),
+                options=['Eliminar', 'Cancelar']
             )
             return
         elif len(respuesta['obj']) > 1 and respuesta['index'] in [2,3,6,8]:
@@ -588,7 +599,8 @@ class Downloads_manager(Base_class):
                 txt += f'"{obj_cached[1][:36]}..."'
             self.open_desicion(
                 self.txts['confirmar'], txt,
-                lambda r: (self.del_download(obj_cached[0]) if r == 'aceptar' else None)
+                lambda r: (self.del_download(obj_cached[0]) if r['index'] == 0 else None),
+                options=['Eliminar', 'Cancelar']
             )
         elif respuesta['index'] == 2:
             # Cambiar la url
@@ -694,7 +706,7 @@ class Downloads_manager(Base_class):
         self.save_conf('extenciones',self.extenciones)
 
     def func_eliminar_extencion(self,r):
-        if r != 'aceptar' or not self.list_config_extenciones.get_selects():
+        if r['index'] != 0 or not self.list_config_extenciones.get_selects():
             return
         for i,x in sorted(self.list_config_extenciones.get_selects(), reverse=True):
             self.extenciones.pop(i)
@@ -773,11 +785,12 @@ class Downloads_manager(Base_class):
         self.gui_informacion.active = True
         self.gui_desicion.redraw += 1
     
-    def open_desicion(self, title, texto, func=None):
+    def open_desicion(self, title, texto, func=None, options: list[str] = None):
         self.gui_desicion.title.text = title
         self.gui_desicion.body.text = texto
         self.gui_desicion.active = True
         self.gui_desicion.func = func
+        self.gui_desicion.options = options
         self.gui_desicion.redraw += 1
 
     def limpiar_textos_new_download(self):
