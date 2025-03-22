@@ -36,7 +36,6 @@ if __name__ == "__main__":
         "freetype.dll",
         "libjpeg-9.dll",
         "libmodplug-1.dll",
-        "zlib1.dll",
         "libogg-0.dll",
         "libvorbis-0.dll",
         "libvorbisfile-3.dll",

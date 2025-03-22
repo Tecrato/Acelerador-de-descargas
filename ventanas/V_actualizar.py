@@ -11,7 +11,7 @@ os.chdir(Path(__file__).parent)
 class Ventana_actualizar(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = uti.web_tools.get_json('http://127.0.0.1:5000/get_configurations')
+            self.configs: dict = uti.web_tools.get('http://127.0.0.1:5000/get_configurations').json
         except Exception:
             self.configs = DICT_CONFIG_DEFAULT
 

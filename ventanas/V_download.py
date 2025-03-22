@@ -21,8 +21,6 @@ from Utilidades_pygame.GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
 from Utilidades_pygame.base_app_class import Base_class
 
-from Utilidades.web_tools import get_json, head
-
 
 class Downloader(Base_class):
     def otras_variables(self):
@@ -31,7 +29,7 @@ class Downloader(Base_class):
 
         self.config: Config
         
-        self.raw_data = get_json(f'http://127.0.0.1:5000/descargas/get/{self.download_id}')
+        self.raw_data = uti.get(f'http://127.0.0.1:5000/descargas/get/{self.download_id}').json
         
         self.file_name: str = self.raw_data[1]
         self.type: str = self.raw_data[2]
@@ -130,7 +128,7 @@ class Downloader(Base_class):
 
     def load_resources(self):
         try:
-            self.configs: dict = get_json('http://127.0.0.1:5000/get_configurations')
+            self.configs: dict = uti.get('http://127.0.0.1:5000/get_configurations').json
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
@@ -347,7 +345,7 @@ class Downloader(Base_class):
         if progreso == self.last_updated_progress:
             return
         self.last_updated_progress = progreso
-        get_json(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}')
+        uti.get(f'http://127.0.0.1:5000/descargas/update/estado/{self.download_id}/{f'{progreso * 100:.2f}%' if float(progreso) < 1.0 else 'Completado'}').json
 
     def calc_velocity(self):
         if not self.downloading:
@@ -439,6 +437,8 @@ class Downloader(Base_class):
             permitido = self.velocidad_limite - self.peso_descargado_max_vel
             
             if permitido <= 0:
+                if self.velocidad_limite == 0:
+                    return
                 tiempo_reset = 1 * (self.peso_descargado_max_vel / self.velocidad_limite)
                 time.sleep(tiempo_reset if tiempo_reset <= 1 else 1)
                 
@@ -471,7 +471,7 @@ class Downloader(Base_class):
             while intentos < 10:
                 intentos += 1
                 try:
-                    response = head(self.url, timeout=30)
+                    response = uti.get(self.url, timeout=30).headers
                     if (int(response.get('content-length', 0)) != self.peso_total) or (response.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
                         raise TrajoHTML('No paginas')
                     else:
@@ -510,13 +510,12 @@ class Downloader(Base_class):
             self.open_GUI_dialog(
                 self.txts['gui-url no sirve'], 
                 'Error', 
-                func=self.cerrar_todo,
+                func=lambda r: (self.Func_pool.start('descargar') if r['index'] == 0 else self.cerrar_todo({'index':0})),
                 options=[self.txts['reintentar'], self.txts['cancelar']]
             )
         except Exception as err:
             uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
-            uti.debug_print(traceback.format_exc(), priority=3)
             self.open_GUI_dialog(
                 self.txts['gui-error inesperado'], 
                 'Error',
@@ -676,7 +675,7 @@ class Downloader(Base_class):
         self.loading += 1
         self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
 
-        self.save_dir = Path(get_json(f'http://127.0.0.1:5000/configuration/save_dir'))
+        self.save_dir = Path(uti.get(f'http://127.0.0.1:5000/configuration/save_dir').json)
         try:
             file = open(self.save_dir.joinpath(self.file_name), 'wb')
         except Exception as err:
@@ -716,7 +715,7 @@ class Downloader(Base_class):
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
         self.btn_pausar_y_reanudar_descarga.func = self.func_reanudar
 
-        if self.cerrar_al_finalizar or get_json(f'http://127.0.0.1:5000/descargas/check/{self.download_id}')['cola']:
+        if self.cerrar_al_finalizar or uti.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json['cola']:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
             subprocess.call(f'shutdown /s /t 30 Descarga finalizada - {self.file_name}', shell=True)

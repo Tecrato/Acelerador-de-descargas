@@ -1,4 +1,16 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12.4 - 21/3/2025
+
+Codigo mas organizado y errores en los metodos get y post de la libreria de requests.
+
+Correcciones:
+ - Error con las opciones que tienen que ver con la cola.
+ - Error al detener la descarga.
+
+Cambios:
+ - Elevado el limite de hilos para la descarga, de 32 a 64 hilos.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.12.3 - 17/3/2025
 
 Cambios:

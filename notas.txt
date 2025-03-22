@@ -1,6 +1,8 @@
 # Errores:
 
 # Cambios:
+ - Que al terminar la cola mande un last update para que recargue la lista en la interfaz grafica.
+ - - Correcion, que cuando termine la descarga diga que si esta en la cola se recargue la lista.
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...

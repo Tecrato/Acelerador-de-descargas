@@ -1,5 +1,4 @@
 import pygame as pag
-import json
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 
@@ -10,7 +9,7 @@ from textos import idiomas
 class Ventana_actualizar_url(Base_class):
     def load_resources(self):
         try:
-            self.configs: dict = uti.web_tools.get_json('http://127.0.0.1:5000/get_configurations')
+            self.configs: dict = uti.web_tools.get('http://127.0.0.1:5000/get_configurations').json
         except Exception as err:
             uti.debug_print("No se pudo cargar la configuracion", priority=2)
             uti.debug_print(err, priority=2)

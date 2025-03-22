@@ -15,10 +15,12 @@ Botones Generales:
 Acciones Generales:
  - Es posible instalar una extension del programa, ver en la pantalla de extras (Boton signo de interrogacion en la esquina superior de la pantalla).
  - Es posible borrar todas las descargas desde la pantalla de extras, esto borrara tanto la cache de las descargas como la base de datos.
+ - Se puede poner desde 1 hasta 64 hilos en la pantalla de configuraciones, 8 es el valor recomendado y no recomiendo mas si es una computadora antigua o si no esta seguro de la cantidad de buses de su conexion.
 
 Limitantes:
  - Existen varios links que aún no funcionan con la application, recomendable desactivar mediante la ventana de la extencion en caso de tenerla activada.
  - Problemas para que los navegadores instalen la extension, dejare la extension descomprimida en el archivo winrar.
+ - Cualquier problema o duda, no dudes en preguntar, mi usuario de discord es: tecrato#7835.
 
 English:
 
@@ -37,7 +39,7 @@ General Buttons:
 General Actions:
  - It is possible to install an extension of the program, see on the extras screen (Question mark button in the top corner of the screen).
  - It is possible to delete all downloads from the extras screen, this will delete both the download cache and the database.
-
+ - It is possible to set the number of threads from 1 to 64 in the configuration screen, 8 is the recommended value and I do not recommend more if the computer is old or if you are not sure about the number of buses of your connection.
 
 Limitations:
  - There are several links that still do not work with the application, recommended to deactivate through the extension window in case of having it activated.
