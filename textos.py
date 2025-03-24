@@ -127,6 +127,11 @@ textos_español = {
     'gui-no se puede reanudar': 'La descarga no se puede reanudar:\nEl link no permite reanudar la descarga',
     'gui-cerrar la ventana descarga': 'Desea cerrar la ventana de descarga?\nLa descarga se podrá reanudar luego.',
     'gui-actualizando url': 'La siguiente descarga de su navegador\nactualizará la url de la descarga seleccionada',
+    'gui-abriendo change log': 'Abriendo listado de cambios',
+    'gui-no hay actualizaciones disponibles': 'No hay actualizaciones disponibles',
+    'gui-error al buscar actualizaciones': 'Error al buscar actualizaciones',
+    'gui-buscando informacion de': 'buscando informacion de',
+    'gui-error al buscar la informacion de': 'Error al buscar la informacion de',
 
     'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
 
@@ -287,6 +292,11 @@ textos_ingles = {
     'gui-no se puede reanudar': 'This download can\'t continue:\nIs not alowed to resume',
     'gui-cerrar la ventana descarga': 'Do you want close the download?\nYou can resume later',
     'gui-actualizando url': 'The following download will\nupdate the url of the selected download',
+    'gui-abriendo change log': 'Opening change log',
+    'gui-no hay actualizaciones disponibles': 'No updates available',
+    'gui-error al buscar actualizaciones': 'Error searching updates',
+    'gui-buscando informacion de': 'Searching information of',
+    'gui-error al buscar la informacion de': 'Error searching information of',
 
     'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
 

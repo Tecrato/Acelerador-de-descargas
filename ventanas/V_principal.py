@@ -309,7 +309,7 @@ class Downloads_manager(Base_class):
         self.text_extras_version = uti_pag.Text(f'Version {self.config.version}', 26, self.config.font_mononoki, (0,0), dire='bottomright')
         self.btn_extras_version_notes = uti_pag.Button(
             '', 26, self.config.font_symbols, (0,0), 10, 'bottomright','white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,
-            func=lambda: os.startfile(INITIAL_DIR / 'version.txt')
+            func=self.func_abrir_change_log
         )
 
 
@@ -390,6 +390,7 @@ class Downloads_manager(Base_class):
             self.btn_extras_install_extension,self.btn_extras_borrar_todo,
         ]
 
+    @override
     def move_objs(self):
         # loader
         self.loader.pos = (self.ventana_rect.w-10, self.ventana_rect.h-30)
@@ -453,6 +454,7 @@ class Downloads_manager(Base_class):
         self.btn_extras_version_notes.pos = (self.ventana_rect.w,self.ventana_rect.h)
         self.text_extras_version.pos = (self.btn_extras_version_notes.left,self.ventana_rect.h)
 
+    @override
     def otro_evento(self, actual_screen: str, evento: pag.event.Event):
         if evento.type == pag.MOUSEBUTTONDOWN and evento.button == 1 and not self.low_detail_mode and self.allow_particles:
             self.particulas_mouse.spawn_pos = pag.mouse.get_pos()
@@ -486,6 +488,7 @@ class Downloads_manager(Base_class):
             if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:
                 self.func_salir_nueva_descarga()
 
+    @override
     def draw_before(self, actual_screen):
         if actual_screen == 'new_download':
             pag.draw.rect(self.ventana, (50,50,50),self.rect_new_download_fondo, border_radius=20)
@@ -500,6 +503,18 @@ class Downloads_manager(Base_class):
     
     # Ahora si, funciones del programa
     # Funciones de botones
+
+    def func_abrir_change_log(self):
+        self.Mini_GUI_manager.clear_group('change_log')
+        self.Mini_GUI_manager.add(
+            uti_pag.mini_GUI.simple_popup(
+                pag.Vector2(50000,50000), 'botomright', 'Change Log', self.txts['gui-abriendo change log']
+            ),
+            group='change_log'
+        )
+
+        os.startfile(INITIAL_DIR/'version.txt')
+
     def func_reload_lista_descargas(self):
         try:
             self.loading += 1
@@ -530,7 +545,6 @@ class Downloads_manager(Base_class):
             self.list_main_descargas.lista_palabras = to_set
             self.list_main_descargas.on_wheel(diff)
         except Exception as err:
-            uti.debug_print(type(err))
             uti.debug_print(err)
             self.Mini_GUI_manager.clear_group('lista_descargas')
             self.Mini_GUI_manager.add(
@@ -908,7 +922,6 @@ class Downloads_manager(Base_class):
             self.text_new_download_status.text = self.txts['descripcion-state[link caido]']
         except Exception as err:
             uti.debug_print(err, priority=3)
-            uti.debug_print(type(err), priority=3)
             self.logger.write(f'Error conprobar {self.url} - {type(err)} -> {err}')
             self.text_new_download_status.text = self.txts['descripcion-state[error]']
 
@@ -939,17 +952,20 @@ class Downloads_manager(Base_class):
                 self.socket_client.send(b'a')
                 respuesta = json.loads(self.socket_client.recv(1024).decode())
                 # print(respuesta)
-                if (respuesta["last_update"]) - self.last_update > .5 and respuesta["last_update_type"] <= 1 and len(respuesta['last_downloads_changed']) > 0:
+                    
+                if respuesta['last_update'] != self.last_update:
+                    pass
+                if time.time() - self.last_update > .5 and respuesta["last_update_type"] <= 1 and len(respuesta['last_downloads_changed']) > 0:
                     for i in respuesta['last_downloads_changed']:
                         self.reload_elemento_individual(i)
-                    self.last_update = int(respuesta["last_update"])
-                elif (respuesta["last_update"]) - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
+                    self.last_update = respuesta["last_update"]
+                elif time.time() - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
                     self.func_reload_lista_descargas()
-                    self.last_update = int(respuesta["last_update"])
+                    self.last_update = respuesta["last_update"]
+
                 time.sleep(0.1)
         except Exception as err:
             uti.debug_print(err, priority=3)
-            uti.debug_print(traceback.format_exc(), priority=3)
         finally:
             self.socket_client.close()
             self.socket_client = None

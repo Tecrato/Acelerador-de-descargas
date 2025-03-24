@@ -46,9 +46,9 @@ class Ventana_actualizar_url(Base_class):
     def func_cancelar(self):
         print("cancelando actualizacion de url")
         try:
-            uti.web_tools.get_json('http://127.0.0.1:5000/descargas/cancel_update/url')
+            uti.get('http://127.0.0.1:5000/descargas/cancel_update/url').json
         except Exception as err:
-            print(err)
+            uti.debug_print(err, 2)
         self.exit()
 
 

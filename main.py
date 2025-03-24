@@ -1,6 +1,5 @@
 import json
 import os
-import traceback
 import shutil
 import multiprocessing
 import datetime
@@ -15,11 +14,13 @@ from threading import Thread, Lock
 from platformdirs import user_log_path
 
 from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config, DICT_CONFIG_DEFAULT_TYPES
+from textos import idiomas
 
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
 from Utilidades import win32_tools, Logger, check_update
+
 
 from my_warnings import TrajoHTML
 from ventanas.V_principal import Downloads_manager
@@ -59,6 +60,9 @@ def get_logger():
     if ctx.get("logger", None) is None:
         ctx.logger = Logger('Acelerador de descargas', user_log_path('Acelerador de descargas', 'Edouard Sandoval'))
     return ctx.logger
+
+def get_text(key: str) -> str:
+    return str(idiomas[get_conf('idioma')][key])
 
 def get_all_conf():
     try:
@@ -295,34 +299,39 @@ def download(id: int):
     
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'})
 
-def init_download(id):
+def init_download(id_download):
     global cola, cola_iniciada
-    lista_descargas.append(id)
-    get_logger().write(f'Logger: Iniciando descarga {id} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
-    descargas_process[id] = Process(name=f'Descarga {id} - Download Manager by Edouard Sandoval',target=Downloader,args=(Config(window_resize=False,resolution=(700, 300)),id,'2' if id in cola else '0'),daemon=True)
-    descargas_process[id].start()
-    descargas_process[id].join()
+    lista_descargas.append(id_download)
+    get_logger().write(f'Logger: Iniciando descarga {id_download} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+    descargas_process[id_download] = Process(name=f'Descarga {id_download} - Download Manager by Edouard Sandoval',target=Downloader,args=(Config(window_resize=False,resolution=(700, 300)),id_download,'2' if id_download in cola else '0'),daemon=True)
+    descargas_process[id_download].start()
+    descargas_process[id_download].join()
     # c = Downloader(id,'2' if id in cola else '0')
-    uti.debug_print(f"Termino {id} -> {descargas_process[id].exitcode}", priority=0)
-
-    if id in cola and descargas_process[id].exitcode == 3:
-        cola.remove(id)
+    uti.debug_print(f"Termino {id_download} -> {descargas_process[id_download].exitcode}", priority=1)
+    
+    if id_download in cola:
         update_last_update()
+    else:
+        update_last_download_update(id_download)
+    
+    if id_download in cola and descargas_process[id_download].exitcode == 3:
+        cola.remove(id_download)
 
         if len(cola) > 0:
-            lista_descargas.remove(id)
-            del descargas_process[id]
+            lista_descargas.remove(id_download)
+            del descargas_process[id_download]
             return init_download(cola[0])
 
         cola_iniciada = False
         if get_conf('apagar al finalizar cola'):
             get_logger().write(f'Logger: Apagando el sistema por finalizar la cola de descargas {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")} \n')
-            os.system('shutdown /s /t 30 /c "Ah finalizado la cola de descarga - Download Manager by Edouard Sandoval"')
+            os.system('shutdown /s /t 30 /c "A finalizado la cola de descarga - Download Manager by Edouard Sandoval"')
             Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
         else:
+            update_last_update()
             Process(target=Ventana_cola_finalizada, args=(Config(window_resize=False, resolution=(350, 130)),), daemon=True).start()
-    del descargas_process[id]
-    lista_descargas.remove(id)
+    del descargas_process[id_download]
+    lista_descargas.remove(id_download)
     
 @app.route("/descargas/add_from_program" , methods=["POST"])
 def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
@@ -351,7 +360,7 @@ def add_descarga_web():
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])
 
     try:
-        icon.show_notification(f"Obteniendo informacion de \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
+        icon.show_notification(f"{get_text('gui-buscando informacion de')} \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
 
         response = func_probar_link(response1['url'])
         if not response:
@@ -374,7 +383,7 @@ def add_descarga_web():
         uti.debug_print(err, priority=2)
         get_logger().write(type(err))
         get_logger().write(err)
-        icon.show_notification(f"Error al Obtener informacion de \n\n{response1['nombre']}",'Descargar')
+        icon.show_notification(f"{get_text('gui-error al buscar la informacion de')} \n\n{response1['nombre']}",'Descargar')
         return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
     
@@ -458,12 +467,11 @@ def update_last_update():
     lock.release()
 def update_last_download_update(download_id):
     global last_update
-    last_update = float(time.time())
     lock.acquire()
+    last_update = float(time.time())
     for i,x in list_changes_to_sockets.items():
         x['last_downloads_changed'].append(download_id)
-        if x['last_update_type'] < 1:
-            x['last_update_type'] = 1
+        x['last_update_type'] = max(x['last_update_type'], 1)
     lock.release()
 
 
@@ -478,7 +486,6 @@ def func_probar_link(url):
         return response
     except Exception as err:
         uti.debug_print(err, 2)
-        uti.debug_print(traceback.format_exc())
         return False
 
 def func_update_url_download(download_id, url, nombre):
@@ -503,10 +510,10 @@ def buscar_actualizacion(confirm=False):
         if sera:
             Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True).start()
         elif confirm:
-            icon.show_notification(f"No hay actualizaciones disponibles", "Acelerador de descargas")
+            icon.show_notification(get_text('gui-no hay actualizaciones disponibles'), "Acelerador de descargas")
     except:
         if confirm:
-            icon.show_notification(f"Error al buscar actualizaciones", "Acelerador de descargas")
+            icon.show_notification(get_text('gui-error al buscar actualizaciones'), "Acelerador de descargas")
 
 def borrar_carpetas_vacias():
     cosas = os.listdir(CACHE_DIR)

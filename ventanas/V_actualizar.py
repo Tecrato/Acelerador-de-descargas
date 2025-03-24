@@ -7,7 +7,6 @@ from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config
 from textos import idiomas
 
-os.chdir(Path(__file__).parent)
 class Ventana_actualizar(Base_class):
     def load_resources(self):
         try:
@@ -36,5 +35,7 @@ class Ventana_actualizar(Base_class):
 
         # Y se mueven los objetos a su posicion en pantalla
         self.move_objs()
+
 if __name__ == '__main__':
+    os.chdir(Path(__file__).parent)
     Ventana_actualizar(Config(window_resize=False, resolution=(300, 130)), 'https://www.google.com')

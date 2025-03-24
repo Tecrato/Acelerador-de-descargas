@@ -1,4 +1,14 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.12.5 - 22/3/2025
+
+Correcciones:
+ - Error al cancelar la actualizacion de url en su respectiva ventana.
+
+Cambios:
+ - Ahora se genera una miniventana que le dice al usuario que el documento txt de las versiones ya se esta abriendo, calma pueblo.
+ - Añadidas las traducciones al ingles en las notificaciones deel sistema operativo.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.12.4 - 21/3/2025
 
 Codigo mas organizado y errores en los metodos get y post de la libreria de requests.

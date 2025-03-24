@@ -3,8 +3,8 @@
 datas = [
         ('C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf', './Assets/fuentes/'),
         ('C:/Users/Edouard/Documents/fuentes/Symbols.ttf', './Assets/fuentes/'),
-        ('./descargas.png','./'),
-        ('./descargas.ico','./'),
+        ('./Assets/img/descargas.png','./Assets/img/'),
+        ('./Assets/img/descargas.ico','./Assets/img/'),
         ('./extencion.crx','./'),
         ('./cerrar_listener.bat','./'),
         ('./version.txt','./'),
@@ -48,7 +48,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     contents_directory='.',
-    icon= './descargas.ico'
+    icon= './Assets/img/descargas.ico'
 )
 
 coll = COLLECT(
