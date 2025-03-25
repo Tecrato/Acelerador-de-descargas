@@ -9,7 +9,6 @@ import shutil
 import socket
 import datetime
 import pyperclip
-import traceback
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -19,7 +18,7 @@ import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
 from threading import Thread
-from urllib.parse import urlparse, unquote, quote
+from urllib.parse import urlparse, unquote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 
@@ -60,7 +59,8 @@ class Downloads_manager(Base_class):
     def load_resources(self):
         try:
             self.configs = uti.get('http://127.0.0.1:5000/get_configurations').json
-        except:
+        except Exception as err:
+            uti.debug_print(f"No se pudo cargar las configuraciones", priority=2)
             self.configs = DICT_CONFIG_DEFAULT
         self.threads = self.configs.get('hilos',DICT_CONFIG_DEFAULT['hilos'])
         self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])

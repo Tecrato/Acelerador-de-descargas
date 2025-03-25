@@ -82,7 +82,13 @@ def get_conf(key: str):
         return DICT_CONFIG_DEFAULT.get(key)
     return configs.get(key, DICT_CONFIG_DEFAULT.get(key))
 def set_conf(key: str, value: str):
-    configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+    try:
+        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+    except Exception as err:
+        uti.debug_print(f"No se pudo guardar la configuracion {key}", priority=2)
+        get_logger().write(f"No se pudo guardar la configuracion {key}")
+        get_logger().write(err)
+        configs = DICT_CONFIG_DEFAULT
     configs[key] = value
     json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
 
@@ -173,11 +179,10 @@ def set_configuration():
         response = request.get_json()
     else:
         response = request.form
-    uti.debug_print(response, priority=0)
     try:
         if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
             raise TypeError('Troliado mi pana')
-        set_conf(response['key'], DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']))
+        set_conf(response['key'], str(response['value']))
         get_logger().write(f"Logger: Configuracion {response['key']} cambaiada a '{response['value']}'")
         return jsonify({"message": "Configuracion actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     except TypeError as err:
@@ -537,6 +542,10 @@ def borrar_logs_vacios():
 
 
 def init():
+    try:
+        json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+    except:
+        json.dump(DICT_CONFIG_DEFAULT, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
     icon.run()
     # icon.show_notification("Acelerador de descargas", "Acelerador de descargas abierto", 5)
 
