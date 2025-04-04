@@ -1,5 +1,5 @@
 # Errores:
-
+ - hay que actualizar la cola cuando un elemento se remueve
 
 # Cambios:
  - Que al terminar la cola mande un last update para que recargue la lista en la interfaz grafica.
@@ -8,10 +8,18 @@
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
  - el select(False) de las listas al clickar en otro lado.
- 
+
+
 # Cosas nuevas:
  - hacer que separe los archivos descargados en carpetas
  - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
+ - una opcion para que las siguientes descargas que lleguen se añadan a la cola en vez de descargarse de una vez
+   - Y si la cola no esta iniciada, iniciarla.
+  
+ - Crear opcion para que las siguientes descargas que se añadan se añadan a la cola automaticamente.
+   
+ - Añadir el referer.
+
 
 # Exagerado:
  - descargar Torrent's

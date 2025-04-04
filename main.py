@@ -1,16 +1,16 @@
-import json
 import os
-import shutil
-import multiprocessing
-import datetime
 import time
+import json
+import shutil
+import datetime
 import socket as sk
+import multiprocessing
 import Utilidades as uti
 
-from multiprocessing import Process
 from DB import Data_Base
 from pathlib import Path
 from threading import Thread, Lock
+from multiprocessing import Process
 from platformdirs import user_log_path
 
 from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config, DICT_CONFIG_DEFAULT_TYPES
@@ -29,6 +29,7 @@ from ventanas.V_actualizar import Ventana_actualizar
 from ventanas.V_cola_finalizada import Ventana_cola_finalizada
 from ventanas.V_detener_apago_automatico import Ventana_detener_apago_automatico
 from ventanas.V_actualizar_url import Ventana_actualizar_url
+
 
 os.chdir(Path(__file__).parent)
 app = Flask("Acelerador de descargas(API)")
@@ -67,13 +68,15 @@ def get_text(key: str) -> str:
 def get_all_conf():
     try:
         configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+        for key, value in configs.items():
+            configs[key] = DICT_CONFIG_DEFAULT_TYPES[key](value)
     except Exception:
         configs = DICT_CONFIG_DEFAULT
     return configs
 
 def get_conf(key: str):
     try:
-        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+        configs: dict = get_all_conf()
     except Exception as err:
         uti.debug_print(f"No se pudo cargar la configuracion {key}", priority=2)
         uti.debug_print(err, priority=2)
@@ -102,10 +105,18 @@ program_thread = None
 last_update = time.time()
 list_changes_to_sockets = {}
 lock = Lock()
+timer = uti.multithread.Interval_funcs()
+
+una_session = uti.Http_Session()
 
 updating_url = False
 updating_id = -1
-updating_url_window = Process
+
+pv_updating_url = Process()
+pv_cola_finalizada = Process()
+pv_actualizar_programa = Process()
+pv_detener_apago_automatico = Process()
+
 
 
 
@@ -116,14 +127,13 @@ def hello_world():
 
 @app.route("/api_close", methods=["GET"])
 def close():
-    global updating_url, updating_url_window
+    global updating_url, pv_updating_url, pv_cola_finalizada, pv_actualizar_programa, pv_detener_apago_automatico
     if program_thread and program_thread.is_alive():
         program_thread.join(.1)
     
-    if updating_url:
-        updating_url = False
+    for i in [pv_updating_url, pv_cola_finalizada, pv_actualizar_programa, pv_detener_apago_automatico]:
         try:
-            updating_url_window.kill()
+            i.kill()
         except:
             pass
 
@@ -207,10 +217,11 @@ def get_sockets_clients():
     while True:
         time.sleep(1)
         client, address = socket.accept()
-        uti.debug_print(f"Connection from {address}", priority=0)
+        uti.debug_print(f"Connection from {address}", priority=1)
         list_changes_to_sockets[address] = {
             'last_downloads_changed': [],
-            'last_update_type': 0
+            'last_update_type': 0,
+            'last_update': time.time()
         }
         Thread(target=__comunicacion, args=(client,address)).start()
     
@@ -219,17 +230,34 @@ def __comunicacion(client: sk.socket, address):
         while True:
             lock.acquire()
             message = json.dumps({'status': 'idle', 'last_update':last_update, 'last_update_type': list_changes_to_sockets[address]['last_update_type'],'last_downloads_changed': list_changes_to_sockets[address]['last_downloads_changed']}).encode()
-            client.send(message)
-            list_changes_to_sockets[address]['last_downloads_changed'] = []
-            list_changes_to_sockets[address]['last_update_type'] = 0
+            client.sendall(message)
             lock.release()
-            time.sleep(.2)
-            client.recv(1024).decode()
+            r = client.recv(1024).decode()
+            if not r:
+                continue
+            try:
+                response = json.loads(r)
+            except Exception as err:
+                uti.debug_print("updated", priority=2)
+                continue
+            if response['status'] == 'updated':
+                list_changes_to_sockets[address]['last_downloads_changed'] = []
+                list_changes_to_sockets[address]['last_update_type'] = 0
+                list_changes_to_sockets[address]['last_update'] = time.time()
+                continue
+            if response['status'] == 'idle' and time.time() - list_changes_to_sockets[address]['last_update'] > .5:
+                time.sleep(.3)
+            else:
+                time.sleep(1/30)
     except Exception as err:
         uti.debug_print(err, priority=1)
     finally:
-        client.close()
+        try:
+            lock.release()
+        except:
+            pass
         del list_changes_to_sockets[address]
+        client.close()
 
 
 #-------------------------------------------------------------------------------------------------
@@ -252,24 +280,24 @@ def read_items():
 
 @app.route("/descargas/update/url/<int:id>", methods=["GET"])
 def update_url(id:int):
-    global updating_url, updating_url_window, updating_id
+    global updating_url, pv_updating_url, updating_id
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     if updating_url:
         return jsonify({"message": "Ya se esta actualizando", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     updating_url = True
     updating_id = id
-    updating_url_window = Process(target=Ventana_actualizar_url, args=(Config(window_resize=False, resolution=(400, 125)),id))
-    updating_url_window.start()
+    pv_updating_url = Process(target=Ventana_actualizar_url, args=(Config(window_resize=False, resolution=(400, 125)),id))
+    pv_updating_url.start()
     return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/cancel_update/url", methods=["GET"])
 def cancel_update_url():
-    global updating_url, updating_url_window
+    global updating_url, pv_updating_url
     if updating_url:
         updating_url = False
         try:
-            updating_url_window.kill()
+            pv_updating_url.kill()
         except:
             pass
         uti.debug_print("actualizacion de url cancelada", priority=0)
@@ -280,6 +308,16 @@ def update_estado(id:int, estado: str) -> Response:
     get_db().update_estado(id, estado)
     update_last_download_update(id)
     return jsonify({"message": "estado actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+
+@app.route("/descargas/update/size/<int:id>/<size>", methods=["GET"])
+def update_size(id:int, size: str) -> Response:
+    try:
+        get_db().update_size(id, size)
+        update_last_download_update(id)
+        return jsonify({"message": "tamanio actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+    except Exception as err:
+        uti.debug_print(type(err), priority=3)
+        return jsonify({"message": "Error al actualizar el tamanio", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/update/nombre/<int:id>/<nombre>", methods=["GET"])
 def update_name(id:int, nombre: str):
@@ -305,46 +343,58 @@ def download(id: int):
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'})
 
 def init_download(id_download):
-    global cola, cola_iniciada
+    global cola, cola_iniciada, pv_cola_finalizada, pv_detener_apago_automatico
     lista_descargas.append(id_download)
     get_logger().write(f'Logger: Iniciando descarga {id_download} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     descargas_process[id_download] = Process(name=f'Descarga {id_download} - Download Manager by Edouard Sandoval',target=Downloader,args=(Config(window_resize=False,resolution=(700, 300)),id_download,'2' if id_download in cola else '0'),daemon=True)
     descargas_process[id_download].start()
     descargas_process[id_download].join()
+    exitcode = descargas_process[id_download].exitcode
     # c = Downloader(id,'2' if id in cola else '0')
-    uti.debug_print(f"Termino {id_download} -> {descargas_process[id_download].exitcode}", priority=1)
+    uti.debug_print(f"Termino {id_download} -> {exitcode}", priority=1)
     
     if id_download in cola:
         update_last_update()
     else:
         update_last_download_update(id_download)
     
-    if id_download in cola and descargas_process[id_download].exitcode == 3:
+    del descargas_process[id_download]
+    lista_descargas.remove(id_download)
+
+    if exitcode == 4:
+        # os.system('shutdown /s /t 30 /c "A finalizado la descarga - Download Manager by Edouard Sandoval"')
+        Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
+        return
+    
+    if id_download in cola and exitcode == 3:
         cola.remove(id_download)
 
         if len(cola) > 0:
-            lista_descargas.remove(id_download)
-            del descargas_process[id_download]
             return init_download(cola[0])
 
         cola_iniciada = False
         if get_conf('apagar al finalizar cola'):
             get_logger().write(f'Logger: Apagando el sistema por finalizar la cola de descargas {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")} \n')
             os.system('shutdown /s /t 30 /c "A finalizado la cola de descarga - Download Manager by Edouard Sandoval"')
-            Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
+            if not pv_detener_apago_automatico.is_alive():
+                pv_detener_apago_automatico = Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True)
+                pv_detener_apago_automatico.start()
         else:
-            update_last_update()
-            Process(target=Ventana_cola_finalizada, args=(Config(window_resize=False, resolution=(350, 130)),), daemon=True).start()
-    del descargas_process[id_download]
-    lista_descargas.remove(id_download)
-    
+            if not pv_cola_finalizada.is_alive():
+                pv_cola_finalizada = Process(target=Ventana_cola_finalizada, args=(Config(window_resize=False, resolution=(350, 130)),), daemon=True)
+                pv_cola_finalizada.start()
+
+
 @app.route("/descargas/add_from_program" , methods=["POST"])
 def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
     if request.is_json:
         response = request.get_json()
+    elif request.is_secure:
+        response = request.form
     else:
         response = request.args.to_dict()
-    get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'])
+
+    get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
     update_last_update()
     get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
     return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'})
@@ -354,6 +404,8 @@ def add_descarga_web():
     global updating_url
     if request.is_json:
         response1 = request.get_json()
+    elif request.is_secure:
+        response1 = request.form
     else:
         response1 = request.args.to_dict()
     uti.debug_print(response1, priority=0)
@@ -367,14 +419,13 @@ def add_descarga_web():
     try:
         icon.show_notification(f"{get_text('gui-buscando informacion de')} \n{response1['nombre']}\n{response1['url'][:70]}...", "Acelerador de descargas")
 
-        response = func_probar_link(response1['url'])
+        response = func_probar_link(response1['url'], response1.get('cookies', None))
         if not response:
-            response = func_probar_link(response1['url'])
+            response = func_probar_link(response1['url'], response1.get('cookies', None))
         if not response:
             raise Exception('No se pudo obtener la informacion')
         if updating_url:
             func_update_url_download(updating_id, response1["url"], response1['nombre'])
-            updating_url = False
             return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
         uti.debug_print(response, priority=0)
@@ -392,7 +443,7 @@ def add_descarga_web():
         return jsonify({"message": "Error al obtener la descarga", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
     
-    index = get_db().añadir_descarga(response1['nombre'], tipo, peso, response1['url'], hilos)
+    index = get_db().añadir_descarga(nombre=response1['nombre'], tipo=tipo,peso=peso, url=response1['url'], partes=hilos, cookies=response1.get('cookies', ''))
     update_last_update()
     Thread(target=init_download,args=(index,)).start()
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
@@ -464,25 +515,38 @@ def clear_cola():
 
 
 def update_last_update():
-    global last_update
-    lock.acquire()
-    last_update = float(time.time())
-    for i,x in list_changes_to_sockets.items():
-        x['last_update_type'] = 2
-    lock.release()
-def update_last_download_update(download_id):
-    global last_update
-    lock.acquire()
-    last_update = float(time.time())
-    for i,x in list_changes_to_sockets.items():
-        x['last_downloads_changed'].append(download_id)
-        x['last_update_type'] = max(x['last_update_type'], 1)
-    lock.release()
-
-
-def func_probar_link(url):
+    global last_update, list_changes_to_sockets
     try:
-        response = uti.get(url).headers
+        lock.acquire()
+        last_update = float(time.time())
+        for i,x in list_changes_to_sockets.items():
+            x['last_update_type'] = 2
+    except Exception as err:
+        uti.debug_print(err, priority=2)
+    finally:
+        lock.release()
+def update_last_download_update(download_id):
+    global last_update, list_changes_to_sockets
+    try:
+        lock.acquire()
+        last_update = float(time.time())
+        for i,x in list_changes_to_sockets.items():
+            if download_id not in x['last_downloads_changed']:
+                x['last_downloads_changed'].append(download_id)
+        x['last_update_type'] = max(x['last_update_type'], 1)
+    except Exception as err:
+        uti.debug_print(err, priority=2)
+    finally:
+        lock.release()
+
+
+def func_probar_link(url, cookie=None):
+    try:
+        if cookie:
+            una_session.cookies = cookie
+        else:
+            una_session.cookies = {}
+        response = una_session.get(url).headers
         uti.debug_print(response, priority=0)
         tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
         peso = int(response.get('content-length', 1))
@@ -494,13 +558,16 @@ def func_probar_link(url):
         return False
 
 def func_update_url_download(download_id, url, nombre):
+    global updating_url, pv_updating_url
     get_db().update_url(download_id, url)
+    updating_url = False
     try:
-        updating_url_window.kill()
+        pv_updating_url.kill()
     except:
         pass
     icon.show_notification(f"URL cambiada para \n{download_id} -> {nombre}", 'Acelerador de descargas')
     get_logger().write(f"Logger ({datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}): URL cambiada para {download_id} -> {nombre}: [{url}]")
+    Thread(target=init_download,args=(download_id,)).start()
 
 
 def func_open_program():
@@ -510,13 +577,18 @@ def func_open_program():
         win32_tools.front(TITLE)
 
 def buscar_actualizacion(confirm=False):
+    global pv_actualizar_programa
     try:
         sera = check_update('acelerador de descargas', VERSION, 'last')
-        if sera:
-            Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True).start()
+        if sera and not pv_actualizar_programa.is_alive():
+            pv_actualizar_programa = Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True)
+            pv_actualizar_programa.start()
+        elif pv_actualizar_programa.is_alive():
+            pass
         elif confirm:
             icon.show_notification(get_text('gui-no hay actualizaciones disponibles'), "Acelerador de descargas")
-    except:
+    except Exception as err:
+        uti.debug_print(err, 2)
         if confirm:
             icon.show_notification(get_text('gui-error al buscar actualizaciones'), "Acelerador de descargas")
 

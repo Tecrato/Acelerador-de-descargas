@@ -1,7 +1,7 @@
 import os
 import Utilidades as uti
-from pathlib import Path
 import Utilidades_pygame as uti_pag
+from pathlib import Path
 
 from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config

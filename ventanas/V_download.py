@@ -1,42 +1,44 @@
-from io import BufferedWriter
-import pygame as pag
-import urllib.request
-import http.client
 import os
 import sys
 import time
 import shutil
 import subprocess
+import http.client
+import pygame as pag 
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 from pathlib import Path
-from Utilidades import win32_tools, LinearRegressionSimple
+from threading import Lock
+from io import BufferedWriter
 from tkinter.simpledialog import askstring
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
+from Utilidades import win32_tools, LinearRegressionSimple
 
 from my_warnings import *
 from textos import idiomas
 from Utilidades_pygame.GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
 from Utilidades_pygame.base_app_class import Base_class
+from enums.Download import Download
 
 
 class Downloader(Base_class):
     def otras_variables(self):
-        self.download_id = self.args[0]
-        self.modificador = self.args[1]
+        self.download_id: int = self.args[0]
+        self.modificador: int = self.args[1]
 
         self.config: Config
         
-        self.raw_data = uti.get(f'http://127.0.0.1:5000/descargas/get/{self.download_id}').json
+        self.raw_data = Download(*uti.get(f'http://127.0.0.1:5000/descargas/get/{self.download_id}').json)
         
-        self.file_name: str = self.raw_data[1]
-        self.type: str = self.raw_data[2]
-        self.peso_total: int = int(self.raw_data[3])
-        self.url: str = self.raw_data[4]
-        self.num_hilos: int = int(self.raw_data[6])
-        self.tiempo: float = float(self.raw_data[7])
+        
+        self.file_name: str = self.raw_data.nombre
+        self.type: str = self.raw_data.tipo
+        self.peso_total: int = int(self.raw_data.peso)
+        self.url: str = self.raw_data.url
+        self.num_hilos: int = int(self.raw_data.partes)
+        self.tiempo: float = float(self.raw_data.fecha)
+        self.cookies: str = self.raw_data.cookies
 
         pag.display.set_caption(f'Downloader {self.download_id}_{self.file_name}')
         
@@ -62,6 +64,7 @@ class Downloader(Base_class):
         self.downloading_threads: int = 0
         self.hilos_listos: int = 0
         self.intentos: int = 0
+        self.peso_nuevo: int = 0
         self.peso_descargado: int = 0
         self.peso_descargado_vel: int = 0
         self.peso_descargado_max_vel: int = 0
@@ -107,8 +110,13 @@ class Downloader(Base_class):
             'Accept-Encoding': 'identity'
             }
         self.pool_hilos: ThreadPoolExecutor = ThreadPoolExecutor(self.num_hilos, 'downloads_threads')
-        
         self.chunk_regressor: LinearRegressionSimple = LinearRegressionSimple(*self.list_to_train_chunk_regressor)
+
+        self.session = uti.Http_Session()
+        self.session.headers = self.default_headers
+        
+        if self.cookies:
+            self.session.cookies = self.cookies
         
         self.carpeta_cache: Path = self.config.cache_dir.joinpath(f'./{self.download_id}')
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -119,7 +127,7 @@ class Downloader(Base_class):
         self.Func_pool.start('descargar')
         self.Func_pool.add('__terminar_programa', self.__terminar_de_cerrar)
         self.Func_pool.add('finalizar descarga', self.finish_download)
-        self.class_intervals.add('actualizar_progress', self.update_progress_db, 1, start=True)
+        self.class_intervals.add('actualizar_progress', self.update_progress_db, .1, start=True)
         self.class_intervals.add('actualizar_vel', self.calc_velocity, .4, start=True)
         self.class_intervals.add('actualizar_tiempo_restante', self.calc_tiempo_restante, 1, start=True)
         
@@ -328,6 +336,18 @@ class Downloader(Base_class):
             except:
                 self.open_GUI_dialog(self.txts['numero invalido'],'Error',tipo=2)
 
+    def func_cambio_tamanio(self, resultado):
+        uti.debug_print(resultado)
+        if resultado['index'] == 1:
+            self.cerrar_todo('a')
+            return
+        
+        self.session.get(f"http://127.0.0.1:5000/descargas/update/size/{self.download_id}/{self.peso_nuevo}", timeout=30)
+        self.peso_total = self.peso_nuevo
+        uti.debug_print(self.peso_nuevo)
+        shutil.rmtree(self.carpeta_cache, ignore_errors=True)
+        self.carpeta_cache.mkdir(parents=True, exist_ok=True)
+        self.Func_pool.start('descargar')
 
     # ---------------------------------------------------------------------------------- #
 
@@ -458,7 +478,7 @@ class Downloader(Base_class):
         self.text_finalizando_hilos2.pos = (self.text_finalizando_hilos.centerx, self.text_finalizando_hilos.bottom+10)
         self.velocidad_limite = 0
         self.pool_hilos.shutdown(True, cancel_futures=True)
-        self.exit()
+        super().exit()
 
 
     def crear_conexion(self):
@@ -471,9 +491,13 @@ class Downloader(Base_class):
             while intentos < 10:
                 intentos += 1
                 try:
-                    response = uti.get(self.url, timeout=30).headers
-                    if (int(response.get('content-length', 0)) != self.peso_total) or (response.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
-                        raise TrajoHTML('No paginas')
+                    # response = uti.get(self.url, timeout=30).headers
+                    response = self.session.get(self.url, timeout=30).headers
+                    if (response.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
+                        raise TrajoHTML(f'No paginas= type:{response.get("Content-Type", "unknown/Nose").split(";")[0]}')
+                    if (int(response.get('content-length', 0)) != self.peso_total):
+                        self.peso_nuevo = int(response.get('content-length', 0))
+                        raise DifferentSizeError(f"ahora pesa distinto: de {self.peso_total} a {response.get('content-length', 0)}")
                     else:
                         break
                 except http.client.HTTPException as err:
@@ -512,6 +536,15 @@ class Downloader(Base_class):
                 'Error', 
                 func=lambda r: (self.Func_pool.start('descargar') if r['index'] == 0 else self.cerrar_todo({'index':0})),
                 options=[self.txts['reintentar'], self.txts['cancelar']]
+            )
+        except DifferentSizeError as err:
+            uti.debug_print(type(err), priority=3)
+            uti.debug_print(err, priority=3)
+            self.open_GUI_dialog(
+                self.txts['gui-cambio de tamanio'], 
+                'Error', 
+                func=self.func_cambio_tamanio,
+                options=[self.txts['aceptar'], self.txts['cancelar']]
             )
         except Exception as err:
             uti.debug_print(type(err), priority=3)
@@ -608,8 +641,9 @@ class Downloader(Base_class):
 
         try:
             self.list_textos_hilos[0][num] = self.txts['status_hilo[conectando]'].format(num)
-            r = urllib.request.Request(self.url, headers=this_header)
-            response = urllib.request.urlopen(r, timeout=15)
+            r = self.session.copy()
+            r.headers = this_header
+            response = r.get(self.url, timeout=15)
 
             tipo = response.headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             if tipo != self.type:
@@ -718,7 +752,8 @@ class Downloader(Base_class):
         if self.cerrar_al_finalizar or uti.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json['cola']:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
-            subprocess.call(f'shutdown /s /t 30 Descarga finalizada - {self.file_name}', shell=True)
+            self.config.returncode = 4
+            subprocess.call(f'shutdown /s /t 30 /c "Descarga finalizada, se apagara el sistema en 30 segundos"', shell=True)
             self.cerrar_todo('aceptar')
             return
         elif self.ejecutar_al_finalizar:

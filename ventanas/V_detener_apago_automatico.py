@@ -1,6 +1,5 @@
-import pygame as pag
-import json
 import os
+import pygame as pag
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 

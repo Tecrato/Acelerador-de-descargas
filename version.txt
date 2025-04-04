@@ -1,4 +1,30 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.13 - 1/4/2025
+
+Novedades:
+ - Añadidas las cookies a las descargas, ahora el programa permite copiar las cookies de session de la pagina del navegador.
+ - Nueva ventana de error cuando el archivo tiene un peso diferente, para que con un click actualize el peso y descargue el archivo, sin tener que salir y buscar el link y annadir la descarga denuevo.
+ - extension para firefox, de momento con el mismo metodo, agregar en modo desarrollador, un avance importante.
+
+Cosas de codigo:
+ - Creada clase de Download, la que define como debe ser la informacion de una descarga, y para llamar a la informacion por los nombres de las variables.
+ - 
+
+Mejoras:
+ - Mejorado el algoritmo para recargar la lista de descargas, ahora se actualiza de manera mas rapido y eficiente, y se relaentiza cuando no recarga ningun elemento.
+ - Uso de una session para todas las peticiones de la aplicacion.
+ - Al cambiar la url de una descarga mediante la ventana de actualizar url, se iniciara la descarga inmediatamente.
+
+Correcciones:
+ - Solucionados errores relacionados con los tipos de datos de las configuraciones.
+ - Ahora se cerraran las ventanas de cola y actualizacion al cerrar el programa.
+ - no recargaba la lista al finalizar la cola de descargas.
+ - algunas consultas hecha tnato de la extension como de programas externos cuando vienen por post, 
+ - 
+
+y otras traducciones.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.12.5.1 - 25/3/2025
 
 Correcciones:

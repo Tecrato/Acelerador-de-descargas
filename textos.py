@@ -132,6 +132,7 @@ textos_español = {
     'gui-error al buscar actualizaciones': 'Error al buscar actualizaciones',
     'gui-buscando informacion de': 'buscando informacion de',
     'gui-error al buscar la informacion de': 'Error al buscar la informacion de',
+    'gui-cambio de tamanio': 'El tamaño de la descarga ha cambiado\nDesea actualizar el tamaño\nY reiniciar?',
 
     'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
 
@@ -297,6 +298,7 @@ textos_ingles = {
     'gui-error al buscar actualizaciones': 'Error searching updates',
     'gui-buscando informacion de': 'Searching information of',
     'gui-error al buscar la informacion de': 'Error searching information of',
+    'gui-cambio de tamanio': 'The size of the download has changed\nDo you want to update the size\nAnd restart?',
 
     'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
 

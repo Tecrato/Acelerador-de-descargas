@@ -1,23 +1,23 @@
-from http.client import InvalidURL
-from typing import override
-import urllib
-import pygame as pag
 import os
 import json
 import time
+import urllib
 import shutil
 import socket
 import datetime
 import pyperclip
-import urllib.request
 import urllib.error
 import urllib.parse
+import pygame as pag
+import urllib.request
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
+from typing import override
 from threading import Thread
+from http.client import InvalidURL
 from urllib.parse import urlparse, unquote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
@@ -28,6 +28,7 @@ from constants import DICT_CONFIG_DEFAULT, Config, INITIAL_DIR
 from textos import idiomas
 from loader import Loader
 from my_warnings import TrajoHTML, LinkCaido
+from enums.Download import Download
 
 # top_package = __import__(__name__.split('.')[0])
 
@@ -49,6 +50,7 @@ class Downloads_manager(Base_class):
         self.can_change_new_threads = False
         self.last_update = time.time()
         self.thread_new_download: Thread = Thread()
+        self.session = uti.Http_Session()
         
         self.logger = uti.Logger('Acelerador de descargas(UI)', self.config.config_dir/'Logs')
         # self.logger.write(f"Acelerador de descargas iniciado en {datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
@@ -518,7 +520,7 @@ class Downloads_manager(Base_class):
     def func_reload_lista_descargas(self):
         try:
             self.loading += 1
-            response = uti.get('http://127.0.0.1:5000/descargas/get_all',timeout=5).json
+            response = self.session.get('http://127.0.0.1:5000/descargas/get_all',timeout=5).json
             self.cached_list_DB = response['lista']
             self.cola = response['cola']
             
@@ -534,10 +536,10 @@ class Downloads_manager(Base_class):
                 id_descarga = row[0]
                 nombre = row[1]
                 peso = uti.format_size_bits_to_bytes_str(row[3])
-                hilos = row[6]
-                fecha = datetime.datetime.fromtimestamp(float(row[7]))
+                hilos = row[5]
+                fecha = datetime.datetime.fromtimestamp(float(row[6]))
                 txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
-                estado = self.txts[f'{row[8]}'.lower()] if f'{row[8]}'.lower() in self.txts else row[8]
+                estado = self.txts[f'{row[7]}'.lower()] if f'{row[7]}'.lower() in self.txts else row[7]
                 cola = ' - 'if not row[0] in self.cola else f'[{self.cola.index(row[0])}]'
                 for i, j in enumerate((id_descarga, nombre, hilos, peso, estado, cola, txt_fecha)):
                     to_set[i].append(j)
@@ -618,18 +620,18 @@ class Downloads_manager(Base_class):
                 self.func_select_box({'obj': [x], 'index': respuesta['index']})
             return
         else:
-            obj_cached = self.cached_list_DB[respuesta['obj'][0]['index']]
+            obj_cached: Download = Download(*self.cached_list_DB[respuesta['obj'][0]['index']])
 
         if respuesta['index'] == 0:
             # 0 descargar
             Thread(target=self.func_descargar, args=(obj_cached,)).start()
         elif respuesta['index'] == 1:
             # Eliminar la descarga
-            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached[0]}\n'
-            if len(f'"{obj_cached[1]}"') <= 40:
-                txt += f' "{obj_cached[1]}"'
+            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached.id}\n'
+            if len(f'"{obj_cached.nombre}"') <= 40:
+                txt += f' "{obj_cached.nombre}"'
             else:
-                txt += f'"{obj_cached[1][:36]}..."'
+                txt += f'"{obj_cached.nombre[:36]}..."'
             self.open_desicion(
                 self.txts['confirmar'], txt,
                 lambda r: (self.del_download(obj_cached[0]) if r['index'] == 0 else None),
@@ -637,11 +639,11 @@ class Downloads_manager(Base_class):
             )
         elif respuesta['index'] == 2:
             # Cambiar la url
-            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json
+            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached.id}').json
             if response['downloading'] == True or response['cola'] == True:
                 self.mini_ventana(1)
                 return
-            response = uti.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached[0]}').json
+            response = uti.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached.id}').json
             if response['status'] != 'ok':
                 self.mini_ventana(5)
         elif respuesta['index'] == 3:
@@ -650,15 +652,15 @@ class Downloads_manager(Base_class):
             self.mini_ventana(3)
         elif respuesta['index'] == 4:
             # 4 añadir a la cola
-            response = uti.get(f'http://127.0.0.1:5000/cola/add/{obj_cached[0]}').json
+            response = uti.get(f'http://127.0.0.1:5000/cola/add/{obj_cached.id}').json
             if response['status'] == 'ok':
-                self.cola.append(obj_cached[0])
-                self.list_main_descargas[5][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached[0])}]'         
+                self.cola.append(obj_cached.id)
+                self.list_main_descargas[5][respuesta['obj'][0]['index']] = f'[{self.cola.index(obj_cached.id)}]'         
         elif respuesta['index'] == 5:
             # 5 remover de la cola
-            response = uti.get(f'http://127.0.0.1:5000/cola/delete/{obj_cached[0]}').json
+            response = uti.get(f'http://127.0.0.1:5000/cola/delete/{obj_cached.id}').json
             if response['status'] == 'ok':
-                self.cola.remove(obj_cached[0])
+                self.cola.remove(obj_cached.id)
                 self.list_main_descargas[5][respuesta['obj'][0]['index']] = f' - '   
         elif respuesta['index'] == 6:
             # 6 limpiar cola
@@ -669,27 +671,27 @@ class Downloads_manager(Base_class):
                     self.list_main_descargas[5][x] = f' - '
         elif respuesta['index'] == 7:
             # 7 reiniciar descarga
-            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json
-            if response['downloading'] == False and uti.get(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached[0]}/esperando').json['status'] == 'ok':
-                shutil.rmtree(self.config.cache_dir.joinpath(f'./{obj_cached[0]}'), True)
+            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached.id}').json
+            if response['downloading'] == False and uti.get(f'http://127.0.0.1:5000/descargas/update/estado/{obj_cached.id}/esperando').json['status'] == 'ok':
+                shutil.rmtree(self.config.cache_dir.joinpath(f'./{obj_cached.id}'), True)
                 self.list_main_descargas[4][respuesta['obj'][0]['index']] = self.txts['esperando'].capitalize()
         elif respuesta['index'] == 8:
             # 8 cambiar nombre
-            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached[0]}').json
+            response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached.id}').json
             if response['downloading'] == True:
                 self.mini_ventana(1)
                 return
-            nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached[1])
+            nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached.nombre)
             if not nombre or nombre == '':
                 return
-            response = uti.get(f'http://127.0.0.1:5000/descargas/update/nombre/{obj_cached[0]}/{nombre}').json
+            response = uti.get(f'http://127.0.0.1:5000/descargas/update/nombre/{obj_cached.id}/{nombre}').json
             if response['status'] == 'ok':
                 self.list_main_descargas[1][int(respuesta['obj'][0]['index'])] = nombre
         self.redraw = True
 
-    def func_descargar(self, obj_cached):
+    def func_descargar(self, obj_cached: Download):
         self.loading += 1
-        response = uti.get(f'http://127.0.0.1:5000/descargas/download/{obj_cached[0]}').json
+        response = uti.get(f'http://127.0.0.1:5000/descargas/download/{obj_cached.id}').json
         if response.get('status') == 'ok':
             self.mini_ventana(0)
         else:
@@ -792,7 +794,7 @@ class Downloads_manager(Base_class):
     def func_add_download(self):
         if not self.can_add_new_download:
             return
-        uti.send_post('http://127.0.0.1:5000/descargas/add_from_program', data={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
+        self.session.post('http://127.0.0.1:5000/descargas/add_from_program', data={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
 
         self.Func_pool.start('reload list')
         self.goto('main')
@@ -865,7 +867,7 @@ class Downloads_manager(Base_class):
             if not url_parsed.scheme or not url_parsed.netloc:
                 raise urllib.error.URLError('URL invalida')
             
-            response = uti.get(self.url, timeout=15).headers
+            response = self.session.get(self.url, timeout=15).headers
             
             self.logger.write(f"Informacion obtenida: {self.url}")
             self.logger.write(response)
@@ -908,37 +910,43 @@ class Downloads_manager(Base_class):
             
             self.text_new_download_status.text = self.txts['estado']+': '+self.txts['disponible']
             self.can_add_new_download = True
-        except InvalidURL:
+        except InvalidURL as err:
             self.text_new_download_status.text = self.txts['descripcion-state[url invalida]']
-        except TimeoutError:
+            uti.debug_print(err, priority=3)
+        except TimeoutError as err:
             self.text_new_download_status.text = self.txts['descripcion-state[tiempo agotado]']
-        except urllib.error.HTTPError:
+            uti.debug_print(err, priority=3)
+        except urllib.error.HTTPError as err:
             self.text_new_download_status.text = self.txts['descripcion-state[error internet]']
-        except urllib.error.URLError:
+            uti.debug_print(err, priority=3)
+        except urllib.error.URLError as err:
             self.text_new_download_status.text = self.txts['descripcion-state[url invalida]']
-        except TrajoHTML:
+            uti.debug_print(err, priority=3)
+        except TrajoHTML as err:
             self.text_new_download_status.text = self.txts['descripcion-state[trajo un html]']
-        except LinkCaido:
+            uti.debug_print(err, priority=3)
+        except LinkCaido as err:
             self.text_new_download_status.text = self.txts['descripcion-state[link caido]']
+            uti.debug_print(err, priority=3)
         except Exception as err:
             uti.debug_print(err, priority=3)
             self.logger.write(f'Error conprobar {self.url} - {type(err)} -> {err}')
             self.text_new_download_status.text = self.txts['descripcion-state[error]']
 
     def reload_elemento_individual(self, id):
-        response = uti.get(f'http://127.0.0.1:5000/descargas/get/{id}',timeout=5).json
-        self.cola = uti.get('http://127.0.0.1:5000/cola/get_all',timeout=5).json['cola']
-        nombre = response[1]
-        peso = uti.format_size_bits_to_bytes_str(response[3])
-        hilos = response[6]
-        fecha = datetime.datetime.fromtimestamp(float(response[7]))
+        response = Download(*self.session.get(f'http://127.0.0.1:5000/descargas/get/{id}',timeout=5).json)
+        self.cola = self.session.get('http://127.0.0.1:5000/cola/get_all',timeout=5).json['cola']
+        nombre = response.nombre
+        peso = uti.format_size_bits_to_bytes_str(response.peso)
+        hilos = response.partes
+        fecha = datetime.datetime.fromtimestamp(float(response.fecha))
         txt_fecha = f'{fecha.day}/{fecha.month}/{fecha.year}'
-        estado = self.txts[f'{response[8]}'.lower()] if f'{response[8]}'.lower() in self.txts else response[8]
-        cola = ' - 'if not response[0] in self.cola else f'[{self.cola.index(response[0])}]'
+        estado = self.txts[f'{response.estado}'.lower()] if f'{response.estado}'.lower() in self.txts else response.estado
+        cola = ' - 'if not response.id in self.cola else f'[{self.cola.index(response.id)}]'
         # self.list_main_descargas.append([id,nombre, hilos, peso, estado, cola, txt_fecha])
         for i,d in enumerate(self.cached_list_DB):
             if d[0] == id:
-                self.cached_list_DB[i] = (id,nombre, hilos, peso, estado, cola, txt_fecha)
+                self.cached_list_DB[i] = response
                 self.list_main_descargas[i] = (id,nombre, hilos, peso, estado, cola, txt_fecha)
                 break
 
@@ -946,24 +954,49 @@ class Downloads_manager(Base_class):
         self.socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_client.connect(('127.0.0.1', 5001))
         try:
+            self.socket_client.sendall(json.dumps({'status': 'idle'}).encode())
             while True:
                 if not self.running:
                     break
-                self.socket_client.send(b'a')
-                respuesta = json.loads(self.socket_client.recv(1024).decode())
-                # print(respuesta)
+                r = self.socket_client.recv(1024).decode()
+                if not r:
+                    continue
+                try:
+                    respuesta = json.loads(r)
+                except Exception as err:
+                    uti.debug_print(r, priority=1)
+                    uti.debug_print(err, priority=2)
+                    self.socket_client.sendall(json.dumps({'status': 'idle'}).encode())
+                    continue
                     
-                if respuesta['last_update'] != self.last_update:
-                    pass
-                if time.time() - self.last_update > .5 and respuesta["last_update_type"] <= 1 and len(respuesta['last_downloads_changed']) > 0:
+                # if respuesta['last_update'] != self.last_update and respuesta['last_update_type'] > 0:
+                #     uti.debug_print(f'Actualizacion: {respuesta["last_update"]} - {self.last_update}', priority=3)
+                #     uti.debug_print(f'result: {respuesta}', priority=3)
+                #     pass
+
+                to_send = 'idle'
+
+                if (time.time() - self.last_update > 2) and (time.time()-self.last_click > 4) and respuesta["last_update_type"] > 1:
+                    self.func_reload_lista_descargas()
+                    self.last_update = respuesta["last_update"]
+                    to_send = 'updated'
+
+                elif self.last_update != respuesta["last_update"] and respuesta["last_update_type"] == 1:
+                    to_send = 'updated'
                     for i in respuesta['last_downloads_changed']:
                         self.reload_elemento_individual(i)
                     self.last_update = respuesta["last_update"]
-                elif time.time() - self.last_update > 3 and time.time()-self.last_click > 4 and respuesta["last_update_type"] > 1:
-                    self.func_reload_lista_descargas()
-                    self.last_update = respuesta["last_update"]
+                
+                
+                else:
+                    to_send = 'idle'
 
-                time.sleep(0.1)
+                if to_send == 'idle' and time.time() - self.last_update > .5:
+                    time.sleep(0.2)
+                else:
+                    time.sleep(1/30)
+
+                self.socket_client.sendall(json.dumps({"status": to_send}).encode())
         except Exception as err:
             uti.debug_print(err, priority=3)
         finally:
