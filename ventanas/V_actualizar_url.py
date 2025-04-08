@@ -1,3 +1,4 @@
+from typing import override
 import pygame as pag
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
@@ -23,7 +24,7 @@ class Ventana_actualizar_url(Base_class):
         # El resto de textos y demas cosas
         self.text_program_title = uti_pag.Text(self.txts['title'], 18, self.config.font_mononoki, (self.ventana_rect.centerx, 20))
         self.text_parrafo = uti_pag.Text(self.txts['gui-actualizando url'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,40), dire='top')
-        self.btn_aceptar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.func_cancelar)
+        self.btn_aceptar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
         ...
 
         # Tambien se debe agregar a las respiectivas listas
@@ -36,6 +37,7 @@ class Ventana_actualizar_url(Base_class):
     def post_init(self):
         if self.enfoques:
             uti.win32_tools.front2(self.hwnd)
+            uti.win32_tools.topmost(self.hwnd)
 
     def otro_evento(self, actual_screen, evento):
         if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:
@@ -43,13 +45,13 @@ class Ventana_actualizar_url(Base_class):
         elif evento.type == pag.MOUSEBUTTONDOWN:
             ...
 
-    def func_cancelar(self):
-        print("cancelando actualizacion de url")
+    @override
+    def exit(self):
         try:
             uti.get('http://127.0.0.1:5000/descargas/cancel_update/url').json
         except Exception as err:
             uti.debug_print(err, 2)
-        self.exit()
+        return super().exit()
 
 
 if __name__ == '__main__':

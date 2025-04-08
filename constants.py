@@ -7,7 +7,7 @@ DICT_CONFIG_DEFAULT = {
     'detener_5min': True,  # Detener la descarga después de 5 minutos de no haber descargado nada.
     'ldm': False,  # Desactiva el smothscroll de la lista de descargas y algún otro efecto en la aplicacion ´para que consuma menos CPU.
     'idioma': 'español',  # Idioma de la interfaz gráfica, opciones: 'español', 'inglés'.
-    'save_dir': user_downloads_path().as_uri(), # Directorio por defecto donde se guardarán los archivos descargados. Puedes cambiarlo a cualquier ruta que desees.
+    'save_dir': user_downloads_path().joinpath('./Edouard').as_posix(), # Directorio por defecto donde se guardarán los archivos descargados. Puedes cambiarlo a cualquier ruta que desees.
     'apagar al finalizar cola': False, # Si se establece en True, el sistema se apagará automáticamente una vez que se haya procesado toda la cola de descargas.
     'extenciones': ['whl','exe','msi','iso','cia','apk','zip','rar','jar','tar','gz','iso','mp3','mp4','mkv','flv','avi'], # Lista de extensiones de archivo que se permitirán descargar. Puedes agregar o eliminar extensiones según tus necesidades.
     'velocidad_limite': 0, # Límite de velocidad en kb/s para las descargas. Si se establece en 0, no se aplicará ningún límite.
@@ -27,7 +27,7 @@ DICT_CONFIG_DEFAULT_TYPES = {
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.13'
+VERSION = '3.13.1'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')

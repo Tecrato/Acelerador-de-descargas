@@ -70,7 +70,8 @@ def get_all_conf():
         configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
         for key, value in configs.items():
             configs[key] = DICT_CONFIG_DEFAULT_TYPES[key](value)
-    except Exception:
+    except Exception as err:
+        uti.debug_print(f"No se pudo cargar la configuracion {key}", priority=2)
         configs = DICT_CONFIG_DEFAULT
     return configs
 
@@ -185,14 +186,17 @@ def get_configuration(key: str):
     return jsonify(get_conf(key)), 200, {'Access-Control-Allow-Origin':'*'}
 @app.route("/set_configuration", methods=["POST"])
 def set_configuration():
-    if request.is_json:
-        response = request.get_json()
-    else:
-        response = request.form
     try:
+        if request.is_json:
+            response = request.get_json()
+        else:
+            response = request.form.to_dict()
+        uti.debug_print(response)
+
+
         if not isinstance(DICT_CONFIG_DEFAULT_TYPES[response['key']](response['value']), DICT_CONFIG_DEFAULT_TYPES[response['key']]):
             raise TypeError('Troliado mi pana')
-        set_conf(response['key'], str(response['value']))
+        set_conf(response['key'], response['value'])
         get_logger().write(f"Logger: Configuracion {response['key']} cambaiada a '{response['value']}'")
         return jsonify({"message": "Configuracion actualizada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     except TypeError as err:
@@ -389,11 +393,8 @@ def init_download(id_download):
 def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
     if request.is_json:
         response = request.get_json()
-    elif request.is_secure:
-        response = request.form
     else:
-        response = request.args.to_dict()
-
+        response = request.form.to_dict()
     get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
     update_last_update()
     get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
@@ -404,10 +405,8 @@ def add_descarga_web():
     global updating_url
     if request.is_json:
         response1 = request.get_json()
-    elif request.is_secure:
-        response1 = request.form
     else:
-        response1 = request.args.to_dict()
+        response1 = request.form.to_dict()
     uti.debug_print(response1, priority=0)
 
     if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):

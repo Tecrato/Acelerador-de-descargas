@@ -305,13 +305,13 @@ class Downloader(Base_class):
             if not self.fallo_destino:
                 file = Path(self.save_dir)/self.file_name
             else:
-                file = DICT_CONFIG_DEFAULT['save_dir']/self.file_name
+                file = Path(DICT_CONFIG_DEFAULT['save_dir'])/self.file_name
             subprocess.call(['explorer','/select,{}'.format(file.as_uri())], shell = True)
         elif resultado['index'] == 1:
             if not self.fallo_destino:
                 file = Path(self.save_dir)/self.file_name
             else:
-                file = DICT_CONFIG_DEFAULT['save_dir']/self.file_name
+                file = Path(DICT_CONFIG_DEFAULT['save_dir'])/self.file_name
             os.startfile(file)
         self.cerrar_todo('a')
 
@@ -712,10 +712,13 @@ class Downloader(Base_class):
         self.save_dir = Path(uti.get(f'http://127.0.0.1:5000/configuration/save_dir').json)
         try:
             file = open(self.save_dir.joinpath(self.file_name), 'wb')
-        except Exception as err:
-            uti.debug_print(type(err), priority=3)
-            uti.debug_print(err, priority=3)
-            file = open(DICT_CONFIG_DEFAULT['save_dir'] + '/' + self.file_name, 'wb')
+        except Exception:
+            uti.debug_print(self.save_dir, priority=3)
+            uti.debug_print(DICT_CONFIG_DEFAULT, priority=3)
+
+            destino = Path(DICT_CONFIG_DEFAULT['save_dir'])
+            destino.mkdir(parents=True, exist_ok=True)
+            file = open(destino.joinpath(self.file_name), 'wb')
             self.fallo_destino = True
 
         for x in range(self.num_hilos):

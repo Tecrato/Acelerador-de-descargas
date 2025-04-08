@@ -1,4 +1,19 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.13.1 - 4/4/2025
+
+Correcciones:
+ - Error con las llamadas a la API para las configuraciones, sobre todo la de las extenciones.
+   - que fastidio lidiar con lo de si es formulario o json, los datos se mandan y se trabajan diferente.
+ - No cancelaba la actualizacion de la url al cerrar la ventana de actualizacion de url.
+ - Ahora muestra el texto de cuando no hay internet.
+ - mejorado el momento de recargar la lista al eliminar una o varias descargas.
+
+Cambios:
+ - Añadido texto de la mini-ventana de actualizacion de url.
+ - Ahora la ventana de actualizacion de url se queda por encima de todo (topmost).
+ - La carpeta por defecto de descargas ahora es Edouard dentro de downloads.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13 - 1/4/2025
 
 Novedades:

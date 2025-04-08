@@ -133,6 +133,8 @@ textos_español = {
     'gui-buscando informacion de': 'buscando informacion de',
     'gui-error al buscar la informacion de': 'Error al buscar la informacion de',
     'gui-cambio de tamanio': 'El tamaño de la descarga ha cambiado\nDesea actualizar el tamaño\nY reiniciar?',
+    'gui-error actualizando url': 'ya se esta actualizando una url',
+    'gui-actualizando url mini': 'La siguiente descarga de su\nnavegador actualizará la url\nde la descarga seleccionada',
 
     'gui-detener apagado automatico': '¿Desea detener la inminente apagada de PC?',
 
@@ -299,6 +301,8 @@ textos_ingles = {
     'gui-buscando informacion de': 'Searching information of',
     'gui-error al buscar la informacion de': 'Error searching information of',
     'gui-cambio de tamanio': 'The size of the download has changed\nDo you want to update the size\nAnd restart?',
+    'gui-error actualizando url': 'Already updating a url',
+    'gui-actualizando url mini': 'The following download will\nupdate the url of the selected download',
 
     'gui-detener apagado automatico': 'Do you want stop the computer that will turn off in less than 30 seconds?',
 

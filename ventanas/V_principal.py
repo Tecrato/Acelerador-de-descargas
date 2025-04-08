@@ -67,7 +67,7 @@ class Downloads_manager(Base_class):
         self.threads = self.configs.get('hilos',DICT_CONFIG_DEFAULT['hilos'])
         self.enfoques = self.configs.get('enfoques',DICT_CONFIG_DEFAULT['enfoques'])
         self.detener_5min = self.configs.get('detener_5min',DICT_CONFIG_DEFAULT['detener_5min'])
-        self.low_detail_mode = self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm'])
+        self.low_detail_mode = bool(self.configs.get('ldm',DICT_CONFIG_DEFAULT['ldm']))
         self.velocidad_limite = self.configs.get('velocidad_limite',DICT_CONFIG_DEFAULT['velocidad_limite'])
 
         self.save_dir = Path(self.configs.get('save_dir',DICT_CONFIG_DEFAULT['save_dir']))
@@ -85,8 +85,8 @@ class Downloads_manager(Base_class):
             uti.send_post('http://127.0.0.1:5000/set_configuration', data={"key":'idioma', "value":self.idioma})
         self.txts = idiomas[self.idioma]
 
-    def save_conf(self, key, value):
-        uti.send_post('http://127.0.0.1:5000/set_configuration', data={"key":key, "value":value})
+    def save_conf(self, key, value, parser='json'):
+        uti.send_post('http://127.0.0.1:5000/set_configuration', data={"key":key, "value":value}, parser=parser)
 
     def post_init(self):
         if self.enfoques:
@@ -645,7 +645,9 @@ class Downloads_manager(Base_class):
                 return
             response = uti.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached.id}').json
             if response['status'] != 'ok':
-                self.mini_ventana(5)
+                self.mini_ventana(6)
+            else:
+                self.mini_ventana(7)
         elif respuesta['index'] == 3:
             # copiar url al portapapeles
             pyperclip.copy(obj_cached[4])
@@ -738,7 +740,7 @@ class Downloads_manager(Base_class):
             return
         self.extenciones.append(nombre)
         self.list_config_extenciones.append(nombre)
-        self.save_conf('extenciones',self.extenciones)
+        self.save_conf('extenciones',self.extenciones, parser='json')
 
     def func_eliminar_extencion(self,r):
         if r['index'] != 0 or not self.list_config_extenciones.get_selects():
@@ -746,7 +748,7 @@ class Downloads_manager(Base_class):
         for i,x in sorted(self.list_config_extenciones.get_selects(), reverse=True):
             self.extenciones.pop(i)
             self.list_config_extenciones.pop(i)
-        self.save_conf('extenciones',self.extenciones)
+        self.save_conf('extenciones',self.extenciones, parser='json')
 
     def func_toggle_apagar_al_finalizar_cola(self):
         self.apagar_al_finalizar_cola = not self.apagar_al_finalizar_cola
@@ -780,7 +782,9 @@ class Downloads_manager(Base_class):
             2: ('descarga eliminada', 'Error', self.txts['gui-descarga eliminada']),
             3: ('portapapeles', 'Copiado', self.txts['copiado al portapapeles']),
             4: ('solo una descarga', 'Error', self.txts['gui-solo una descarga']),
-            5: ('error', 'Error', self.txts['gui-error inesperado'])
+            5: ('error', 'Error', self.txts['gui-error inesperado']),
+            6: ('error', 'Error', self.txts['gui-error actualizando url']),
+            7: ('actualizando url', 'Actualizando', self.txts['gui-actualizando url mini'])
         }
         txt_group, txt_header, txt_body = txts_dict[num]
         self.Mini_GUI_manager.clear_group(txt_group)
@@ -802,14 +806,18 @@ class Downloads_manager(Base_class):
     def del_downloads(self,obj):
         for x in obj:
             uti.get(f'http://127.0.0.1:5000/descargas/delete/{self.cached_list_DB[x['index']][0]}').json
-        self.Func_pool.start('reload list')
+        self.last_update = 0
+        self.last_click = 0
+        # self.Func_pool.start('reload list')
         return
 
     def del_download(self, index):
         response = uti.get(f'http://127.0.0.1:5000/descargas/delete/{index}').json
         if response.get('status') == 'ok':
             self.mini_ventana(2)
-            self.Func_pool.start('reload list')
+            self.last_update = 0
+            self.last_click = 0
+            # self.Func_pool.start('reload list')
         elif response.get('status') == 'error':
             self.mini_ventana(1)
 
@@ -885,6 +893,7 @@ class Downloads_manager(Base_class):
                 self.can_change_new_threads = True
                 self.btn_new_download_hilos.pos = (self.ventana_rect.centerx+150,self.ventana_rect.centery+30)
                 self.new_threads = self.threads
+                self.text_new_download_hilos.text = self.txts['config-hilos'].format(self.new_threads)
             else:
                 self.can_change_new_threads = False
                 self.btn_new_download_hilos.pos = (-10000,-100000)
@@ -919,9 +928,9 @@ class Downloads_manager(Base_class):
         except urllib.error.HTTPError as err:
             self.text_new_download_status.text = self.txts['descripcion-state[error internet]']
             uti.debug_print(err, priority=3)
-        except urllib.error.URLError as err:
-            self.text_new_download_status.text = self.txts['descripcion-state[url invalida]']
-            uti.debug_print(err, priority=3)
+        except uti.web_tools.errors.InternetError as err:
+            uti.debug_print("", priority=3)
+            self.text_new_download_status.text = self.txts['descripcion-state[error internet]']
         except TrajoHTML as err:
             self.text_new_download_status.text = self.txts['descripcion-state[trajo un html]']
             uti.debug_print(err, priority=3)
@@ -930,7 +939,7 @@ class Downloads_manager(Base_class):
             uti.debug_print(err, priority=3)
         except Exception as err:
             uti.debug_print(err, priority=3)
-            self.logger.write(f'Error conprobar {self.url} - {type(err)} -> {err}')
+            self.logger.write(f'Error comprobar {self.url} - {type(err)} -> {err}')
             self.text_new_download_status.text = self.txts['descripcion-state[error]']
 
     def reload_elemento_individual(self, id):
