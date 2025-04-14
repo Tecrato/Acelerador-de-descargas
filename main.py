@@ -613,6 +613,23 @@ def borrar_logs_vacios():
 
 
 def init():
+    global icon
+    try:
+        icon = win32_tools.Win32TrayIcon(
+            "Assets/img/descargas.ico",
+            "Acelerador de descargas",
+            [
+                ("Abrir programa", func_open_program),
+                ("Buscar actualizaciones", lambda: buscar_actualizacion(confirm=True)),
+                ("Open logs", lambda: get_logger().open_folder()),
+                ("Salir", lambda: uti.get("http://127.0.0.1:5000/api_close").json),
+            ],
+            func_open_program
+        )
+    except Exception as err:
+        uti.debug_print(err, 2)
+        icon = None
+        os._exit(0)
     try:
         json.load(open(CONFIG_DIR.joinpath('./configs.json')))
     except:
@@ -639,25 +656,14 @@ if __name__ == '__main__':
         pass
 
 
-    icon = win32_tools.Win32TrayIcon(
-        "Assets/img/descargas.ico",
-        "Acelerador de descargas",
-        [
-            ("Abrir programa", func_open_program),
-            ("Buscar actualizaciones", lambda: buscar_actualizacion(confirm=True)),
-            ("Open logs", lambda: get_logger().open_folder()),
-            ("Salir", lambda: uti.get("http://127.0.0.1:5000/api_close").json),
-        ],
-        func_open_program
-    )
 
     
 
+    Thread(target=init).start()
     Thread(target=buscar_actualizacion).start()
     Thread(target=borrar_carpetas_vacias).start()
     Thread(target=get_sockets_clients).start()
     Thread(target=borrar_logs_vacios).start()
-    Thread(target=init).start()
     
     # app.run('0.0.0.0', 5000, debug=True)
     from waitress import serve

@@ -1,4 +1,13 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.13.2 - 4/4/2025
+
+Correcciones:
+ - Si la inicializacion del icono de la barra de tareas falla, el programa se cerrara.
+
+Cambios:
+ - La ventana de detener el apagado automatico ahora se queda por encima de todo (topmost).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13.1 - 4/4/2025
 
 Correcciones:

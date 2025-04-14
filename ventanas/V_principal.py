@@ -9,7 +9,6 @@ import pyperclip
 import urllib.error
 import urllib.parse
 import pygame as pag
-import urllib.request
 import Utilidades as uti
 import Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
@@ -30,9 +29,6 @@ from loader import Loader
 from my_warnings import TrajoHTML, LinkCaido
 from enums.Download import Download
 
-# top_package = __import__(__name__.split('.')[0])
-
-# os.chdir(INITIAL_DIR)
 
 class Downloads_manager(Base_class):
     def otras_variables(self):

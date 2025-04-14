@@ -35,6 +35,7 @@ class Ventana_detener_apago_automatico(Base_class):
     def post_init(self):
         if self.enfoques:
             uti.win32_tools.front2(self.hwnd)
+            uti.win32_tools.topmost(self.hwnd)
 
     def otro_evento(self, actual_screen, evento):
         if evento.type == pag.KEYDOWN and evento.key == pag.K_ESCAPE:

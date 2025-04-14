@@ -5,6 +5,7 @@
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
  - el select(False) de las listas al clickar en otro lado.
+ - agregar un minimo de tamaño para descargar el archivo.
 
 
 # Cosas nuevas:
