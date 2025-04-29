@@ -21,14 +21,13 @@ from urllib.parse import urlparse, unquote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 
-from Utilidades_pygame.GUI import AdC_theme
 from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config, INITIAL_DIR
 from textos import idiomas
 from loader import Loader
 from my_warnings import TrajoHTML, LinkCaido
 from enums.Download import Download
-
+from GUI import AdC_theme
 
 class Downloads_manager(Base_class):
     def otras_variables(self):
@@ -44,6 +43,7 @@ class Downloads_manager(Base_class):
         self.low_detail_mode: bool = False
         self.can_add_new_download = False
         self.can_change_new_threads = False
+        self.agregar_a_cola_automaticamente = False
         self.last_update = time.time()
         self.thread_new_download: Thread = Thread()
         self.session = uti.Http_Session()
@@ -71,6 +71,7 @@ class Downloads_manager(Base_class):
         self.extenciones = self.configs.get('extenciones',DICT_CONFIG_DEFAULT['extenciones'])
 
         self.allow_particles = self.configs.get('particulas',DICT_CONFIG_DEFAULT['particulas'])
+        self.agregar_a_cola_automaticamente = self.configs.get('agregar a cola automaticamente',DICT_CONFIG_DEFAULT['agregar a cola automaticamente'])
 
         try:
             self.idioma = self.configs.get('idioma',DICT_CONFIG_DEFAULT['idioma'])
@@ -219,6 +220,14 @@ class Downloads_manager(Base_class):
             border_width=-1, func=self.func_toggle_particles
         )
 
+        self.text_config_agregar_a_cola_automaticamente = uti_pag.Text(self.txts['config-agregar a cola automaticamente'], 16, self.config.font_mononoki, (30, 415), 'left')
+        self.btn_config_agregar_a_cola_automaticamente = uti_pag.Button(
+            '' if self.agregar_a_cola_automaticamente else '', 16, self.config.font_symbols, (self.text_config_agregar_a_cola_automaticamente.right, 415),
+            10, 'left', 'white', with_rect=True, color_rect=(20,20,20), color_rect_active=(40, 40, 40),
+            border_width=-1, func=self.func_toggle_agregar_a_cola_automaticamente
+        )
+
+        #lista de extenciones
         self.list_config_extenciones = uti_pag.List(
             (self.ventana_rect.w*.3,self.ventana_rect.h*.7), (self.ventana_rect.w*.80,self.ventana_rect.centery),
             self.extenciones.copy(), 16, 10, (40,40,40),dire='center', header=True, text_header=self.txts['extenciones'], background_color=(20,20,20), 
@@ -340,6 +349,7 @@ class Downloads_manager(Base_class):
             self.btn_config_detener_5min,self.text_config_limitador_velocidad,
             self.btn_config_velocidad,self.text_config_particulas, self.btn_config_particulas,
             self.btn_config_añair_extencion,self.btn_config_eliminar_extencion,self.list_config_extenciones,
+            self.text_config_agregar_a_cola_automaticamente, self.btn_config_agregar_a_cola_automaticamente,
 
             self.select_config_change_hilos, self.select_config_velocidad,
         ]
@@ -351,6 +361,7 @@ class Downloads_manager(Base_class):
             self.btn_config_enfoques,self.btn_config_detener_5min,
             self.btn_config_particulas,
             self.btn_config_añair_extencion,self.btn_config_eliminar_extencion,self.list_config_extenciones,
+            self.btn_config_agregar_a_cola_automaticamente,
 
             self.select_config_change_hilos, self.select_config_velocidad,
         ]
@@ -682,7 +693,7 @@ class Downloads_manager(Base_class):
             nombre = askstring(self.txts['nombre'], self.txts['gui-nombre del archivo'],initialvalue=obj_cached.nombre)
             if not nombre or nombre == '':
                 return
-            response = uti.get(f'http://127.0.0.1:5000/descargas/update/nombre/{obj_cached.id}/{nombre}').json
+            response = uti.send_post(f'http://127.0.0.1:5000/descargas/update/nombre', data={'id': obj_cached.id, 'nombre': nombre}).json
             if response['status'] == 'ok':
                 self.list_main_descargas[1][int(respuesta['obj'][0]['index'])] = nombre
         self.redraw = True
@@ -768,6 +779,10 @@ class Downloads_manager(Base_class):
         self.allow_particles = not self.allow_particles
         self.btn_config_particulas.text = ''if self.allow_particles else ''
         self.save_conf('particulas', self.allow_particles)
+    def func_toggle_agregar_a_cola_automaticamente(self):
+        self.agregar_a_cola_automaticamente = not self.agregar_a_cola_automaticamente
+        self.btn_config_agregar_a_cola_automaticamente.text = '' if self.agregar_a_cola_automaticamente else ''
+        self.save_conf('agregar a cola automaticamente', self.agregar_a_cola_automaticamente)
 
 
     # Funciones Variadas

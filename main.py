@@ -108,7 +108,7 @@ list_changes_to_sockets = {}
 lock = Lock()
 timer = uti.multithread.Interval_funcs()
 
-una_session = uti.Http_Session()
+una_session = uti.Http_Session(verify=False)
 
 updating_url = False
 updating_id = -1
@@ -323,12 +323,22 @@ def update_size(id:int, size: str) -> Response:
         uti.debug_print(type(err), priority=3)
         return jsonify({"message": "Error al actualizar el tamanio", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-@app.route("/descargas/update/nombre/<int:id>/<nombre>", methods=["GET"])
-def update_name(id:int, nombre: str):
-    if id in lista_descargas:
+@app.route("/descargas/update/nombre", methods=["POST"])
+def update_name():
+    try:
+        if request.is_json:
+            r = request.get_json()
+            id_download, nombre = r.get('id'), r.get('nombre')
+        else:
+            r = request.form.to_dict()
+            id_download, nombre = r.get('id'), r.get('nombre')
+    except Exception as err:
+        uti.debug_print(type(err), priority=3)
+        return jsonify({"message": "Error al actualizar el nombre", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+    if id_download in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
-    get_db().update_nombre(id, nombre)
-    update_last_download_update(id)
+    get_db().update_nombre(id_download, nombre)
+    update_last_download_update(id_download)
     return jsonify({"message": "nombre actualizado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/download/<int:id>", methods=["GET"])
@@ -390,29 +400,39 @@ def init_download(id_download):
 
 
 @app.route("/descargas/add_from_program" , methods=["POST"])
-def add_descarga_program():# nombre: str, tipo:str, url: str, size: int, hilos:int
-    if request.is_json:
-        response = request.get_json()
-    else:
-        response = request.form.to_dict()
-    get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
-    update_last_update()
-    get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
-    return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'})
+def add_descarga_program():
+    try:
+        if request.is_json:
+            response = request.get_json()
+        else:
+            response = request.form.to_dict()
+        get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
+        update_last_update()
+        get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+        return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+    except Exception as err:
+        uti.debug_print(err, 2)
+        return jsonify({"message": "Error al añadir la descarga", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/descargas/add_web", methods=["POST"])
 def add_descarga_web():
-    global updating_url
-    if request.is_json:
-        response1 = request.get_json()
-    else:
-        response1 = request.form.to_dict()
-    uti.debug_print(response1, priority=0)
+    global cola_iniciada
+    try:
+        global updating_url
+        if request.is_json:
+            response1 = request.get_json()
+        else:
+            response1 = request.form.to_dict()
+        uti.debug_print(response1, priority=0)
 
-    if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):
-        return jsonify({"message": "La extensión no esta permitida", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+        if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):
+            return jsonify({"message": "La extensión no esta permitida", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+        
+        get_logger().write(response1)
+    except Exception as err:
+        uti.debug_print(err, 2)
+        return jsonify({"message": "Error al obtener la descarga", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
     
-    get_logger().write(response1)
     get_logger().write("Obteniendo informacion de \n" + response1['nombre'] + "\n" + response1['url'])
 
     try:
@@ -429,8 +449,11 @@ def add_descarga_web():
 
         uti.debug_print(response, priority=0)
         tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
-        peso = int(response.get('content-length', 1))
-        hilos = get_conf('hilos') if 'bytes' in response.get('Accept-Ranges', '') else 1
+        peso = int(response.get('content-length', 0))
+        if peso > 0 and 'bytes' in response.get('Accept-Ranges', ''):
+            hilos = get_conf('hilos')
+        else:
+            hilos = 1
         
         if tipo in ['text/plain', 'text/html']:
             raise TrajoHTML('No paginas')
@@ -444,6 +467,13 @@ def add_descarga_web():
     
     index = get_db().añadir_descarga(nombre=response1['nombre'], tipo=tipo,peso=peso, url=response1['url'], partes=hilos, cookies=response1.get('cookies', ''))
     update_last_update()
+    if get_conf('agregar a cola automaticamente'):
+        cola.append(index)
+        if not cola_iniciada:
+            cola_iniciada = True
+            Thread(target=init_download,args=(index,)).start()
+        return jsonify({"message": "Descarga añadida a la cola", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
+    
     Thread(target=init_download,args=(index,)).start()
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
@@ -548,8 +578,7 @@ def func_probar_link(url, cookie=None):
         response = una_session.get(url).headers
         uti.debug_print(response, priority=0)
         tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
-        peso = int(response.get('content-length', 1))
-        if tipo in ['text/plain', 'text/html'] or peso == 1:
+        if tipo in ['text/plain', 'text/html']:
             raise TrajoHTML('No paginas')
         return response
     except Exception as err:
@@ -639,7 +668,7 @@ def init():
 
     # time.sleep(2)
     # requests.get('http://127.0.0.1:5000/open_program')
-    
+
 
 #-------------------------------------------------------------------------------------------------
 
@@ -665,7 +694,16 @@ if __name__ == '__main__':
     Thread(target=get_sockets_clients).start()
     Thread(target=borrar_logs_vacios).start()
     
-    # app.run('0.0.0.0', 5000, debug=True)
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=5000)
+    try:
+        # app.run('0.0.0.0', 5000, debug=True)
+        from waitress import serve
+        serve(app, host="0.0.0.0", port=5000)
+    except Exception as err:
+        uti.debug_print(err, 2)
+        try:
+            icon.stop()
+        except:
+            pass
+        os._exit(0)
+        exit()
     icon.stop()

@@ -16,7 +16,7 @@ from Utilidades import win32_tools, LinearRegressionSimple
 
 from my_warnings import *
 from textos import idiomas
-from Utilidades_pygame.GUI import AdC_theme
+from GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
 from Utilidades_pygame.base_app_class import Base_class
 from enums.Download import Download
@@ -60,7 +60,7 @@ class Downloader(Base_class):
 
         # Integers
         self.current_velocity: int = 0
-        self.division: int = self.peso_total // self.num_hilos
+        self.division: int = (self.peso_total // self.num_hilos) if self.peso_total > 0 else self.peso_total
         self.downloading_threads: int = 0
         self.hilos_listos: int = 0
         self.intentos: int = 0
@@ -240,9 +240,13 @@ class Downloader(Base_class):
             self.Func_pool.start('finalizar descarga')
         
         self.text_vel_descarga.text = self.txts['velocidad']+': ' + uti.format_size_bits_to_bytes_str(self.current_velocity)
-        self.text_porcentaje.text = f'{(self.peso_descargado / self.peso_total) * 100:.2f}%'
         self.text_peso_progreso.text = self.txts['descargado']+': '+ uti.format_size_bits_to_bytes_str(self.peso_descargado)
-        self.barra_progreso.volumen = self.peso_descargado / self.peso_total
+        if self.peso_total > 0:
+            self.text_porcentaje.text = f'{(self.peso_descargado / self.peso_total) * 100:.2f}%'
+            self.barra_progreso.volumen = self.peso_descargado / self.peso_total
+        else:
+            self.text_porcentaje.text = f'?%...'
+            self.barra_progreso.volumen = .5
 
         if self.cerrando and self.num_hilos > 1:
             self.text_finalizando_hilos2.text = f'Restantes: {self.downloading_threads}'
@@ -344,6 +348,7 @@ class Downloader(Base_class):
         
         self.session.get(f"http://127.0.0.1:5000/descargas/update/size/{self.download_id}/{self.peso_nuevo}", timeout=30)
         self.peso_total = self.peso_nuevo
+        self.division = (self.peso_total // self.num_hilos) if self.peso_total > 0 else self.peso_total
         uti.debug_print(self.peso_nuevo)
         shutil.rmtree(self.carpeta_cache, ignore_errors=True)
         self.carpeta_cache.mkdir(parents=True, exist_ok=True)
@@ -359,6 +364,8 @@ class Downloader(Base_class):
         ]
 
     def update_progress_db(self):
+        if self.peso_total == 0:
+            return
         if self.peso_descargado == 0 or not self.downloading:
             return
         progreso = (self.peso_descargado / self.peso_total)
@@ -423,7 +430,7 @@ class Downloader(Base_class):
             self.chunk = self.min_chunk
 
     def calc_tiempo_restante(self):
-        if self.current_velocity > 0:
+        if self.current_velocity > 0 and self.peso_total > 0:
             delta_date = uti.format_date((self.peso_total-self.peso_descargado)/self.current_velocity,3)
             if delta_date['year']>0:
                 self.text_tiempo_restante.text = f"{self.txts['tiempo restante']}: {delta_date['year']}{self.txts['año']}s {delta_date['day']}{self.txts['dia']}s"
@@ -686,7 +693,6 @@ class Downloader(Base_class):
             return
         except Exception as err:
             uti.debug_print(type(err), priority=2)
-            uti.debug_print(err, priority=2)
 
             if self.canceled:
                 self.list_textos_hilos[0][num] = self.txts['status_hilo[cancelado]'].format(num)

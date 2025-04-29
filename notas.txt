@@ -1,6 +1,7 @@
 # Errores:
 
 # Cambios:
+ - Que cambie el cursor segun el widget.
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
@@ -13,9 +14,7 @@
  - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
  - una opcion para que las siguientes descargas que lleguen se añadan a la cola en vez de descargarse de una vez
    - Y si la cola no esta iniciada, iniciarla.
-  
  - Crear opcion para que las siguientes descargas que se añadan se añadan a la cola automaticamente.
-   
  - Añadir el referer.
 
 

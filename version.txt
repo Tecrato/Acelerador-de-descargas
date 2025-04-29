@@ -1,4 +1,17 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.13.3 - 4/4/2025
+
+Correcciones:
+ - Corregido error al cambiar el nombre de una descarga, teniendo el nombre espacios.
+ - Corregido procedimiento cuando la descarga no trae el size (tamaño).
+ - Agregados varios trys en la API, para que no se quede pegado el programa ante un error.
+
+Novedades:
+ - Nueva opcion para agregar las descargas entrantes a la cola de descargas automaticamente.
+
+Traducciones.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13.2 - 4/4/2025
 
 Correcciones:
@@ -6,6 +19,9 @@ Correcciones:
 
 Cambios:
  - La ventana de detener el apagado automatico ahora se queda por encima de todo (topmost).
+
+Mejoras:
+ - Añadida optimizacion para no parpadear la ventana cuando de mueve de lugar.
 
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13.1 - 4/4/2025
