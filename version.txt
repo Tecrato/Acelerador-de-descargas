@@ -1,4 +1,11 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.13.4 - 4/4/2025
+
+Correcciones:
+ - Copia de las Utilidades, haciendo cualquiero otra cosa voy a estar modificando asi que para no preocuparme.
+ - Error al intentar descargar archivos que no traen tamaño y los que no se pueden descargar por partes.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13.3 - 4/4/2025
 
 Correcciones:

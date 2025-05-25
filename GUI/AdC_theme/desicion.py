@@ -1,8 +1,8 @@
 from typing import Iterable
 import pygame as pag
-import Utilidades_pygame as uti_pag
-from Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
-from Utilidades_pygame.GUI.base import Base_win
+import librerias.Utilidades_pygame as uti_pag
+from librerias.Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
+from librerias.Utilidades_pygame.GUI.base import Base_win
 
 puntos = (
     (386.68010278853194, 0.9960020080301043),

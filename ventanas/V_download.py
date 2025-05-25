@@ -5,20 +5,20 @@ import shutil
 import subprocess
 import http.client
 import pygame as pag 
-import Utilidades as uti
-import Utilidades_pygame as uti_pag
+import librerias.Utilidades as uti
+import librerias.Utilidades_pygame as uti_pag
 from pathlib import Path
 from threading import Lock
 from io import BufferedWriter
 from tkinter.simpledialog import askstring
 from concurrent.futures import ThreadPoolExecutor
-from Utilidades import win32_tools, LinearRegressionSimple
+from librerias.Utilidades import win32_tools, LinearRegressionSimple
 
 from my_warnings import *
 from textos import idiomas
 from GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
-from Utilidades_pygame.base_app_class import Base_class
+from librerias.Utilidades_pygame.base_app_class import Base_class
 from enums.Download import Download
 
 
@@ -112,7 +112,7 @@ class Downloader(Base_class):
         self.pool_hilos: ThreadPoolExecutor = ThreadPoolExecutor(self.num_hilos, 'downloads_threads')
         self.chunk_regressor: LinearRegressionSimple = LinearRegressionSimple(*self.list_to_train_chunk_regressor)
 
-        self.session = uti.Http_Session()
+        self.session = uti.Http_Session(verify=False)
         self.session.headers = self.default_headers
         
         if self.cookies:
@@ -253,8 +253,11 @@ class Downloader(Base_class):
 
         if not self.downloading:
             return
-        for i,x in sorted(enumerate(self.lista_status_hilos), reverse=False):
-            self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
+        if self.num_hilos == 1 and self.peso_total > 0:
+            self.list_textos_hilos[1][0] = f'{int(self.lista_status_hilos[0]["local_count"])/self.peso_total * 100:.2f}%'
+        elif self.num_hilos > 1:
+            for i,x in sorted(enumerate(self.lista_status_hilos), reverse=False):
+                self.list_textos_hilos[1][i] = f'{int(x["local_count"])/self.division * 100:.2f}%'
 
 
 
@@ -644,7 +647,7 @@ class Downloader(Base_class):
 
         this_header = self.default_headers.copy()
         if self.can_reanudar and self.num_hilos > 1:
-            this_header['range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
+            this_header['Range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
 
         try:
             self.list_textos_hilos[0][num] = self.txts['status_hilo[conectando]'].format(num)

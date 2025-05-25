@@ -5,7 +5,7 @@ import shutil
 import datetime
 import socket as sk
 import multiprocessing
-import Utilidades as uti
+import librerias.Utilidades as uti
 
 from DB import Data_Base
 from pathlib import Path
@@ -19,7 +19,7 @@ from textos import idiomas
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
-from Utilidades import win32_tools, Logger, check_update
+from librerias.Utilidades import win32_tools, Logger, check_update
 
 
 from my_warnings import TrajoHTML
@@ -447,10 +447,17 @@ def add_descarga_web():
             func_update_url_download(updating_id, response1["url"], response1['nombre'])
             return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-        uti.debug_print(response, priority=0)
-        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+        p = False
         peso = int(response.get('content-length', 0))
         if peso > 0 and 'bytes' in response.get('Accept-Ranges', ''):
+            try:
+                res = uti.get(response1['url'], headers={'Range': 'bytes=0-1'})
+                p = True
+            except Exception as err:
+                p = False
+        uti.debug_print(response, priority=0)
+        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+        if peso > 0 and 'bytes' in response.get('Accept-Ranges', '') and p: 
             hilos = get_conf('hilos')
         else:
             hilos = 1
@@ -608,6 +615,7 @@ def buscar_actualizacion(confirm=False):
     global pv_actualizar_programa
     try:
         sera = check_update('acelerador de descargas', VERSION, 'last')
+        uti.debug_print(sera)
         if sera and not pv_actualizar_programa.is_alive():
             pv_actualizar_programa = Process(target=Ventana_actualizar,args=(Config(window_resize=False, resolution=(300, 130)), sera['url'],), daemon=True)
             pv_actualizar_programa.start()

@@ -9,8 +9,8 @@ import pyperclip
 import urllib.error
 import urllib.parse
 import pygame as pag
-import Utilidades as uti
-import Utilidades_pygame as uti_pag
+import librerias.Utilidades as uti
+import librerias.Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
@@ -21,7 +21,7 @@ from urllib.parse import urlparse, unquote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 
-from Utilidades_pygame.base_app_class import Base_class
+from librerias.Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config, INITIAL_DIR
 from textos import idiomas
 from loader import Loader

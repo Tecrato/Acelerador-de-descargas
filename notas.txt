@@ -1,4 +1,5 @@
 # Errores:
+ - Al cambias el estado de focus en la aplicacion no se cambia la variable en la ventana actual, se aplica el cambio al cerrar la ventana, comprobar resto de opciones.
 
 # Cambios:
  - Que cambie el cursor segun el widget.
@@ -9,6 +10,7 @@
  - agregar un minimo de tamaño para descargar el archivo.
 
 
+
 # Cosas nuevas:
  - hacer que separe los archivos descargados en carpetas
  - hacer input text con sugerencias, y que puedan ser obligatorias las opciones de abajo
@@ -16,6 +18,8 @@
    - Y si la cola no esta iniciada, iniciarla.
  - Crear opcion para que las siguientes descargas que se añadan se añadan a la cola automaticamente.
  - Añadir el referer.
+ - Hacer una animacion para el cambio de pantallas.
+ - minimo de tamaño de descarga.
 
 
 # Exagerado:

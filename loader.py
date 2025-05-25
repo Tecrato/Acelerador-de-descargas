@@ -1,5 +1,5 @@
 import pygame as pag
-from Utilidades_pygame.figuras.engranajes import Engranaje
+from librerias.Utilidades_pygame.figuras.engranajes import Engranaje
 class Loader:
     def __init__(self, pos) -> None:
         self.__pos = pos

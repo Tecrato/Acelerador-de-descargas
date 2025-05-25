@@ -1,9 +1,9 @@
 import os
 import pygame as pag
-import Utilidades as uti
-import Utilidades_pygame as uti_pag
+import librerias.Utilidades as uti
+import librerias.Utilidades_pygame as uti_pag
 
-from Utilidades_pygame.base_app_class import Base_class
+from librerias.Utilidades_pygame.base_app_class import Base_class
 from constants import Config, DICT_CONFIG_DEFAULT
 from textos import idiomas
 
