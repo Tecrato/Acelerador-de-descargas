@@ -2,12 +2,10 @@
  - Al cambias el estado de focus en la aplicacion no se cambia la variable en la ventana actual, se aplica el cambio al cerrar la ventana, comprobar resto de opciones.
 
 # Cambios:
- - Que cambie el cursor segun el widget.
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
  - el select(False) de las listas al clickar en otro lado.
- - agregar un minimo de tamaño para descargar el archivo.
 
 
 

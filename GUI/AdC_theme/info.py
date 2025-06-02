@@ -1,8 +1,8 @@
 import pygame as pag
-import librerias.Utilidades_pygame as uti_pag
+import Utilidades_pygame as uti_pag
 
-from librerias.Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
-from librerias.Utilidades_pygame.GUI.base import Base_win
+from Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
+from Utilidades_pygame.GUI.base import Base_win
 
 puntos = (
     (386.68010278853194, 0.9960020080301043),
@@ -37,7 +37,7 @@ class Info(Base_win):
         self.body = uti_pag.Text(texto, 20, self.font, (0,0), 'center')
         self.add(self.body, f'({size[0]/2},{size[1]/2 - 10})')
 
-        self.btn_aceptar = uti_pag.Button('Aceptar',16,self.font,(0,0), 15, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=self.func_aceptar)
+        self.btn_aceptar = uti_pag.Button('Aceptar',16,self.font,(0,0), 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=self.func_aceptar)
         self.add(self.btn_aceptar, f'{self.size[0]-20},{self.size[1]-10}', clicking=True)
 
     def draw_after(self):

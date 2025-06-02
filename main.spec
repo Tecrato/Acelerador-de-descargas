@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 datas = [
-        ('C:/Users/Edouard/Documents/fuentes/mononoki Bold Nerd Font Complete Mono.ttf', './Assets/fuentes/'),
-        ('C:/Users/Edouard/Documents/fuentes/Symbols.ttf', './Assets/fuentes/'),
+        ('./Assets/fuentes/mononoki Bold Nerd Font Complete Mono.ttf', './Assets/fuentes/'),
+        ('./Assets/fuentes/Symbols.ttf', './Assets/fuentes/'),
         ('./Assets/img/descargas.png','./Assets/img/'),
         ('./Assets/img/descargas.ico','./Assets/img/'),
         ('./extencion.crx','./'),

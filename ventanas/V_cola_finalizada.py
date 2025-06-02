@@ -1,8 +1,8 @@
 import pygame as pag
-import librerias.Utilidades as uti
-import librerias.Utilidades_pygame as uti_pag
+import Utilidades as uti
+import Utilidades_pygame as uti_pag
 
-from librerias.Utilidades_pygame.base_app_class import Base_class
+from Utilidades_pygame.base_app_class import Base_class
 from constants import Config, DICT_CONFIG_DEFAULT
 from textos import idiomas
 
@@ -21,7 +21,7 @@ class Ventana_cola_finalizada(Base_class):
         # El resto de textos y demas cosas
         self.text_program_title = uti_pag.Text(self.txts['title'], 16, self.config.font_mononoki, (self.ventana_rect.centerx, 30))
         self.pregunta = uti_pag.Text(self.txts['gui-cola de descarga completada'], 16, self.config.font_mononoki, (self.config.resolution[0]//2,50), dire='top')
-        self.btn_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
+        self.btn_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, (self.config.resolution[0]//2,100), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
         ...
 
         # Tambien se debe agregar a las respiectivas listas

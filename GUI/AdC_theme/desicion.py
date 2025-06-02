@@ -1,8 +1,8 @@
 from typing import Iterable
 import pygame as pag
-import librerias.Utilidades_pygame as uti_pag
-from librerias.Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
-from librerias.Utilidades_pygame.GUI.base import Base_win
+import Utilidades_pygame as uti_pag
+from Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
+from Utilidades_pygame.GUI.base import Base_win
 
 puntos = (
     (386.68010278853194, 0.9960020080301043),
@@ -71,7 +71,7 @@ class Desicion(Base_win):
         self.__botons_pointer = len(self.list_objs)
         
         for i, op in enumerate(self.options):
-            gui = uti_pag.Button(op, 20, self.font, (0,0), (15,15), 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=lambda n=i, op=op: self.execute_func('{}'.format(n), '{}'.format(op)))
+            gui = uti_pag.Button(op, 20, self.font, (0,0), 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=lambda n=i, op=op: self.execute_func('{}'.format(n), '{}'.format(op)))
             pos = '({},{})'.format((self.list_objs[last_g]['GUI'].left-10) if i > 0 else (self.size[0]-20), self.size[1]-20)
             self.add(gui, pos, clicking=True)
             last_g += 1

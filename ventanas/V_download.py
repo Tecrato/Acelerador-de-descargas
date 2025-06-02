@@ -5,20 +5,20 @@ import shutil
 import subprocess
 import http.client
 import pygame as pag 
-import librerias.Utilidades as uti
-import librerias.Utilidades_pygame as uti_pag
+import Utilidades as uti
+import Utilidades_pygame as uti_pag
 from pathlib import Path
 from threading import Lock
 from io import BufferedWriter
 from tkinter.simpledialog import askstring
 from concurrent.futures import ThreadPoolExecutor
-from librerias.Utilidades import win32_tools, LinearRegressionSimple
+from Utilidades import win32_tools, LinearRegressionSimple
 
 from my_warnings import *
 from textos import idiomas
 from GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
-from librerias.Utilidades_pygame.base_app_class import Base_class
+from Utilidades_pygame.base_app_class import Base_class
 from enums.Download import Download
 
 
@@ -176,11 +176,11 @@ class Downloader(Base_class):
         self.text_title_hilos = uti_pag.Text(self.txts['title_hilos'], 14, self.config.font_mononoki, (550, 30), 'center')
 
         self.btn_cancelar_descarga =  uti_pag.Button(
-            self.txts['cancelar'], 16, self.config.font_mononoki, ((self.ventana_rect.width / 2) / 3, 20), (20, 10), 'center', 'black','purple', 'cyan', 0, 0, 20, 
+            self.txts['cancelar'], 16, self.config.font_mononoki, ((self.ventana_rect.width / 2) / 3, 20), (10, 5), 'center', 'black','purple', 'cyan', 0, 0, 20, 
             0, 0, 20, -1, func= lambda: self.open_GUI_dialog(self.txts['gui-cancelar descarga'], (400, 200),self.func_cancelar, options=[self.txts['aceptar'], self.txts['cancelar']])
         )
         self.btn_pausar_y_reanudar_descarga = uti_pag.Button(
-            self.txts['reanudar'], 16, self.config.font_mononoki, (((self.ventana_rect.width / 2) / 3) * 2, 20), (20, 10), 
+            self.txts['reanudar'], 16, self.config.font_mononoki, (((self.ventana_rect.width / 2) / 3) * 2, 20), (10, 5), 
             'center', 'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1, func=self.func_reanudar
         )
 
@@ -669,6 +669,9 @@ class Downloader(Base_class):
                     if not data:
                         break
                     if self.paused or self.canceled:
+                        response.close()
+                        buffered_write.flush()
+                        buffered_write.close()
                         raise Exception('Paused or Canceled')
                     tanto = len(data)
                     self.lock.acquire()

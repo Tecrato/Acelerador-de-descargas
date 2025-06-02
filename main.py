@@ -5,7 +5,7 @@ import shutil
 import datetime
 import socket as sk
 import multiprocessing
-import librerias.Utilidades as uti
+import Utilidades as uti
 
 from DB import Data_Base
 from pathlib import Path
@@ -19,7 +19,7 @@ from textos import idiomas
 from flask import Flask, Response, request, jsonify, g
 from flask_cors import CORS, cross_origin
 
-from librerias.Utilidades import win32_tools, Logger, check_update
+from Utilidades import win32_tools, Logger, check_update
 
 
 from my_warnings import TrajoHTML
@@ -166,7 +166,7 @@ def open_program():
         return jsonify({"message": "Programa iniciado", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     else:
         win32_tools.front(TITLE)
-        return jsonify({"message": "Programa ya iniciado", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+        return jsonify({"message": "Programa ya iniciado", "code":1, 'status':'error'}), 405, {'Access-Control-Allow-Origin':'*'}
 
 def open_program_thread():
     global program_opened
@@ -176,7 +176,8 @@ def open_program_thread():
 
 @app.route("/extencion/check/<name>")
 def check_extencion(name: str):
-    return jsonify({"message": "busqueda de extension", "code":0, 'status':'ok', "respuesta":name in get_conf('extenciones')}), 200, {'Access-Control-Allow-Origin':'*'}
+    s = name in get_conf('extenciones')
+    return jsonify({"message": "busqueda de extension", "code":0, 'status':'ok', "respuesta":s}), 200 if s else 404, {'Access-Control-Allow-Origin':'*'}
 
 @app.route("/get_configurations")
 def get_configurations():
@@ -205,13 +206,13 @@ def set_configuration():
         get_logger().write(type(err))
         get_logger().write('No es el tipo que necesita')
         get_logger().write(err)
-        return jsonify({"message": "Valor de tipo invalido", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+        return jsonify({"message": "Valor de tipo invalido", "code":2, 'status':'error'}), 400, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
         uti.debug_print(err, priority=2)
         get_logger().write(f'Logger: Error al actualizar la configuracion {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
         get_logger().write(type(err))
         get_logger().write(err)
-        return jsonify({"message": "Error al actualizar la configuracion", "code":1, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
+        return jsonify({"message": "Error al actualizar la configuracion", "code":1, 'status':'error'}), 500, {'Access-Control-Allow-Origin':'*'}
 
 
 def get_sockets_clients():
@@ -424,6 +425,7 @@ def add_descarga_web():
         else:
             response1 = request.form.to_dict()
         uti.debug_print(response1, priority=0)
+        get_logger().write(response1)
 
         if response1.get('nombre', '').split('.')[-1].lower() not in get_conf('extenciones'):
             return jsonify({"message": "La extensión no esta permitida", "code":2, 'status':'error'}), 200, {'Access-Control-Allow-Origin':'*'}
@@ -665,7 +667,7 @@ def init():
         )
     except Exception as err:
         uti.debug_print(err, 2)
-        icon = None
+        del icon
         os._exit(0)
     try:
         json.load(open(CONFIG_DIR.joinpath('./configs.json')))
@@ -691,10 +693,6 @@ if __name__ == '__main__':
         os._exit(0)
     except Exception:
         pass
-
-
-
-    
 
     Thread(target=init).start()
     Thread(target=buscar_actualizacion).start()

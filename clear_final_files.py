@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import shutil
 
-import librerias.Utilidades as uti
+import Utilidades as uti
 
 os.chdir(Path(__file__).parent)
 

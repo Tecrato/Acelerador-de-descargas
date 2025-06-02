@@ -9,8 +9,8 @@ import pyperclip
 import urllib.error
 import urllib.parse
 import pygame as pag
-import librerias.Utilidades as uti
-import librerias.Utilidades_pygame as uti_pag
+import Utilidades as uti
+import Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
@@ -21,7 +21,7 @@ from urllib.parse import urlparse, unquote
 from tkinter.filedialog import askdirectory
 from tkinter.simpledialog import askstring
 
-from librerias.Utilidades_pygame.base_app_class import Base_class
+from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config, INITIAL_DIR
 from textos import idiomas
 from loader import Loader
@@ -32,6 +32,10 @@ from GUI import AdC_theme
 class Downloads_manager(Base_class):
     def otras_variables(self):
         self.config:Config
+
+        # Loader
+        self.loader = Loader((self.ventana_rect.w, self.ventana_rect.h))
+
 
         self.new_threads = 1
         self.new_file_size = 0
@@ -94,6 +98,7 @@ class Downloads_manager(Base_class):
     def on_exit(self):
         del self.logger
 
+    @override
     def generate_objs(self):
         self.particulas_mouse = uti_pag.Particles(
             (0,0), radio=10, radio_dispersion=5, color=(255,255,255), velocity=1, 
@@ -102,8 +107,6 @@ class Downloads_manager(Base_class):
             spawn_count=5, auto_spawn=False
         )
 
-        # Loader
-        self.loader = Loader((self.ventana_rect.w, self.ventana_rect.h))
 
         # Pantalla principal
         self.text_main_title = uti_pag.Text(self.txts['title'], 26, self.config.font_mononoki, (self.ventana_rect.centerx, 30),with_rect=True,color_rect=(20,20,20))
@@ -129,10 +132,14 @@ class Downloads_manager(Base_class):
             border_color=(100,100,100),
             smothscroll=True if not self.low_detail_mode else False
             )
-        self.btn_main_reload_list = uti_pag.Button('', 13, self.config.font_symbols, self.list_main_descargas.topright, 16,'topright', 'black', 'darkgrey', 'lightgrey', 0, border_width=1,border_radius=0, border_top_right_radius=20, border_color=(100,100,100), func=lambda :self.Func_pool.start('reload list'))
+        self.btn_main_reload_list = uti_pag.Button(
+            '', 13, self.config.font_symbols, self.list_main_descargas.topright, 11,'topright', 'black', 'darkgrey', 
+            'lightgrey', 0, border_width=1,border_radius=0, border_top_right_radius=20, border_color=(100,100,100), 
+            func=lambda :self.Func_pool.start('reload list')
+        )
 
-        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 15, self.config.font_mononoki, (30, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: self.goto('new_download'))
-        self.btn_main_change_save_dir = uti_pag.Button(self.txts['btn-cambiar_carpeta'], 15, self.config.font_mononoki, (self.btn_main_new_descarga.right, 80), height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_left_radius=0, border_top_left_radius=0, border_width=-1,func=self.func_preguntar_carpeta)
+        self.btn_main_new_descarga = uti_pag.Button(self.txts['btn-nueva_descarga'], 14, self.config.font_mononoki, (30, 80), min_height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_right_radius=0, border_top_right_radius=0, border_width=-1,func=lambda: self.goto('new_download'))
+        self.btn_main_change_save_dir = uti_pag.Button(self.txts['btn-cambiar_carpeta'], 14, self.config.font_mononoki, (self.btn_main_new_descarga.right, 80), min_height=40, dire='topleft', color='white', color_rect=(50,50,50), color_rect_active=(90,90,90), border_radius=20, border_bottom_left_radius=0, border_top_left_radius=0, border_width=-1,func=self.func_preguntar_carpeta)
 
         # Pantalla Configuraciones
         self.registrar_pantalla('config')
@@ -140,11 +147,11 @@ class Downloads_manager(Base_class):
         self.text_config_title: uti_pag.Text = uti_pag.Text(self.txts['title-configuraciones'], 26, self.config.font_mononoki, (self.ventana_rect.centerx, 30), with_rect=True, color_rect=(20,20,20))
         self.btn_config_exit: uti_pag.Button = uti_pag.Button('', 26, self.config.font_symbols, (self.ventana_rect.w, 0), 10, 'topright','white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1,func=lambda :self.goto('main'))
 
-        self.text_config_hilos = uti_pag.Text(self.txts['config-hilos'].format(self.threads), 16, self.config.font_mononoki,(30, 100), 'left', with_rect=True, color_rect=(20,20,20), padding=10)
+        self.text_config_hilos = uti_pag.Text(self.txts['config-hilos'].format(self.threads), 16, self.config.font_mononoki,(30, 100), 'left', with_rect=True, color_rect=(20,20,20))
         self.btn_config_change_hilos = uti_pag.Button(
             self.txts['cambiar'],16, self.config.font_mononoki,
             (self.text_config_hilos.right + 60, self.text_config_hilos.centery),
-            (20,10),color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
+            color='white', color_rect=(40,40,40), color_rect_active=(60, 60, 60),
             border_radius=0, border_width=3
         )
         self.select_config_change_hilos = uti_pag.Select_box(
@@ -159,19 +166,19 @@ class Downloads_manager(Base_class):
         )
 
 
-        self.text_config_idioma = uti_pag.Text(self.txts['config-idioma'], 16, self.config.font_mononoki, (30, 130), 'left', padding=10,with_rect=True, color_rect=(20,20,20))
+        self.text_config_idioma = uti_pag.Text(self.txts['config-idioma'], 16, self.config.font_mononoki, (30, 130), 'left',with_rect=True, color_rect=(20,20,20))
         self.btn_config_idioma_es = uti_pag.Button(
-            'Español', 14, self.config.font_mononoki, (30, 160), (20, 10), 'left','black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+            'Español', 14, self.config.font_mononoki, (30, 160), (10,5), 'left','black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
             func=lambda: self.func_change_idioma('español')
         )
         self.btn_config_idioma_en = uti_pag.Button(
-            'English', 14, self.config.font_mononoki, (120, 160), (20, 10), 'left', 'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+            'English', 14, self.config.font_mononoki, (140, 160), (10,5), 'left', 'black', 'purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
             func=lambda: self.func_change_idioma('ingles')
         )
         
         self.text_config_apagar_al_finalizar_cola = uti_pag.Text(
             self.txts['apagar-al-finalizar']+' ('+self.txts['la']+' '+self.txts['cola']+')', 16, 
-            self.config.font_mononoki, (30, 190), 'left', 'white', with_rect=True, color_rect=(20,20,20), padding=10
+            self.config.font_mononoki, (30, 190), 'left', 'white', with_rect=False, color_rect=(20,20,20), padding=0
         )
         self.btn_config_apagar_al_finalizar_cola = uti_pag.Button(
             '' if self.apagar_al_finalizar_cola else '', 16, self.config.font_symbols, 
@@ -181,7 +188,7 @@ class Downloads_manager(Base_class):
         
         self.text_config_LDM = uti_pag.Text(
             self.txts['bajo consumo']+': ', 16, self.config.font_mononoki, (30, 225), 'left', 'white', with_rect=True, 
-            color_rect=(20,20,20), padding=10
+            color_rect=(20,20,20), padding=0
         )
         self.btn_config_LDM = uti_pag.Button(
             '' if self.low_detail_mode else '', 16, self.config.font_symbols, (self.text_config_LDM.right, 225),
@@ -193,7 +200,7 @@ class Downloads_manager(Base_class):
         self.btn_config_enfoques = uti_pag.Button(
             '' if self.enfoques else '', 16, self.config.font_symbols, 
             pos=(self.text_config_enfoques.right, 260), dire='left',color='white',with_rect=True, 
-            color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1, padding=10,
+            color_rect=(20,20,20),color_rect_active=(40, 40, 40),border_width=-1, border_radius=-1,
             func=self.func_toggle_enfoques
         )
 
@@ -204,7 +211,7 @@ class Downloads_manager(Base_class):
         )
 
         
-        self.text_config_limitador_velocidad = uti_pag.Text(self.txts['limitar-velocidad']+': '+uti.format_size_bits_to_bytes_str(self.velocidad_limite), 16, self.config.font_mononoki, (30, 335), 'left', 'white',padding=10)
+        self.text_config_limitador_velocidad = uti_pag.Text(self.txts['limitar-velocidad']+': '+uti.format_size_bits_to_bytes_str(self.velocidad_limite), 16, self.config.font_mononoki, (30, 335), 'left', 'white',padding=0)
         self.btn_config_velocidad = uti_pag.Button(
             self.txts['cambiar'],16, self.config.font_mononoki,
             (self.text_config_limitador_velocidad.right + 60, self.text_config_limitador_velocidad.centery),
@@ -236,12 +243,12 @@ class Downloads_manager(Base_class):
         )
         self.btn_config_añair_extencion: uti_pag.Button = uti_pag.Button(
             self.txts['añadir'], 16, self.config.font_mononoki, (self.list_config_extenciones.right, self.list_config_extenciones.top), 
-            (0,15), 'topleft', 'white', (20, 20, 20), (50, 50, 50), border_radius=0, border_bottom_left_radius=20, 
+            (0,10), 'topleft', 'white', (20, 20, 20), (50, 50, 50), border_radius=0, border_bottom_left_radius=20, 
             func=self.func_añadir_extencion
         )
         self.btn_config_eliminar_extencion: uti_pag.Button = uti_pag.Button(
             self.txts['eliminar'], 16, self.config.font_mononoki, 
-            (self.list_config_extenciones.right, self.list_config_extenciones.bottom), (0,15), 'topright', 'white', (20, 20, 20), 
+            (self.list_config_extenciones.right, self.list_config_extenciones.bottom), (0,10), 'topright', 'white', (20, 20, 20), 
             (50, 50, 50), border_radius=0, border_bottom_right_radius=20, 
             func=lambda: self.open_desicion(
                 self.txts['confirmar'], self.txts['gui-desea borrar los elementos'],
@@ -257,18 +264,19 @@ class Downloads_manager(Base_class):
         self.rect_new_download_fondo = pag.Rect(0,0,500,300)
         self.text_new_download_title = uti_pag.Text(self.txts['agregar nueva descarga'], 18, self.config.font_mononoki, (0,0))
 
-        self.btn_new_download_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, dire='bottomleft', border_radius=0, border_top_right_radius=20, func=self.func_salir_nueva_descarga)
-        self.btn_new_download_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, dire='bottomright', padding=(20,19), border_radius=0, border_top_left_radius=20, func=self.func_add_download)
+        self.btn_new_download_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, dire='bottomleft', padding=(10,10), border_radius=0, border_top_right_radius=20, func=self.func_salir_nueva_descarga)
+        self.btn_new_download_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, dire='bottomright', padding=(10,10), border_radius=0, border_top_left_radius=20, func=self.func_add_download)
 
         self.input_new_download_url =uti_pag.Input(self.ventana_rect.center, 14, self.config.font_mononoki, 'URL', 1_000, width=300, height=35, hover_border_color='purple', dire='center')
         self.btn_new_download_paste = uti_pag.Button(
-            '', 20, self.config.font_symbols, (0,0), padding=0, dire='topleft',height=34, border_width=2,
-            color_rect='purple', color_rect_active='cyan', border_radius=-1, border_top_left_radius=20, border_bottom_left_radius=20,
+            '', 20, self.config.font_symbols, (0,0), padding=(10,0), dire='topleft',min_height=self.input_new_download_url.height, border_width=2,
+            color_rect='purple', color_rect_active='cyan', border_radius=20, border_top_left_radius=0, border_bottom_left_radius=0,
             func=lambda: self.input_new_download_url.set(pyperclip.paste().strip())
         )
 
         self.btn_new_download_comprobar_url = uti_pag.Button(
-            self.txts['comprobar'], 14, self.config.font_mononoki, (0,0), padding=(20,10), dire='left',
+            self.txts['comprobar'], 14, self.config.font_mononoki, (0,0), dire='right',
+            border_top_right_radius=0, border_bottom_right_radius=0,
             func=self.func_comprobar_url
         )
 
@@ -296,15 +304,16 @@ class Downloads_manager(Base_class):
         self.btn_extras_exit = uti_pag.Button('', 26, self.config.font_symbols, (self.ventana_rect.w, 0), 10, 'topright', 'white', (20, 20, 20), (50, 50, 50), 0, -1, border_width=-1, func=lambda :self.goto('main'))
 
         self.text_extras_nombre = uti_pag.Text('Edouard Sandoval', 30, self.config.font_mononoki, (self.ventana_rect.centerx, 100), 'center', padding=0,with_rect=True,color_rect=(20,20,20))
-        self.btn_extras_link_github = uti_pag.Button('', 30, self.config.font_symbols, (self.ventana_rect.w*.25, 200), 20, 'center',func=lambda: os.startfile('http://github.com/Tecrato'))
-        self.btn_extras_link_youtube = uti_pag.Button('輸', 30, self.config.font_symbols, (self.ventana_rect.w*.75, 200), 20, 'center', func=lambda: os.startfile('http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
+        self.btn_extras_link_github = uti_pag.Button('', 30, self.config.font_symbols, (self.ventana_rect.w*.25, 200), 10, 'center',func=lambda: os.startfile('http://github.com/Tecrato'))
+        self.btn_extras_link_youtube = uti_pag.Button('輸', 30, self.config.font_symbols, (self.ventana_rect.w*.75, 200), 10, 'center', func=lambda: os.startfile('http://youtube.com/channel/UCeMfUcvDXDw2TPh-b7UO1Rw'))
         self.btn_extras_install_extension = uti_pag.Button(
             self.txts['instalar']+' '+self.txts['extencion'], 20, self.config.font_mononoki, (self.ventana_rect.centerx, 300),
-            20, 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
+            15, 'center', 'black','purple', 'cyan', 0, 0, 20, 0, 0, 20, -1,
             func=lambda: os.startfile(INITIAL_DIR / 'extencion.crx')
         )
         self.btn_extras_borrar_todo = uti_pag.Button(
             self.txts['borrar datos'], 20, self.config.font_mononoki, (0,self.ventana_rect.h), dire="bottomleft",
+            border_radius=0, border_top_right_radius=15,
             func=lambda: self.open_desicion(
                 self.txts['borrar datos'],
                 self.txts['gui-desea borrar todos los datos?'],
@@ -407,6 +416,7 @@ class Downloads_manager(Base_class):
         # GUI
         self.gui_informacion.pos = self.ventana_rect.center
         self.gui_desicion.pos = self.ventana_rect.center
+        self.Mini_GUI_manager.limit = self.ventana_rect
 
         # Main
         self.text_main_title.pos = (self.ventana_rect.centerx, 30)
@@ -423,8 +433,8 @@ class Downloads_manager(Base_class):
         self.list_config_extenciones.size = (self.ventana_rect.w*.3,self.ventana_rect.h*.7)
         self.list_config_extenciones.pos = (self.ventana_rect.w*.8,self.ventana_rect.centery)
         
-        self.btn_config_añair_extencion.width =  self.list_config_extenciones.width/2
-        self.btn_config_eliminar_extencion.width =  self.list_config_extenciones.width/2
+        self.btn_config_añair_extencion.min_width =  self.list_config_extenciones.width/2
+        self.btn_config_eliminar_extencion.min_width =  self.list_config_extenciones.width/2
 
         self.btn_config_añair_extencion.pos = self.list_config_extenciones.bottomleft
         self.btn_config_eliminar_extencion.pos = self.list_config_extenciones.bottomright
@@ -436,7 +446,7 @@ class Downloads_manager(Base_class):
         
         self.input_new_download_url.pos = (self.ventana_rect.centerx-50,self.ventana_rect.centery-70)
         self.btn_new_download_paste.pos = self.input_new_download_url.topright+(0,1)
-        self.btn_new_download_comprobar_url.pos = (self.btn_new_download_paste.right + 10,self.input_new_download_url.centery)
+        self.btn_new_download_comprobar_url.pos = (self.rect_new_download_fondo.right,self.input_new_download_url.centery)
 
         # ---> Los detalles
         self.text_new_download_title_details.pos = (self.ventana_rect.centerx,self.ventana_rect.centery-30)
@@ -456,12 +466,19 @@ class Downloads_manager(Base_class):
         
 
         # Extras
+        self.text_extras_title.pos = (self.ventana_rect.centerx, 30)
+        self.text_extras_nombre.pos = (self.ventana_rect.centerx, 100)
+
         self.btn_extras_exit.pos = (self.ventana_rect.w, 0)
         self.btn_extras_link_github.pos = (self.ventana_rect.w*.25, 200)
         self.btn_extras_link_youtube.pos = (self.ventana_rect.w*.75, 200)
 
+        self.btn_extras_install_extension.pos = (self.ventana_rect.centerx, 300)
+
         self.btn_extras_version_notes.pos = (self.ventana_rect.w,self.ventana_rect.h)
         self.text_extras_version.pos = (self.btn_extras_version_notes.left,self.ventana_rect.h)
+
+        self.btn_extras_borrar_todo.pos = (0,self.ventana_rect.h)
 
     @override
     def otro_evento(self, actual_screen: str, evento: pag.event.Event):
@@ -583,18 +600,25 @@ class Downloads_manager(Base_class):
         self.text_config_hilos.text = self.txts['config-hilos'].format(self.threads)
         self.save_conf('hilos',self.threads)
 
-    def func_change_idioma(self, idioma: str):
+    def __Cambio_idioma(self, idioma: str):
         self.loading += 1
-        self.idioma = str(idioma)
-        self.txts = idiomas[self.idioma]
-        self.configs['idioma'] = self.idioma
-        self.save_conf('idioma',self.idioma)
+        try:
+            self.idioma = str(idioma)
+            self.txts = idiomas[self.idioma]
+            self.configs['idioma'] = self.idioma
+            self.save_conf('idioma',self.idioma)
 
-        self.generate_objs()
-        self.Func_pool.start('reload list')
-        self.move_objs()
+            self.generate_objs()
+            self.Func_pool.start('reload list')
+            self.move_objs()
+        except Exception as err:
+            uti.debug_print(err, priority=3)
+        finally:
+            self.loading -= 1
+        
+    def func_change_idioma(self, idioma: str):
+        Thread(target=self.__Cambio_idioma, args=(idioma,)).start()
 
-        self.loading -= 1
 
     def func_preguntar_carpeta(self):
         try:

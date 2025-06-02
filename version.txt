@@ -1,4 +1,20 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.14 - 1/6/2025
+
+Actualizacion de la libreria Utilidades.
+
+Correcciones:
+ - Arreglo de paddings en todos los textos.
+ - Corregio no se guardaba el progreso de la descarga al pausar o cancelar.
+ - Las miniventanas no se colocaban en la esquina al redimensionar la ventana.
+ - Faltaba el mover el boton de "Instalar extencion" y el de "Borrar todo".
+
+Cambios:
+ - Codigos HTTP desde el Backend, dependiendo de que error ocurra manda su respectivo error.
+ - El cambio de idioma se hace en un thread para no bloquear la ventana y mostrar el loader.
+ - Agregadas las fuentes al repositorio.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.13.4 - 4/4/2025
 
 Correcciones:

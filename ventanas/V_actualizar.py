@@ -1,9 +1,9 @@
 import os
-import librerias.Utilidades as uti
-import librerias.Utilidades_pygame as uti_pag
+import Utilidades as uti
+import Utilidades_pygame as uti_pag
 from pathlib import Path
 
-from librerias.Utilidades_pygame.base_app_class import Base_class
+from Utilidades_pygame.base_app_class import Base_class
 from constants import DICT_CONFIG_DEFAULT, Config
 from textos import idiomas
 
@@ -23,8 +23,9 @@ class Ventana_actualizar(Base_class):
         # El resto de textos y demas cosas
         self.text_program_title = uti_pag.Text(self.txts['title'], 16, self.config.font_mononoki, (self.ventana_rect.centerx, 30))
         self.pregunta = uti_pag.Text(self.txts['nueva descarga disponible'], 20, self.config.font_mononoki, (self.config.resolution[0]//2,50), dire='top')
-        self.btn_aceptar = uti_pag.Button(self.txts['descargar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=lambda:(os.startfile(self.args[0]),self.exit()))
-        self.btn_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4 *3,100), padding=(20,15), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
+        self.btn_aceptar = uti_pag.Button(self.txts['descargar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4,100), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=lambda:(os.startfile(self.args[0]),self.exit()))
+
+        self.btn_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, (self.config.resolution[0]//4 *3,100), border_radius=0, border_bottom_right_radius=20, border_top_left_radius=20, color_rect='purple', color_rect_active='cyan', border_color='black', border_width=1, func=self.exit)
 
         # Tambien se debe agregar a las respiectivas listas
         self.lists_screens["main"]["draw"].extend([
