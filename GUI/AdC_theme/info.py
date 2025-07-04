@@ -24,21 +24,21 @@ class Info(Base_win):
         self.func = func
 
         self.poligono = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size),0, color=(0,0,0))
-        self.add(self.poligono,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono)
         self.poligono2 = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size)-10,0, color=(15,15,15))
-        self.add(self.poligono2,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono2)
         self.poligono3 = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size)-30,0, color=(40,40,40))
-        self.add(self.poligono3,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono3)
         # self.poligono_btn_aceptar = PoligonoIrregular(puntos, pag.Vector2(self.size), min(self.size),0, color=(10,10,10))
 
-        self.title = uti_pag.Text(title, 20, self.font, (0,0), 'top')
-        self.add(self.title, f'({size[0]/2},{size[1]*.1})')
+        self.title = uti_pag.Text(title, 20, self.font, (size[0]/2,size[1]*.1), 'top')
+        self.add(self.title)
 
-        self.body = uti_pag.Text(texto, 20, self.font, (0,0), 'center')
-        self.add(self.body, f'({size[0]/2},{size[1]/2 - 10})')
+        self.body = uti_pag.Text(texto, 18, self.font, (size[0]/2,size[1]/2 - 10), 'center',border_radius=-1, max_width=size[0]*.85)
+        self.add(self.body)
 
-        self.btn_aceptar = uti_pag.Button('Aceptar',16,self.font,(0,0), 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=self.func_aceptar)
-        self.add(self.btn_aceptar, f'{self.size[0]-20},{self.size[1]-10}', clicking=True)
+        self.btn_aceptar = uti_pag.Button('Aceptar',16,self.font,(self.size[0]-20,self.size[1]-10), 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=self.func_aceptar)
+        self.add(self.btn_aceptar, clicking=True)
 
     def draw_after(self):
         pag.draw.line(self.surf, (0,0,0), self.poligono3.figura[2], self.poligono3.figura[7], 2)

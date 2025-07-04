@@ -3,7 +3,7 @@
 ProjectFileVersion = 1.1
 [General]
 Program name = Acelerador de descargas
-Program version = 3.13.3
+Program version = 3.14
 Windows XP = 0
 Windows Server 2003 = 0
 Windows Vista = 0
@@ -30,8 +30,8 @@ VisualStylesEnabled = 1
 Installation path = <ProgramFiles>\<Company>\<AppName>\
 Autcip = 1
 [Uninstall]
-Vwau = 0
-Website = https://
+Vwau = 1
+Website = https://github.com/Tecrato
 Include uninstaller = 1
 Uninstaller filename = Uninstall
 UseCustomDisplayIcon = 1
@@ -78,6 +78,21 @@ Execdlls = 0
 2
 3
 [Files/Dirs]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
+N/A
+[Folder]
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
+70.5 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
+84.2 KB
+pyd
+C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
+131.2 KB
+pyd
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
 273.7 KB
 pyd
@@ -238,7 +253,7 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 118 Byte
 bat
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe
-5.4 MB
+5.5 MB
 exe
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx
 8.2 KB
@@ -295,10 +310,10 @@ C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-desc
 48.6 KB
 dll
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version
-6 Byte
+4 Byte
 
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-22.2 KB
+23.2 KB
 txt
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
 106 KB
@@ -330,21 +345,6 @@ N/A
 C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\setuptools
 N/A
 [Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
-70.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
-84.2 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
-131.2 KB
-pyd
 [Licence_Begin]
 1362
 {\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil Arial;}{\f1\fnil\fcharset0 Arial;}}

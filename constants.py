@@ -29,7 +29,7 @@ DICT_CONFIG_DEFAULT_TYPES = {
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.14'
+VERSION = '3.14.1'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')

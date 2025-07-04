@@ -477,6 +477,9 @@ def add_descarga_web():
     index = get_db().añadir_descarga(nombre=response1['nombre'], tipo=tipo,peso=peso, url=response1['url'], partes=hilos, cookies=response1.get('cookies', ''))
     update_last_update()
     if get_conf('agregar a cola automaticamente'):
+        if lista_descargas:
+            cola.append(lista_descargas[0])
+            cola_iniciada = True
         cola.append(index)
         if not cola_iniciada:
             cola_iniciada = True

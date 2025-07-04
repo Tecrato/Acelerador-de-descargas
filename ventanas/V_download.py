@@ -218,7 +218,8 @@ class Downloader(Base_class):
         self.lists_screens['main']['update'] = self.lists_screens['main']['draw']
         self.lists_screens['main']['click'] = [
             self.btn_cancelar_descarga, self.btn_pausar_y_reanudar_descarga,
-            self.select_more_options, self.list_textos_hilos
+            self.list_textos_hilos,
+            self.select_more_options
         ]
 
     def exit(self):

@@ -1,4 +1,16 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.14.1 - 1/6/2025
+
+# Correcciones:
+ - Arreglado el overlap de la lista de hilos sobre el select de opciones en la ventana de descarga.
+ - Arreglado el max_width del nombre de la descarga en la ventana de nueva descarga y en la ventana de eliminar descarga.
+ - Adaptado a los bloques con el nuevo sistema de posicion.
+
+# Cambios:
+ - Al obtener una nueva descarga teniendo la opcion de añadir a la cola automaticamente y que haya una descarga en progreso, toma la descarga en progreso como lo primero de la cola y activa la cola.
+
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.14 - 1/6/2025
 
 Actualizacion de la libreria Utilidades.

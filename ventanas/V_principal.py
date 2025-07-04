@@ -282,7 +282,7 @@ class Downloads_manager(Base_class):
 
         # Los detalles de la nueva descarga
         self.text_new_download_title_details = uti_pag.Text(self.txts['detalles'], 20, self.config.font_mononoki)
-        self.text_new_download_filename = uti_pag.Text(self.txts['nombre']+': ----------', 16, self.config.font_mononoki, dire='left')
+        self.text_new_download_filename = uti_pag.Text(self.txts['nombre']+': ----------', 16, self.config.font_mononoki, dire='left', max_width=320)
         self.text_new_download_file_type = uti_pag.Text(self.txts['tipo']+': ----------', 16, self.config.font_mononoki, dire='left')
         self.text_new_download_size = uti_pag.Text(self.txts['tamaño']+': ----------', 16, self.config.font_mononoki, dire='left')
         self.text_new_download_status = uti_pag.Text(self.txts['descripcion-state[esperando]'], 16, self.config.font_mononoki, dire='left')
@@ -658,11 +658,8 @@ class Downloads_manager(Base_class):
             Thread(target=self.func_descargar, args=(obj_cached,)).start()
         elif respuesta['index'] == 1:
             # Eliminar la descarga
-            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached.id}\n'
-            if len(f'"{obj_cached.nombre}"') <= 40:
-                txt += f' "{obj_cached.nombre}"'
-            else:
-                txt += f'"{obj_cached.nombre[:36]}..."'
+            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached.id}\n '
+            txt += f'"{obj_cached.nombre}"'
             self.open_desicion(
                 self.txts['confirmar'], txt,
                 lambda r: (self.del_download(obj_cached[0]) if r['index'] == 0 else None),
@@ -898,10 +895,7 @@ class Downloads_manager(Base_class):
             new_title: str = unquote(url_parsed.split('/')[-1])
 
         self.new_filename = new_title
-        if len(self.new_filename) > 33:
-            self.text_new_download_filename.text = self.new_filename[:33] + '...'
-        else:
-            self.text_new_download_filename.text = self.new_filename
+        self.text_new_download_filename.text = self.new_filename
 
         self.text_new_download_status.text = self.txts['descripcion-state[conectando]']
 

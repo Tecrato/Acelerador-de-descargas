@@ -29,17 +29,17 @@ class Desicion(Base_win):
         self.__botons_pointer = -1
 
         self.poligono = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size),0, color=(0,0,0))
-        self.add(self.poligono,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono)
         self.poligono2 = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size)-10,0, color=(10,10,10))
-        self.add(self.poligono2,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono2)
         self.poligono3 = PoligonoIrregular(puntos, pag.Vector2(size)/2, min(size)-30,0, color=(40,40,40))
-        self.add(self.poligono3,f'{(size[0]/2,size[1]/2)}')
+        self.add(self.poligono3)
         
-        self.title = uti_pag.Text(title, 20, self.font, (0,0), 'top')
-        self.add(self.title, f'({size[0]/2},{size[1]*.1})')
+        self.title = uti_pag.Text(title, 20, self.font, (size[0]/2,size[1]*.1), 'top')
+        self.add(self.title)
 
-        self.body = uti_pag.Text(texto, 20, self.font, (0,0), 'center',border_radius=-1)
-        self.add(self.body, f'({size[0]/2},{size[1]/2 - 10})')
+        self.body = uti_pag.Text(texto, 18, self.font, (size[0]/2,size[1]/2 - 10), 'center',border_radius=-1, max_width=size[0]*.85)
+        self.add(self.body)
 
         self.options = ('aceptar', 'cancelar') if options is None else options
 
@@ -71,7 +71,7 @@ class Desicion(Base_win):
         self.__botons_pointer = len(self.list_objs)
         
         for i, op in enumerate(self.options):
-            gui = uti_pag.Button(op, 20, self.font, (0,0), 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=lambda n=i, op=op: self.execute_func('{}'.format(n), '{}'.format(op)))
-            pos = '({},{})'.format((self.list_objs[last_g]['GUI'].left-10) if i > 0 else (self.size[0]-20), self.size[1]-20)
-            self.add(gui, pos, clicking=True)
+            pos = (self.list_objs[last_g]['GUI'].left-10) if i > 0 else (self.size[0]-20), self.size[1]-20
+            gui = uti_pag.Button(op, 20, self.font, pos, 5, 'bottomright','black','purple', color_rect_active='cyan', border_width=-1, border_radius=0, func=lambda n=i, op=op: self.execute_func('{}'.format(n), '{}'.format(op)))
+            self.add(gui, clicking=True)
             last_g += 1
