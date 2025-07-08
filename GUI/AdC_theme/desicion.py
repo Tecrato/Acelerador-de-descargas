@@ -52,6 +52,7 @@ class Desicion(Base_win):
         self.active = False
         if self.func:
             self.func({'index':int(index), 'text':text})
+            self.active = False
         return True
     
     @property
