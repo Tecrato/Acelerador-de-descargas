@@ -1,4 +1,9 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.14.3 - 6/7/2025
+# Correcciones:
+ - Arreglado la cola duplicaba el primer elemento en descarga aun ya iniciado.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.14.2 - 6/7/2025
 # Correcciones:
  - Arreglado bug que no permitia el cambio del raton a la mano en algunos botones.
