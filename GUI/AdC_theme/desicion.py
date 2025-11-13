@@ -38,7 +38,7 @@ class Desicion(Base_win):
         self.title = uti_pag.Text(title, 20, self.font, (size[0]/2,size[1]*.1), 'top')
         self.add(self.title)
 
-        self.body = uti_pag.Text(texto, 18, self.font, (size[0]/2,size[1]/2 - 10), 'center',border_radius=-1, max_width=size[0]*.85)
+        self.body = uti_pag.Text(texto, 18, self.font, (size[0]/2,size[1]/2 - 10), 'center',border_radius=-1, max_width=size[0]*.80)
         self.add(self.body)
 
         self.options = ('aceptar', 'cancelar') if options is None else options

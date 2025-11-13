@@ -34,7 +34,8 @@ class Downloads_manager(Base_class):
         self.config:Config
 
         # Loader
-        self.loader = Loader((self.ventana_rect.w, self.ventana_rect.h))
+        # self.loader = Loader((self.ventana_rect.w, self.ventana_rect.h))
+        self.loader = uti_pag.default_loader.Loader((self.ventana_rect.w, self.ventana_rect.h))
 
 
         self.new_threads = 1
@@ -658,8 +659,8 @@ class Downloads_manager(Base_class):
             Thread(target=self.func_descargar, args=(obj_cached,)).start()
         elif respuesta['index'] == 1:
             # Eliminar la descarga
-            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached.id}\n '
-            txt += f'"{obj_cached.nombre}"'
+            txt = f'{self.txts["gui-desea borrar el elemento"]}\n\nid -> {obj_cached.id}\n'
+            txt += f'\"{obj_cached.nombre}\"'
             self.open_desicion(
                 self.txts['confirmar'], txt,
                 lambda r: (self.del_download(obj_cached[0]) if r['index'] == 0 else None),

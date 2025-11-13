@@ -1,4 +1,11 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.14.4 - 13/11/2025
+# Correcciones:
+ - Arregladas las Particulas se quedaban en pantalla al llegar al borde.
+ - cambiada algunas prioridades del debugger.
+ - optimizada la union de partes al finalizar la descarga
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.14.3 - 6/7/2025
 # Correcciones:
  - Arreglado la cola duplicaba el primer elemento en descarga aun ya iniciado.

@@ -629,7 +629,7 @@ def buscar_actualizacion(confirm=False):
         elif confirm:
             icon.show_notification(get_text('gui-no hay actualizaciones disponibles'), "Acelerador de descargas")
     except Exception as err:
-        uti.debug_print(err, 2)
+        uti.debug_print(err, priority=2)
         if confirm:
             icon.show_notification(get_text('gui-error al buscar actualizaciones'), "Acelerador de descargas")
 
@@ -647,11 +647,11 @@ def borrar_logs_vacios():
     for i in cosas:
         if os.path.isfile and (path/i).stat().st_size == 0:
             os.remove(path/i)
-            uti.debug_print(f"'{path/i}' Eliminado")
+            uti.debug_print(f"'{path/i}' Eliminado", priority=1)
             r = True
 
     if r:
-        uti.debug_print("logs vacios eliminados")
+        uti.debug_print("logs vacios eliminados", priority=1)
 
 
 def init():
@@ -675,6 +675,7 @@ def init():
     try:
         json.load(open(CONFIG_DIR.joinpath('./configs.json')))
     except:
+        uti.debug_print("No se pudo cargar la configuracion, creando una nueva", priority=3)
         json.dump(DICT_CONFIG_DEFAULT, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
     icon.run()
     # icon.show_notification("Acelerador de descargas", "Acelerador de descargas abierto", 5)

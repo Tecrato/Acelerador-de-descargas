@@ -540,7 +540,6 @@ class Downloader(Base_class):
                     options=[self.txts['reintentar'], self.txts['cancelar']]
                 )
         except (http.client.HTTPException, DifferentTypeError, LowSizeError, TrajoHTML) as err:
-            uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
             self.open_GUI_dialog(
                 self.txts['gui-url no sirve'], 
@@ -549,7 +548,6 @@ class Downloader(Base_class):
                 options=[self.txts['reintentar'], self.txts['cancelar']]
             )
         except DifferentSizeError as err:
-            uti.debug_print(type(err), priority=3)
             uti.debug_print(err, priority=3)
             self.open_GUI_dialog(
                 self.txts['gui-cambio de tamanio'], 
@@ -735,14 +733,11 @@ class Downloader(Base_class):
             self.fallo_destino = True
 
         for x in range(self.num_hilos):
-            with open(self.carpeta_cache.joinpath(f'./parte{x}.tmp'), 'rb') as parte,\
-                memoryview(bytearray(1024*1024)) as buffer:
-                while True:
-                    buffer_read = parte.readinto(buffer)
-                    if not buffer_read:
-                        break
-                    file.write(buffer[:buffer_read])
-            os.remove(self.carpeta_cache.joinpath(f'./parte{x}.tmp'))
+            parte_path = self.carpeta_cache.joinpath(f'./parte{x}.tmp')
+            with open(parte_path, 'rb') as parte:
+                shutil.copyfileobj(parte, file, length=1024*1024*16)
+            os.remove(parte_path)
+
         file.close()
         shutil.rmtree(self.carpeta_cache, True)
 
