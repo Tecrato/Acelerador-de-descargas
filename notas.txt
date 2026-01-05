@@ -1,4 +1,6 @@
 # Errores:
+ - Se queda pegado el icono al buscar actualizaciones
+ - No se ve el texto de los hilos cuando carga la primera vez.
 
 # Cambios:
  - colocar los textos en un archiv json.
