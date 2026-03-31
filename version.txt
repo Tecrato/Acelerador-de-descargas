@@ -1,4 +1,15 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.14.5 - 13/11/2025
+# Correcciones:
+ - Solucionado: el programa se quedaba pegado al buscar actualizaciones desde el icono de notificaciones.
+
+# Nuevo:
+ - Nueva opcion al añadir descarga desde programa "iniciar", que inicia la descarga inmediatamente al agrgarla.
+
+# Cambios:
+ - Eliminado el Lock al actualizar el numero de bytes descargados en cada hilo.
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.14.4 - 13/11/2025
 # Correcciones:
  - Arregladas las Particulas se quedaban en pantalla al llegar al borde.

@@ -1,12 +1,10 @@
 # Errores:
- - Se queda pegado el icono al buscar actualizaciones
- - No se ve el texto de los hilos cuando carga la primera vez.
+ - opencode tiene el fallo de descarga infinita, supongo que por el connection close
 
 # Cambios:
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
- - el select(False) de las listas al clickar en otro lado.
 
 
 

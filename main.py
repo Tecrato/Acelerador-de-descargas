@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import shutil
@@ -32,6 +33,8 @@ from ventanas.V_actualizar_url import Ventana_actualizar_url
 
 
 os.chdir(Path(__file__).parent)
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 app = Flask("Acelerador de descargas(API)")
 CORS(app)
 
@@ -67,7 +70,7 @@ def get_text(key: str) -> str:
 
 def get_all_conf():
     try:
-        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json'), encoding='utf-8'))
         for key, value in configs.items():
             configs[key] = DICT_CONFIG_DEFAULT_TYPES[key](value)
     except Exception as err:
@@ -87,14 +90,14 @@ def get_conf(key: str):
     return configs.get(key, DICT_CONFIG_DEFAULT.get(key))
 def set_conf(key: str, value: str):
     try:
-        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+        configs: dict = json.load(open(CONFIG_DIR.joinpath('./configs.json'), encoding='utf-8'))
     except Exception as err:
         uti.debug_print(f"No se pudo guardar la configuracion {key}", priority=2)
         get_logger().write(f"No se pudo guardar la configuracion {key}")
         get_logger().write(err)
         configs = DICT_CONFIG_DEFAULT
     configs[key] = value
-    json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
+    json.dump(configs, open(CONFIG_DIR.joinpath('./configs.json'), 'w', encoding='utf-8'))
 
 
 lista_descargas = []
@@ -103,6 +106,7 @@ cola: list[int] = []
 cola_iniciada = False
 program_opened = False
 program_thread = None
+buscando_actualizacion = False
 last_update = time.time()
 list_changes_to_sockets = {}
 lock = Lock()
@@ -407,9 +411,11 @@ def add_descarga_program():
             response = request.get_json()
         else:
             response = request.form.to_dict()
-        get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
+        index = get_db().añadir_descarga(response['nombre'],response['tipo'],response['size'],response['url'],response['hilos'],cookies=response.get('cookies', ''))
         update_last_update()
         get_logger().write(f'Logger: Descarga añadida exitosamente: {response["nombre"]} - {response["size"]} - {response["url"]} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
+        if response.get('iniciar', False) == True:
+            Thread(target=init_download,args=(index,)).start()
         return jsonify({"message": "Descarga añadida exitosamente", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
     except Exception as err:
         uti.debug_print(err, 2)
@@ -574,7 +580,6 @@ def update_last_download_update(download_id):
         for i,x in list_changes_to_sockets.items():
             if download_id not in x['last_downloads_changed']:
                 x['last_downloads_changed'].append(download_id)
-        x['last_update_type'] = max(x['last_update_type'], 1)
     except Exception as err:
         uti.debug_print(err, priority=2)
     finally:
@@ -617,8 +622,9 @@ def func_open_program():
         win32_tools.front(TITLE)
 
 def buscar_actualizacion(confirm=False):
-    global pv_actualizar_programa
+    global pv_actualizar_programa, buscando_actualizacion
     try:
+        buscando_actualizacion = True
         sera = check_update('acelerador de descargas', VERSION, 'last')
         uti.debug_print(sera)
         if sera and not pv_actualizar_programa.is_alive():
@@ -632,6 +638,8 @@ def buscar_actualizacion(confirm=False):
         uti.debug_print(err, priority=2)
         if confirm:
             icon.show_notification(get_text('gui-error al buscar actualizaciones'), "Acelerador de descargas")
+    finally:
+        buscando_actualizacion = False
 
 def borrar_carpetas_vacias():
     cosas = os.listdir(CACHE_DIR)
@@ -662,7 +670,7 @@ def init():
             "Acelerador de descargas",
             [
                 ("Abrir programa", func_open_program),
-                ("Buscar actualizaciones", lambda: buscar_actualizacion(confirm=True)),
+                ("Buscar actualizaciones", lambda: Thread(target=buscar_actualizacion, kwargs={'confirm': True}).start() if not buscando_actualizacion else None),
                 ("Open logs", lambda: get_logger().open_folder()),
                 ("Salir", lambda: uti.get("http://127.0.0.1:5000/api_close").json),
             ],
@@ -673,10 +681,10 @@ def init():
         del icon
         os._exit(0)
     try:
-        json.load(open(CONFIG_DIR.joinpath('./configs.json')))
+        json.load(open(CONFIG_DIR.joinpath('./configs.json'), encoding='utf-8'))
     except:
         uti.debug_print("No se pudo cargar la configuracion, creando una nueva", priority=3)
-        json.dump(DICT_CONFIG_DEFAULT, open(CONFIG_DIR.joinpath('./configs.json'), 'w'))
+        json.dump(DICT_CONFIG_DEFAULT, open(CONFIG_DIR.joinpath('./configs.json'), 'w', encoding='utf-8'))
     icon.run()
     # icon.show_notification("Acelerador de descargas", "Acelerador de descargas abierto", 5)
 

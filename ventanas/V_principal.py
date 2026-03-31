@@ -266,6 +266,7 @@ class Downloads_manager(Base_class):
         self.text_new_download_title = uti_pag.Text(self.txts['agregar nueva descarga'], 18, self.config.font_mononoki, (0,0))
 
         self.btn_new_download_cancelar = uti_pag.Button(self.txts['cancelar'], 14, self.config.font_mononoki, dire='bottomleft', padding=(10,10), border_radius=0, border_top_right_radius=20, func=self.func_salir_nueva_descarga)
+        self.btn_new_download_aceptar_y_descargar = uti_pag.Button((self.txts['aceptar']+' & '+self.txts['iniciar']), 14, self.config.font_mononoki, dire='bottomright', padding=(10,10), border_radius=0, func=lambda: self.func_add_download(auto_start=True))
         self.btn_new_download_aceptar = uti_pag.Button(self.txts['aceptar'], 14, self.config.font_mononoki, dire='bottomright', padding=(10,10), border_radius=0, border_top_left_radius=20, func=self.func_add_download)
 
         self.input_new_download_url =uti_pag.Input(self.ventana_rect.center, 14, self.config.font_mononoki, 'URL', 1_000, width=300, height=35, hover_border_color='purple', dire='center')
@@ -378,7 +379,7 @@ class Downloads_manager(Base_class):
 
         # Nueva descarga
         self.lists_screens['new_download']['draw'] = [
-            self.text_new_download_title,self.btn_new_download_cancelar,self.btn_new_download_aceptar,
+            self.text_new_download_title,self.btn_new_download_cancelar, self.btn_new_download_aceptar_y_descargar,self.btn_new_download_aceptar,
             self.input_new_download_url,self.btn_new_download_paste,self.btn_new_download_comprobar_url,
             self.text_new_download_title_details,self.btn_new_download_hilos,self.select_new_download_hilos,
 
@@ -388,8 +389,8 @@ class Downloads_manager(Base_class):
         ]
         self.lists_screens['new_download']['update'] = self.lists_screens['new_download']['draw']
         self.lists_screens['new_download']['click'] = [
-            self.btn_new_download_cancelar,self.btn_new_download_aceptar,self.input_new_download_url,
-            self.btn_new_download_paste,self.btn_new_download_comprobar_url,
+            self.btn_new_download_cancelar, self.btn_new_download_aceptar_y_descargar,self.btn_new_download_aceptar,
+            self.input_new_download_url, self.btn_new_download_paste,self.btn_new_download_comprobar_url,
 
             self.select_new_download_hilos,
         ]
@@ -463,8 +464,9 @@ class Downloads_manager(Base_class):
             self.btn_new_download_hilos.pos = (-1000,-1000)
 
         self.btn_new_download_cancelar.pos = (self.ventana_rect.centerx+125,self.ventana_rect.centery+150)
-        self.btn_new_download_aceptar.pos = (self.ventana_rect.centerx+125,self.ventana_rect.centery+150)
-        
+        self.btn_new_download_aceptar_y_descargar.pos = self.btn_new_download_cancelar.bottomleft
+        self.btn_new_download_aceptar.pos = self.btn_new_download_aceptar_y_descargar.bottomleft
+
 
         # Extras
         self.text_extras_title.pos = (self.ventana_rect.centerx, 30)
@@ -828,10 +830,10 @@ class Downloads_manager(Base_class):
             group=txt_group
         )
 
-    def func_add_download(self):
+    def func_add_download(self, auto_start: bool = False):
         if not self.can_add_new_download:
             return
-        self.session.post('http://127.0.0.1:5000/descargas/add_from_program', data={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size})
+        self.session.post('http://127.0.0.1:5000/descargas/add_from_program', data={'url': self.url, "tipo": self.new_file_type, 'hilos': self.new_threads, 'nombre': self.new_filename, 'size':self.new_file_size, 'iniciar': auto_start})
 
         self.Func_pool.start('reload list')
         self.goto('main')

@@ -453,9 +453,6 @@ class Downloader(Base_class):
             self.text_tiempo_restante.text = self.txts['tiempo restante'] + f": {self.txts['calculando']}..."
 
     def max_vel_throttle(self, chunk_size: int):
-        if self.velocidad_limite == 0:
-            return
-
         with self.max_vel_lock:
             self.peso_descargado_max_vel += chunk_size
 
@@ -468,8 +465,6 @@ class Downloader(Base_class):
             permitido = self.velocidad_limite - self.peso_descargado_max_vel
             
             if permitido <= 0:
-                if self.velocidad_limite == 0:
-                    return
                 tiempo_reset = 1 * (self.peso_descargado_max_vel / self.velocidad_limite)
                 time.sleep(tiempo_reset if tiempo_reset <= 1 else 1)
                 
@@ -673,15 +668,16 @@ class Downloader(Base_class):
                         buffered_write.close()
                         raise Exception('Paused or Canceled')
                     tanto = len(data)
-                    self.lock.acquire()
+                    # self.lock.acquire()
                     self.lista_status_hilos[num]['local_count'] += tanto
                     self.peso_descargado_vel += tanto
                     self.peso_descargado += tanto
                     buffered_write.write(data)
-                    self.lock.release()
+                    # self.lock.release()
 
 
-                    self.max_vel_throttle(tanto)
+                    if self.velocidad_limite >= 1024:
+                        self.max_vel_throttle(tanto)
                 response.close()
     
                 buffered_write.flush()
@@ -735,7 +731,7 @@ class Downloader(Base_class):
         for x in range(self.num_hilos):
             parte_path = self.carpeta_cache.joinpath(f'./parte{x}.tmp')
             with open(parte_path, 'rb') as parte:
-                shutil.copyfileobj(parte, file, length=1024*1024*16)
+                shutil.copyfileobj(parte, file, length=1024*1024*64)  # Aumentado el buffer a 64MB
             os.remove(parte_path)
 
         file.close()
