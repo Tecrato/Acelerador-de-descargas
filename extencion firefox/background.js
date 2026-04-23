@@ -1,46 +1,51 @@
-// Escucha cuando se crea una descarga
-browser.downloads.onCreated.addListener(async (item) => {
-  if (item.byExtensionId) {
+browser.downloads.onCreated.addListener(async (downloadItem) => {
+  if (downloadItem.byExtensionId && downloadItem.byExtensionId === browser.runtime.id) {
     return;
   }
-  const fileName = item.filename.split('\\').pop().split('/').pop();
+
+  const fileName = downloadItem.filename.split('\\').pop().split('/').pop();
   const extension = fileName.split('.').pop().toLowerCase();
+  const tamanoBytes = downloadItem.fileSize;
+  const tamanoKb = (tamanoBytes && tamanoBytes > 0) ? Math.floor(tamanoBytes / 1024) : -1;
 
   try {
-    await browser.downloads.pause(item.id);
+    console.log('Tamano en bytes:', tamanoBytes);
+    console.log('Extension:', extension);
+    const checkResponse = await fetch(`http://127.0.0.1:5000/extencion/should_intercept?extension=${extension}&tamano=${tamanoKb}`);
+    const checkResult = await checkResponse.json();
+    console.log('Respuesta de la API:', checkResult);
 
-    const urlOrigin = new URL(item.url).origin;
-    const cookies = await browser.cookies.getAll({ url: urlOrigin });
-    const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
-    console.log("Cookies obtenidas:", cookieString);
+    if (checkResult.respuesta === true) {
+      const urlOrigin = new URL(downloadItem.url).origin;
+      const cookies = await browser.cookies.getAll({ url: urlOrigin });
+      const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
 
-    const response = await fetch('http://127.0.0.1:5000/extencion/check/' + extension);
-    const n = await response.json();
-    console.log('Respuesta de la API para la extensión:', n);
-
-    if (n['respuesta'] === true) {
-      const response2 = await fetch('http://127.0.0.1:5000/descargas/add_web', {
+      const response = await fetch('http://127.0.0.1:5000/descargas/add_web', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           'nombre': fileName,
-          'url': item.url,
+          'url': downloadItem.url,
           'cookies': cookieString
         })
       });
-      const n2 = await response2.json();
-      console.log('Respuesta de la API de descarga:', n2);
+      const result = await response.json();
+      console.log('Respuesta de la API de descarga:', result);
 
-      if (n2['status'] === 'error') {
-        await browser.downloads.resume(item.id);
-      } else {
-        await browser.downloads.cancel(item.id);
-        await browser.downloads.erase(item.id);
+      if (result.status !== 'error') {
+        await browser.downloads.erase({ id: downloadItem.id });
       }
-    } else {
-      await browser.downloads.resume(item.id);
     }
   } catch (e) {
-    await browser.downloads.resume(item.id);
+    console.error("Error en el manejador:", e);
+  }
+});
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "openProgram") {
+    fetch('http://127.0.0.1:5000/open_program', { method: 'GET' })
+      .then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
   }
 });

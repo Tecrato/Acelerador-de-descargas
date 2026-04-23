@@ -13,6 +13,7 @@ DICT_CONFIG_DEFAULT = {
     'velocidad_limite': 0, # Límite de velocidad en kb/s para las descargas. Si se establece en 0, no se aplicará ningún límite.
     'particulas': True, # Particulas de la interfaz.
     'agregar a cola automaticamente': False, # Si se establece en True, las descargas que se añadan se añadirán a la cola.
+    'tamano_minimo_kb': 0, # Tamaño mínimo en KB para que la extensión intercepte la descarga. 0 = sin mínimo.
 }
 DICT_CONFIG_DEFAULT_TYPES = {
     'hilos': int,
@@ -26,10 +27,11 @@ DICT_CONFIG_DEFAULT_TYPES = {
     'velocidad_limite': int,
     'particulas': bool,
     'agregar a cola automaticamente': bool,
+    'tamano_minimo_kb': int,
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.14.5'
+VERSION = '3.15'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')

@@ -106,6 +106,7 @@ textos_español = {
     'config-hilos': 'Hilos: {}',
     'config-idioma': 'Idioma:',
     'config-agregar a cola automaticamente': 'Agregar a cola automaticamente: ',
+    'tamano-minimo': 'Tamano minimo',
 
     # GUI's
     'gui-servidor no responde': 'El servidor no responde\nDesea volver a intentarlo?',
@@ -275,6 +276,7 @@ textos_ingles = {
     'config-hilos': 'Threads: {}',
     'config-idioma': 'Lenguaje:',
     'config-agregar a cola automaticamente': 'Add to queue automatically: ',
+    'tamano-minimo': 'Minimum size',
 
     #GUI's
     'gui-servidor no responde': 'Timeout!\nTry again?',

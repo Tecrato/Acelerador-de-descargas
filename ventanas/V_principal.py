@@ -235,6 +235,24 @@ class Downloads_manager(Base_class):
             border_width=-1, func=self.func_toggle_agregar_a_cola_automaticamente
         )
 
+        self.tamano_minimo_kb = self.configs.get('tamano_minimo_kb', DICT_CONFIG_DEFAULT['tamano_minimo_kb'])
+        self.text_config_tamano_minimo = uti_pag.Text(
+            self.txts.get('tamano-minimo', 'Tamano minimo') + f': {uti.format_size_bits_to_bytes_str(self.tamano_minimo_kb)}', 
+            16, self.config.font_mononoki, (30, 455), 'left'
+        )
+        self.btn_config_tamano_minimo = uti_pag.Button(
+            self.txts['cambiar'], 16, self.config.font_mononoki,
+            (self.text_config_tamano_minimo.right + 60, self.text_config_tamano_minimo.centery),
+            (20, 10), color='white', color_rect=(40, 40, 40), color_rect_active=(60, 60, 60),
+            border_radius=0, border_width=3
+        )
+        self.select_config_tamano_minimo = uti_pag.Select_box(
+            self.btn_config_tamano_minimo,
+            ['0 KB (sin minimo)', '1 MB', '5 MB', '10 MB', '50 MB', '100 MB', '500 MB', '1 GB', 'Otro'],
+            auto_open=False, position='right', animation_dir='vertical',
+            padding_horizontal=10, func=self.func_select_box_tamano_minimo
+        )
+
         #lista de extenciones
         self.list_config_extenciones = uti_pag.List(
             (self.ventana_rect.w*.3,self.ventana_rect.h*.7), (self.ventana_rect.w*.80,self.ventana_rect.centery),
@@ -361,8 +379,8 @@ class Downloads_manager(Base_class):
             self.btn_config_velocidad,self.text_config_particulas, self.btn_config_particulas,
             self.btn_config_añair_extencion,self.btn_config_eliminar_extencion,self.list_config_extenciones,
             self.text_config_agregar_a_cola_automaticamente, self.btn_config_agregar_a_cola_automaticamente,
-
-            self.select_config_change_hilos, self.select_config_velocidad,
+            self.text_config_tamano_minimo, self.btn_config_tamano_minimo,
+            self.select_config_change_hilos, self.select_config_velocidad, self.select_config_tamano_minimo,
         ]
         self.lists_screens['config']["update"] = self.lists_screens['config']["draw"]
 
@@ -373,8 +391,8 @@ class Downloads_manager(Base_class):
             self.btn_config_particulas,
             self.btn_config_añair_extencion,self.btn_config_eliminar_extencion,self.list_config_extenciones,
             self.btn_config_agregar_a_cola_automaticamente,
-
-            self.select_config_change_hilos, self.select_config_velocidad,
+            self.btn_config_tamano_minimo,
+            self.select_config_change_hilos, self.select_config_velocidad, self.select_config_tamano_minimo,
         ]
 
         # Nueva descarga
@@ -807,6 +825,35 @@ class Downloads_manager(Base_class):
         self.agregar_a_cola_automaticamente = not self.agregar_a_cola_automaticamente
         self.btn_config_agregar_a_cola_automaticamente.text = '' if self.agregar_a_cola_automaticamente else ''
         self.save_conf('agregar a cola automaticamente', self.agregar_a_cola_automaticamente)
+
+    def func_select_box_tamano_minimo(self, respuesta) -> None:
+        tamano_opciones = {
+            0: 0,       # 0 KB (sin minimo)
+            1: 1024       * 1024,    # 1 MB
+            2: 5120       * 1024,    # 5 MB
+            3: 10240      * 1024,   # 10 MB
+            4: 51200      * 1024,   # 50 MB
+            5: 102400     * 1024,  # 100 MB
+            6: 512000     * 1024,  # 500 MB
+            7: 1048576    * 1024, # 1 GB
+        }
+        
+        if respuesta['index'] == 8:
+            num = askstring('Tamano minimo', 'Ingrese el tamano minimo en KB')
+            if not num:
+                return
+            try:
+                self.tamano_minimo_kb = int(num)
+            except Exception as err:
+                uti.debug_print(err)
+                self.open_info('Error', self.txts['numero invalido'])
+                return
+        else:
+            self.tamano_minimo_kb = tamano_opciones.get(respuesta['index'], 0)
+        
+        self.text_config_tamano_minimo.text = self.txts.get('tamano-minimo', 'Tamano minimo') + f': {uti.format_size_bits_to_bytes_str(self.tamano_minimo_kb)}'
+        self.btn_config_tamano_minimo.pos = (self.text_config_tamano_minimo.right + 60, self.text_config_tamano_minimo.centery)
+        self.save_conf('tamano_minimo_kb', self.tamano_minimo_kb)
 
 
     # Funciones Variadas

@@ -6,6 +6,9 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
         chrome.cookies.getAll({ url: new URL(item.url).origin }, (cookies) => {
 		    let cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
 		    console.log("Cookies obtenidas: ", cookieString);
+            if (item.fileSize < 1024 * 1024) {
+                throw new Error('El archivo es demasiado pequeno');
+            }
             
             fetch('http://127.0.0.1:5000/extencion/check/' + extension)
             .then(response => response.json())

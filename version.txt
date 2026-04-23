@@ -1,4 +1,14 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.15 - 22/4/2025
+
+# Correcciones:
+ - 
+
+# Cambios:
+ - Cambio enel algoritmo para juntar las partes del archivo en el archivo final, resposabilidad cedida a windos, el cambio ahora es mediante un comando de shell.
+ - Nueva regla para descargar archivos, el archivo debe ser de 1MB o mas, y empezado el proceso para que sea customisable (de momento solo en firefox).
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.14.5 - 13/11/2025
 # Correcciones:
  - Solucionado: el programa se quedaba pegado al buscar actualizaciones desde el icono de notificaciones.

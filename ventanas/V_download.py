@@ -1,7 +1,9 @@
 import os
 import sys
 import time
+import ctypes
 import shutil
+import platform
 import subprocess
 import http.client
 import pygame as pag 
@@ -20,6 +22,8 @@ from GUI import AdC_theme
 from constants import DICT_CONFIG_DEFAULT, Config
 from Utilidades_pygame.base_app_class import Base_class
 from enums.Download import Download
+
+
 
 
 class Downloader(Base_class):
@@ -711,31 +715,45 @@ class Downloader(Base_class):
                 return
             self.lista_status_hilos[num]['tiempo_reset'] = (tiempo_reset + 1) if tiempo_reset <= 15 else tiempo_reset
             return
-             
+    
     def finish_download(self):
         self.loading += 1
         self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
 
         self.save_dir = Path(uti.get(f'http://127.0.0.1:5000/configuration/save_dir').json)
         try:
-            file = open(self.save_dir.joinpath(self.file_name), 'wb')
+            final_path = self.save_dir.joinpath(self.file_name)
+            # No abrir el archivo aquí, solo verificar permisos
+            final_path.touch(exist_ok=True)
+            final_path.unlink()  # Borrar si existe para empezar limpio
         except Exception:
             uti.debug_print(self.save_dir, priority=3)
             uti.debug_print(DICT_CONFIG_DEFAULT, priority=3)
-
             destino = Path(DICT_CONFIG_DEFAULT['save_dir'])
             destino.mkdir(parents=True, exist_ok=True)
-            file = open(destino.joinpath(self.file_name), 'wb')
+            final_path = destino.joinpath(self.file_name)
+            final_path.touch(exist_ok=True)
+            final_path.unlink()
             self.fallo_destino = True
 
+        # Construir rutas absolutas a las partes dentro de self.carpeta_cache
+        # Usar comillas dobles alrededor de cada ruta para soportar espacios
+        partes = '+'.join(f'"{self.carpeta_cache / f"parte{x}.tmp"}"' for x in range(self.num_hilos))
+        cmd = f'copy /b {partes} "{final_path}"'
+        
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            # Si falla, mostrar error y quizás intentar método alternativo
+            print(f"Error en copy: {result.stderr}")
+            # Opcional: caer a concatenación en Python
+            self._concatenar_con_python(final_path)
+        
+        # Limpiar archivos temporales
         for x in range(self.num_hilos):
-            parte_path = self.carpeta_cache.joinpath(f'./parte{x}.tmp')
-            with open(parte_path, 'rb') as parte:
-                shutil.copyfileobj(parte, file, length=1024*1024*64)  # Aumentado el buffer a 64MB
-            os.remove(parte_path)
-
-        file.close()
-        shutil.rmtree(self.carpeta_cache, True)
+            parte_path = self.carpeta_cache / f'parte{x}.tmp'
+            if parte_path.exists():
+                parte_path.unlink()
+        shutil.rmtree(self.carpeta_cache, ignore_errors=True)
 
         self.pool_hilos.shutdown(False,cancel_futures=True)
 
@@ -778,4 +796,7 @@ class Downloader(Base_class):
 
 
 if __name__=='__main__':
+    PROCESS_MODE_BACKGROUND_BEGIN = 0x00100000
+    handle = ctypes.windll.kernel32.GetCurrentProcess()
+    ctypes.windll.kernel32.SetPriorityClass(handle, PROCESS_MODE_BACKGROUND_BEGIN)
     Downloader(Config(window_resize=False,resolution=(700, 300)))

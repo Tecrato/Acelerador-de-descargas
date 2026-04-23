@@ -33,8 +33,6 @@ from ventanas.V_actualizar_url import Ventana_actualizar_url
 
 
 os.chdir(Path(__file__).parent)
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
 app = Flask("Acelerador de descargas(API)")
 CORS(app)
 
@@ -182,6 +180,33 @@ def open_program_thread():
 def check_extencion(name: str):
     s = name in get_conf('extenciones')
     return jsonify({"message": "busqueda de extension", "code":0, 'status':'ok', "respuesta":s}), 200 if s else 404, {'Access-Control-Allow-Origin':'*'}
+
+@app.route("/extencion/should_intercept")
+def should_intercept_download():
+    try:
+        extension = request.args.get('extension', '')
+        tamano = int(request.args.get('tamano', -1))
+        
+        ext_ok = extension.lower() in get_conf('extenciones')
+        tamano_minimo = int(get_conf('tamano_minimo_kb'))
+        
+        if tamano < 0:
+            tamano_ok = True
+        else:
+            tamano_ok = tamano >= tamano_minimo
+        
+        respuesta = ext_ok and tamano_ok
+        return jsonify({
+            "message": "verificacion de interceptacion",
+            "code": 0,
+            'status': 'ok',
+            "respuesta": respuesta,
+            "extension_ok": ext_ok,
+            "tamano_ok": tamano_ok,
+            "tamano_minimo": tamano_minimo
+        }), 200, {'Access-Control-Allow-Origin': '*'}
+    except Exception as err:
+        return jsonify({"message": str(err), "code": 1, 'status': 'error'}), 500, {'Access-Control-Allow-Origin': '*'}
 
 @app.route("/get_configurations")
 def get_configurations():
