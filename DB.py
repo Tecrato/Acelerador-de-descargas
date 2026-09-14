@@ -77,7 +77,7 @@ class Data_Base:
         descarga = self.cursor.fetchone()
         return descarga
     
-    def añadir_descarga(self,nombre,tipo,peso,url,partes,tiempo=None, cookies=''):
+    def añadir_descarga(self,nombre,tipo,peso,url,partes,tiempo=None, cookies='') -> int|None:
         self.cursor.execute(
             "INSERT INTO descargas(nombre,tipo,peso,url,partes,fecha,estado,cookies) VALUES(?,?,?,?,?,?,?,?)",
             (nombre,tipo,peso,url,partes,time.time() if not tiempo else tiempo,'esperando', cookies)

@@ -14,7 +14,7 @@ import Utilidades_pygame as uti_pag
 import Utilidades.win32_tools as win32_tools
 
 from pathlib import Path
-from typing import override
+from typing import override, Optional
 from threading import Thread
 from http.client import InvalidURL
 from urllib.parse import urlparse, unquote
@@ -102,9 +102,9 @@ class Downloads_manager(Base_class):
     @override
     def generate_objs(self):
         self.particulas_mouse = uti_pag.Particles(
-            (0,0), radio=10, radio_dispersion=5, color=(255,255,255), velocity=1, 
-            vel_dispersion=2, angle=-90, angle_dispersion=60, radio_down=.2, 
-            gravity=0.15, max_particles=100, time_between_spawns=1, max_distance=1000, 
+            (0,0), radio=10, radio_dispersion=5, color=(255,255,255), velocity=60, 
+            vel_dispersion=120, angle=-90, angle_dispersion=60, radio_down=30, 
+            gravity=9, max_particles=100, time_between_spawns=1, max_distance=1000, 
             spawn_count=5, auto_spawn=False
         )
 
@@ -128,7 +128,7 @@ class Downloads_manager(Base_class):
             separation=10,
             header_text=[self.txts['id'],self.txts['nombre'], self.txts['hilos'], self.txts['tamaño'], self.txts['estado'],self.txts['cola'], self.txts['fecha']],
             fonts=[self.config.font_mononoki for _ in range(7)],
-            colums_witdh=[0, .065, .47, .55, .67, .79, .86],
+            colums_witdh=[0, .065, .47, .551, .67, .79, .86],
             padding_left= 10,
             border_color=(100,100,100),
             smothscroll=True if not self.low_detail_mode else False
@@ -689,8 +689,10 @@ class Downloads_manager(Base_class):
         elif respuesta['index'] == 2:
             # Cambiar la url
             response = uti.get(f'http://127.0.0.1:5000/descargas/check/{obj_cached.id}').json
-            if response['downloading'] == True or response['cola'] == True:
+            if response['downloading'] == True:
                 self.mini_ventana(1)
+            elif response['cola'] == True:
+                self.mini_ventana(8)
                 return
             response = uti.get(f'http://127.0.0.1:5000/descargas/update/url/{obj_cached.id}').json
             if response['status'] != 'ok':
@@ -699,7 +701,7 @@ class Downloads_manager(Base_class):
                 self.mini_ventana(7)
         elif respuesta['index'] == 3:
             # copiar url al portapapeles
-            pyperclip.copy(obj_cached[4])
+            pyperclip.copy(str(obj_cached[4]))
             self.mini_ventana(3)
         elif respuesta['index'] == 4:
             # 4 añadir a la cola
@@ -745,7 +747,10 @@ class Downloads_manager(Base_class):
         response = uti.get(f'http://127.0.0.1:5000/descargas/download/{obj_cached.id}').json
         if response.get('status') == 'ok':
             self.mini_ventana(0)
+        elif response.get('code') == 2:
+            self.mini_ventana(8)
         else:
+            uti.debug_print(response)
             self.mini_ventana(1)
         self.loading -= 1
         self.redraw = True
@@ -866,7 +871,8 @@ class Downloads_manager(Base_class):
             4: ('solo una descarga', 'Error', self.txts['gui-solo una descarga']),
             5: ('error', 'Error', self.txts['gui-error inesperado']),
             6: ('error', 'Error', self.txts['gui-error actualizando url']),
-            7: ('actualizando url', 'Actualizando', self.txts['gui-actualizando url mini'])
+            7: ('actualizando url', 'Actualizando', self.txts['gui-actualizando url mini']),
+            8: ('descarga en cola', 'Error', self.txts['gui-descarga en cola']),
         }
         txt_group, txt_header, txt_body = txts_dict[num]
         self.Mini_GUI_manager.clear_group(txt_group)
@@ -910,7 +916,7 @@ class Downloads_manager(Base_class):
         self.gui_informacion.active = True
         self.gui_desicion.redraw += 1
     
-    def open_desicion(self, title, texto, func=None, options: list[str] = None):
+    def open_desicion(self, title, texto, func=None, options: Optional[list[str]] = None):
         self.gui_desicion.title.text = title
         self.gui_desicion.body.text = texto
         self.gui_desicion.active = True
@@ -954,21 +960,34 @@ class Downloads_manager(Base_class):
             if not url_parsed.scheme or not url_parsed.netloc:
                 raise urllib.error.URLError('URL invalida')
             
-            response = self.session.get(self.url, timeout=15).headers
+            self.session.headers = {
+                "Range": "bytes=0-0"
+            }
+            response = self.session.get(self.url, timeout=15)
+            headers = response.headers
+
+            
+            
             
             self.logger.write(f"Informacion obtenida: {self.url}")
             self.logger.write(response)
             uti.debug_print(response)
+            uti.debug_print(response.headers)
 
             # Validacion de tipo
-            tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+            tipo = headers.get('Content-Type', 'unknown/Nose').split(';')[0]
             self.new_file_type = tipo
             self.text_new_download_file_type.text = self.txts['tipo']+': ' + tipo
             if self.new_file_type in ['text/plain', 'text/html']:
                 raise TrajoHTML('No paginas')
             
+            # Validacion de tamaño
+            content_range = int(headers.get('Content-Range',"/0").split("/")[1])
+            peso = content_range or int(headers.get("content-length", 0))
+            self.new_file_size = peso
+
             # Validacion de reanudar
-            if 'bytes' in response.get('Accept-Ranges', ''):
+            if self.new_file_size >= 4096 and response.status_code==206:
                 self.can_change_new_threads = True
                 self.btn_new_download_hilos.pos = (self.ventana_rect.centerx+150,self.ventana_rect.centery+30)
                 self.new_threads = self.threads
@@ -979,14 +998,9 @@ class Downloads_manager(Base_class):
                 self.new_threads = 1
                 self.text_new_download_hilos.text = self.txts['config-hilos'].format(self.new_threads)
 
-            # Validacion de tamaño
-            self.new_file_size = int(response.get('content-length', 0))
-            if self.new_file_size < 4096:
-                self.new_threads = 1
-                self.can_change_new_threads = False
             self.text_new_download_size.text = f"{self.txts['tamaño']}: {uti.format_size_bits_to_bytes_str(self.new_file_size)}"
-            
-            if a := response.get('content-disposition', False):
+            a = headers.get('content-disposition', None)
+            if a:
                 nuevo_nombre = a.split(';')
                 for x in nuevo_nombre:
                     if 'filename=' in x:
@@ -1020,6 +1034,8 @@ class Downloads_manager(Base_class):
             uti.debug_print(err, priority=3)
             self.logger.write(f'Error comprobar {self.url} - {type(err)} -> {err}')
             self.text_new_download_status.text = self.txts['descripcion-state[error]']
+        finally:
+            self.session.headers.pop("Range")
 
     def reload_elemento_individual(self, id):
         response = Download(*self.session.get(f'http://127.0.0.1:5000/descargas/get/{id}',timeout=5).json)
@@ -1092,4 +1108,4 @@ class Downloads_manager(Base_class):
             self.socket_client = None
 
 if __name__ == '__main__':
-    Downloads_manager(Config(resolution=(800, 550), min_resolution=(600,450)))
+    Downloads_manager(Config(resolution=(800, 550), min_resolution=(600,450))) # type: ignore

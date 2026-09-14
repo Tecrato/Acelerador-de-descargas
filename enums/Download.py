@@ -3,29 +3,29 @@ import Utilidades as uti
 class Download:
     __slots__ = ('__id', '__nombre', '__tipo', '__peso', '__url', '__partes', '__fecha', '__estado', '__cookies')
     def __init__(self, id: int, nombre: str, tipo: str, peso: int, url: str, partes: int, fecha: str, estado: str, cookies: str):
-        self.id: int = id
-        self.nombre: str = nombre
-        self.tipo: str = tipo
-        self.peso: int = peso
-        self.url: str = url
-        self.partes: int = partes
-        self.fecha: str = fecha
-        self.estado: str = estado
-        self.cookies: str = cookies
+        self.__id: int = id
+        self.__nombre: str = nombre
+        self.__tipo: str = tipo
+        self.__peso: int = peso
+        self.__url: str = url
+        self.__partes: int = partes
+        self.__fecha: str = fecha
+        self.__estado: str = estado
+        self.__cookies: str = cookies
 
     def __eq__(self, other: 'Download') -> bool:
         return self.id == other.id
 
-    def __getitem__(self, key: str):
-        return (self.id,
-                self.nombre,
-                self.tipo,
-                self.peso,
-                self.url,
-                self.partes,
-                self.fecha,
-                self.estado,
-                self.cookies)[key]
+    def __getitem__(self, key: int):
+        return (self.__id,
+                self.__nombre,
+                self.__tipo,
+                self.__peso,
+                self.__url,
+                self.__partes,
+                self.__fecha,
+                self.__estado,
+                self.__cookies)[key]
 
     @property
     def id(self) -> int:

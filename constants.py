@@ -31,7 +31,7 @@ DICT_CONFIG_DEFAULT_TYPES = {
 }
 
 TITLE = 'Download Manager by Edouard Sandoval'
-VERSION = '3.15'
+VERSION = '3.15.1'
 SCREENSHOTS_DIR  = user_pictures_path().joinpath('./Edouard Sandoval/Acelerador_de_descargas')
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_DIR = user_config_path('Acelerador de descargas', 'Edouard Sandoval')
@@ -45,6 +45,10 @@ FONT_SIMBOLS = "./Assets/fuentes/Symbols.ttf"
 ICON = './Assets/img/descargas.png'
 
 INITIAL_DIR: Path = Path(__file__).parent
+
+RETURNCODE_ERROR = 1
+RETURNCODE_FINISH = 3
+RETURNCODE_FINISH_SHUTDOWN = 4
 
 class Config:
     def __init__(self, window_resize=True, window_title=TITLE, resolution=None, min_resolution=(100,100), **kwargs):
@@ -65,6 +69,8 @@ class Config:
         self.cache_dir = CACHE_DIR
         self.font_mononoki = FONT_MONONOKI
         self.font_symbols = FONT_SIMBOLS
+        self.window_transparent = False
+        self.vsync = False
 
         self.icon = ICON
         self.noframe = False

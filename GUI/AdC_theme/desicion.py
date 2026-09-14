@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Optional
 import pygame as pag
 import Utilidades_pygame as uti_pag
 from Utilidades_pygame.figuras.poligono_irregular import PoligonoIrregular
@@ -21,7 +21,7 @@ class Desicion(Base_win):
         0: Aceptar
         1: Cancelar
     """
-    def __init__(self, pos, font_mononoki, title, texto, size = (400,200), func=None, options: list[str] = None):
+    def __init__(self, pos, font_mononoki, title, texto, size = (400,200), func=None, options: Optional[list[str]] = None):
         super().__init__(pos, size, scroll_y=False)
 
         self.font = font_mononoki
@@ -40,8 +40,8 @@ class Desicion(Base_win):
 
         self.body = uti_pag.Text(texto, 18, self.font, (size[0]/2,size[1]/2 - 10), 'center',border_radius=-1, max_width=size[0]*.80)
         self.add(self.body)
-
-        self.options = ('aceptar', 'cancelar') if options is None else options
+        
+        self.options: tuple[str,...]|list[str] = ('aceptar', 'cancelar') if options is None else options
 
     def draw_after(self):
         pag.draw.line(self.surf, (0,0,0), self.poligono3.figura[2], self.poligono3.figura[7], 2)
@@ -60,7 +60,7 @@ class Desicion(Base_win):
         return self.__options
     
     @options.setter
-    def options(self, value: list[str]):
+    def options(self, value: list[str]|tuple):
         if not isinstance(value, Iterable) or not all(isinstance(i, str) for i in value):
             raise ValueError("options debe ser una lista de strings")
         if self.__botons_pointer >= 0:

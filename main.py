@@ -15,6 +15,7 @@ from multiprocessing import Process
 from platformdirs import user_log_path
 
 from constants import DICT_CONFIG_DEFAULT, TITLE, VERSION, CONFIG_DIR, CACHE_DIR, Config, DICT_CONFIG_DEFAULT_TYPES
+from constants import RETURNCODE_ERROR, RETURNCODE_FINISH_SHUTDOWN, RETURNCODE_FINISH
 from textos import idiomas
 
 from flask import Flask, Response, request, jsonify, g
@@ -110,7 +111,11 @@ list_changes_to_sockets = {}
 lock = Lock()
 timer = uti.multithread.Interval_funcs()
 
-una_session = uti.Http_Session(verify=False)
+una_session = uti.Http_Session()
+una_session.headers = {
+    "Range": "bytes=0-0"
+}
+
 
 updating_url = False
 updating_id = -1
@@ -376,17 +381,17 @@ def download(id: int):
     global cola, cola_iniciada
     if id in lista_descargas:
         return jsonify({"message": "Descarga en progreso", "code":1, 'status':'error'})
-    
+
     if id in cola and cola_iniciada:
         return jsonify({"message": "Descarga en cola", "code":2, 'status':'error'})
     elif id in cola:
         cola_iniciada = True
     Thread(target=init_download,args=(id,)).start()
-    
-    
+
+
     return jsonify({"message": "Descarga iniciada", "code":0, 'status':'ok'})
 
-def init_download(id_download):
+def init_download(id_download: int):
     global cola, cola_iniciada, pv_cola_finalizada, pv_detener_apago_automatico
     lista_descargas.append(id_download)
     get_logger().write(f'Logger: Iniciando descarga {id_download} {datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")}')
@@ -397,20 +402,26 @@ def init_download(id_download):
     # c = Downloader(id,'2' if id in cola else '0')
     uti.debug_print(f"Termino {id_download} -> {exitcode}", priority=1)
     
+    descargas_process.pop(id_download)
+    lista_descargas.remove(id_download)
+
     if id_download in cola:
         update_last_update()
     else:
         update_last_download_update(id_download)
-    
-    del descargas_process[id_download]
-    lista_descargas.remove(id_download)
 
-    if exitcode == 4:
+
+    if exitcode == RETURNCODE_ERROR:
+        cola_iniciada = False
+        return
+
+    if exitcode == RETURNCODE_FINISH_SHUTDOWN:
         # os.system('shutdown /s /t 30 /c "A finalizado la descarga - Download Manager by Edouard Sandoval"')
         Process(target=Ventana_detener_apago_automatico, args=(Config(window_resize=False, resolution=(400, 130)),), daemon=True).start()
+        cola_iniciada = False
         return
     
-    if id_download in cola and exitcode == 3:
+    if id_download in cola and exitcode == RETURNCODE_FINISH:
         cola.remove(id_download)
 
         if len(cola) > 0:
@@ -476,29 +487,26 @@ def add_descarga_web():
             response = func_probar_link(response1['url'], response1.get('cookies', None))
         if not response:
             raise Exception('No se pudo obtener la informacion')
+        headers = response.headers
         if updating_url:
             func_update_url_download(updating_id, response1["url"], response1['nombre'])
             return jsonify({"message": "Cambiando url", "code":0, 'status':'ok'}), 200, {'Access-Control-Allow-Origin':'*'}
 
-        p = False
-        peso = int(response.get('content-length', 0))
-        if peso > 0 and 'bytes' in response.get('Accept-Ranges', ''):
-            try:
-                res = uti.get(response1['url'], headers={'Range': 'bytes=0-1'})
-                p = True
-            except Exception as err:
-                p = False
-        uti.debug_print(response, priority=0)
-        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
-        if peso > 0 and 'bytes' in response.get('Accept-Ranges', '') and p: 
+        content_range = int(headers.get('Content-Range',"/0").split("/")[1])
+        peso = content_range or int(headers.get("content-length", 0))
+        if peso > 0 and 'bytes' in headers.get('Accept-Ranges', '') and response.status_code == 206:
             hilos = get_conf('hilos')
         else:
             hilos = 1
+
+        uti.debug_print(response, priority=0)
+        uti.debug_print(headers, priority=0)
+        tipo = headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         
         if tipo in ['text/plain', 'text/html']:
             raise TrajoHTML('No paginas')
     except Exception as err:
-        uti.debug_print(err, priority=2)
+        uti.debug_print(err, priority=3)
         get_logger().write(type(err))
         get_logger().write(err)
         icon.show_notification(f"{get_text('gui-error al buscar la informacion de')} \n\n{response1['nombre']}",'Descargar')
@@ -617,14 +625,16 @@ def func_probar_link(url, cookie=None):
             una_session.cookies = cookie
         else:
             una_session.cookies = {}
-        response = una_session.get(url).headers
+        
+        response = una_session.get(url)
+        headers = response.headers
         uti.debug_print(response, priority=0)
-        tipo = response.get('Content-Type', 'unknown/Nose').split(';')[0]
+        tipo = headers.get('Content-Type', 'unknown/Nose').split(';')[0]
         if tipo in ['text/plain', 'text/html']:
             raise TrajoHTML('No paginas')
         return response
     except Exception as err:
-        uti.debug_print(err, 2)
+        uti.debug_print(err, 3)
         return False
 
 def func_update_url_download(download_id, url, nombre):
@@ -728,7 +738,8 @@ if __name__ == '__main__':
     try:
         uti.get('http://127.0.0.1:5000/open_program').json
         os._exit(0)
-    except Exception:
+    except Exception as err:
+        uti.debug_print(err, priority=3)
         pass
 
     Thread(target=init).start()

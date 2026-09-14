@@ -19,7 +19,7 @@ from Utilidades import win32_tools, LinearRegressionSimple
 from my_warnings import *
 from textos import idiomas
 from GUI import AdC_theme
-from constants import DICT_CONFIG_DEFAULT, Config
+from constants import DICT_CONFIG_DEFAULT, Config, RETURNCODE_ERROR, RETURNCODE_FINISH, RETURNCODE_FINISH_SHUTDOWN
 from Utilidades_pygame.base_app_class import Base_class
 from enums.Download import Download
 
@@ -32,6 +32,7 @@ class Downloader(Base_class):
         self.modificador: int = self.args[1]
 
         self.config: Config
+        self.config.returncode = RETURNCODE_ERROR
         
         self.raw_data = Download(*uti.get(f'http://127.0.0.1:5000/descargas/get/{self.download_id}').json)
         
@@ -63,7 +64,7 @@ class Downloader(Base_class):
         self.paused: bool = True
 
         # Integers
-        self.current_velocity: int = 0
+        self.current_velocity: int|float = 0
         self.division: int = (self.peso_total // self.num_hilos) if self.peso_total > 0 else self.peso_total
         self.downloading_threads: int = 0
         self.hilos_listos: int = 0
@@ -79,6 +80,7 @@ class Downloader(Base_class):
         # Chunk
         self.chunk: int = 128
         self.max_chunk_change: float = 0.25
+        self.optimal_chunk = 1024*1024*4
         self.min_chunk: int = 64
         self.max_chunk: int = 1024*1024*10
 
@@ -181,7 +183,7 @@ class Downloader(Base_class):
 
         self.btn_cancelar_descarga =  uti_pag.Button(
             self.txts['cancelar'], 16, self.config.font_mononoki, ((self.ventana_rect.width / 2) / 3, 20), (10, 5), 'center', 'black','purple', 'cyan', 0, 0, 20, 
-            0, 0, 20, -1, func= lambda: self.open_GUI_dialog(self.txts['gui-cancelar descarga'], (400, 200),self.func_cancelar, options=[self.txts['aceptar'], self.txts['cancelar']])
+            0, 0, 20, -1, func= lambda: self.open_GUI_dialog(self.txts['gui-cancelar descarga'], self.txts["cancelar"],self.func_cancelar, options=(self.txts['aceptar'], self.txts['cancelar']))
         )
         self.btn_pausar_y_reanudar_descarga = uti_pag.Button(
             self.txts['reanudar'], 16, self.config.font_mononoki, (((self.ventana_rect.width / 2) / 3) * 2, 20), (10, 5), 
@@ -505,6 +507,8 @@ class Downloader(Base_class):
                     response = self.session.get(self.url, timeout=30).headers
                     if (response.get('Content-Type', 'unknown/Nose').split(';')[0] != self.type):
                         raise TrajoHTML(f'No paginas= type:{response.get("Content-Type", "unknown/Nose").split(";")[0]}')
+                    # if response.get('Etag', 'unknown/Nose').split(';')[0] != self.type
+                    # uti.debug_print(response.get('Etag', 'unknown/Nose'), "\"" in response.get('Etag', 'unknown/Nose'))
                     if (int(response.get('content-length', 0)) != self.peso_total):
                         self.peso_nuevo = int(response.get('content-length', 0))
                         raise DifferentSizeError(f"ahora pesa distinto: de {self.peso_total} a {response.get('content-length', 0)}")
@@ -645,6 +649,7 @@ class Downloader(Base_class):
 
         this_header = self.default_headers.copy()
         if self.can_reanudar and self.num_hilos > 1:
+            this_header['range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
             this_header['Range'] = f'bytes={self.lista_status_hilos[num]["start"] + self.lista_status_hilos[num]["local_count"]}-{self.lista_status_hilos[num]["end"]}'
 
         try:
@@ -672,6 +677,15 @@ class Downloader(Base_class):
                         buffered_write.close()
                         raise Exception('Paused or Canceled')
                     tanto = len(data)
+                    # if self.lista_status_hilos[num]['local_count'] + tanto >= self.lista_status_hilos[num]["end"]:
+                    #     data2 = data[:self.lista_status_hilos[num]["end"]-self.lista_status_hilos[num]['local_count'] +1]
+                    #     tanto = self.lista_status_hilos[num]["end"]-self.lista_status_hilos[num]['local_count'] +1
+                    #     buffered_write.write(data2)
+                    #     self.lista_status_hilos[num]['local_count'] += tanto
+                    #     self.peso_descargado_vel += tanto
+                    #     self.peso_descargado += tanto
+                    #     break
+
                     # self.lock.acquire()
                     self.lista_status_hilos[num]['local_count'] += tanto
                     self.peso_descargado_vel += tanto
@@ -720,8 +734,8 @@ class Downloader(Base_class):
         self.loading += 1
         self.text_juntando_partes.pos = (self.ventana_rect.centerx, self.ventana_rect.centery)
 
-        self.save_dir = Path(uti.get(f'http://127.0.0.1:5000/configuration/save_dir').json)
         try:
+            self.save_dir = Path(str(uti.get(f'http://127.0.0.1:5000/configuration/save_dir').json))
             final_path = self.save_dir.joinpath(self.file_name)
             # No abrir el archivo aquí, solo verificar permisos
             final_path.touch(exist_ok=True)
@@ -736,18 +750,17 @@ class Downloader(Base_class):
             final_path.unlink()
             self.fallo_destino = True
 
-        # Construir rutas absolutas a las partes dentro de self.carpeta_cache
-        # Usar comillas dobles alrededor de cada ruta para soportar espacios
-        partes = '+'.join(f'"{self.carpeta_cache / f"parte{x}.tmp"}"' for x in range(self.num_hilos))
-        cmd = f'copy /b {partes} "{final_path}"'
-        
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        if result.returncode != 0:
-            # Si falla, mostrar error y quizás intentar método alternativo
-            print(f"Error en copy: {result.stderr}")
-            # Opcional: caer a concatenación en Python
-            self._concatenar_con_python(final_path)
-        
+
+        with open(final_path, "wb") as final_file:
+            for x in range(self.num_hilos):
+                with open(self.carpeta_cache / f'parte{x}.tmp', "rb", buffering=self.optimal_chunk) as part_file:
+                    while True:
+                        chunk = part_file.read(self.optimal_chunk)
+                        if not chunk:
+                            break
+                        final_file.write(chunk)
+
+
         # Limpiar archivos temporales
         for x in range(self.num_hilos):
             parte_path = self.carpeta_cache / f'parte{x}.tmp'
@@ -768,7 +781,7 @@ class Downloader(Base_class):
         self.drawing = True
         self.finished = True
         self.hilos_listos = 0
-        self.config.returncode = 3
+        self.config.returncode = RETURNCODE_FINISH
         self.list_vels.clear()
         self.text_estado_general.text = f'{self.txts["estado"]}: {self.txts["finalizado"]}'
         self.btn_pausar_y_reanudar_descarga.text = self.txts['reanudar']
@@ -777,7 +790,7 @@ class Downloader(Base_class):
         if self.cerrar_al_finalizar or uti.get(f'http://127.0.0.1:5000/descargas/check/{self.download_id}').json['cola']:
             self.cerrar_todo('aceptar')
         elif self.apagar_al_finalizar:
-            self.config.returncode = 4
+            self.config.returncode = RETURNCODE_FINISH_SHUTDOWN
             subprocess.call(f'shutdown /s /t 30 /c "Descarga finalizada, se apagara el sistema en 30 segundos"', shell=True)
             self.cerrar_todo('aceptar')
             return
@@ -799,4 +812,4 @@ if __name__=='__main__':
     PROCESS_MODE_BACKGROUND_BEGIN = 0x00100000
     handle = ctypes.windll.kernel32.GetCurrentProcess()
     ctypes.windll.kernel32.SetPriorityClass(handle, PROCESS_MODE_BACKGROUND_BEGIN)
-    Downloader(Config(window_resize=False,resolution=(700, 300)))
+    Downloader(Config(window_resize=False,resolution=(700, 300)))   # type: ignore

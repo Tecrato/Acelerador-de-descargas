@@ -1,11 +1,23 @@
 # -----------------------||||||||||||||||||||||||||||--------------------------------#
+3.15.1 - 31/7/2025
+# Correcciones:
+ - Corregido error al cancelar una descarga no dejaba descargar o realizar operacione, la cola quedaba iniciada y decia que se seguia descargando.
+ - Corregido titulo en las ventanas de operaciones dentro de la aplicacion.
+
+# Cambios:
+ - Adaptacion a nuevos cambios de la libreria.
+ - Algoritmo para juntar el archivo devuelto a la version anterior.
+
+ 
+
+# -----------------------||||||||||||||||||||||||||||--------------------------------#
 3.15 - 22/4/2025
 
 # Correcciones:
  - 
 
 # Cambios:
- - Cambio enel algoritmo para juntar las partes del archivo en el archivo final, resposabilidad cedida a windos, el cambio ahora es mediante un comando de shell.
+ - Cambio en el algoritmo para juntar las partes del archivo en el archivo final, resposabilidad cedida a windos, el cambio ahora es mediante un comando de shell.
  - Nueva regla para descargar archivos, el archivo debe ser de 1MB o mas, y empezado el proceso para que sea customisable (de momento solo en firefox).
 
 # -----------------------||||||||||||||||||||||||||||--------------------------------#

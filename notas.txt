@@ -1,10 +1,15 @@
 # Errores:
- - opencode tiene el fallo de descarga infinita, supongo que por el connection close
+ - Reiniciar la descarga si cambia el ETag
+ - Cuando se cierra y se vuelve a abrir la interfaz, no empieza la actualinacion en tiempo real de la descarga actual.
+
+
 
 # Cambios:
  - colocar los textos en un archiv json.
  - Hacer las mini_GUI denuevo pero con los bloques.
  - Los bloques ...
+ - ETag es la version del archivo, ya no se debe comprobar por size, o bueno, tambien
+ - Usar el sanity_filename
 
 
 
@@ -14,9 +19,15 @@
  - Añadir el referer.
  - Hacer una animacion para el cambio de pantallas.
  - minimo de tamaño de descarga.
- - Boton en new_download para aceptar y empezar la descarga de una vez.
+ 
 
 
 # Exagerado:
  - descargar Torrent's
 
+
+
+try:
+    1
+except Exception as e:
+    raise MyERROR("Error parce") from e

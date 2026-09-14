@@ -1,402 +1,180 @@
-﻿
-[Header]
-ProjectFileVersion = 1.1
-[General]
-Program name = Acelerador de descargas
-Program version = 3.14
-Windows XP = 0
-Windows Server 2003 = 0
-Windows Vista = 0
-Windows Server 2008 = 0
-Windows 7 = 0
-Windows 8 = 0
-Windows 10 = 1
-Windows Server 2016 = 0
-Windows Server 2019 = 0
-Windows Server 2022 = 0
-Windows 11 = 1
-DoNotCheckOS = 0
-Company name = Edouard Sandoval
-Website = https://github.com/Tecrato
-SFA = 1
-DFA = 1
-Comp = 1
-[Graphics]
-Wizard image = <main>
-Header image = <main>
-Show Label = 1
-VisualStylesEnabled = 1
-[Files]
-Installation path = <ProgramFiles>\<Company>\<AppName>\
-Autcip = 1
-[Uninstall]
-Vwau = 1
-Website = https://github.com/Tecrato
-Include uninstaller = 1
-Uninstaller filename = Uninstall
-UseCustomDisplayIcon = 1
-CustomDisplayIcon = <InstallPath>\descargas.ico
-[Licence]
-Licence dialog = 1
-[Finish]
-Sart program = 1
-Reboot computer = 0
-Program = <InstallPath>\Download Manager.exe
-ProgramArguments = 
-[Shortcuts]
-Allowtc = 1
-Shortcut path = <Company>\<AppName>\
-[Serialoptions]
-Allows = 0
-Number = 1000
-Mask = #####-#####-#####-#####
-[SplashScreen]
-Image = C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets\img\descargas.png
-Sound = 
-Time = 2
-PlaySound = 0
-Allow = 1
-[Build]
-File = D:\Programs\Acelerador de descargas.exe
-SetupIconPath = C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\Assets\img\descargas.ico
-UninstallIconPath = C:\Program Files (x86)\solicus\InstallForge\icons\modern.ico
-CompressionMethod = 0
-CompressionLevel = 2
-[Updater]
-Allow = 0
-1 = <AppName>
-2 = <AppVersion>
-3 = http://
-4 = http://
-5 = http://
-6 = Update
-Language = 0
-RunProg = 
-RunProgs = 0
-Execdlls = 0
-[Languages]
-2
-3
-[Files/Dirs]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd
-70.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd
-84.2 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd
-131.2 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd
-273.7 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd
-64 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd
-155.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd
-36.9 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd
-56.4 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd
-34 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd
-83 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd
-126.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ssl.pyd
-178.9 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tkinter.pyd
-66.7 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_uuid.pyd
-27.4 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_wmi.pyd
-39.4 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-console-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-datetime-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-debug-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-errorhandling-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l1-1-0.dll
-25.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l1-2-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l2-1-0.dll
-18.3 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-handle-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-heap-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-interlocked-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-libraryloader-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-localization-l1-2-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-memory-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-namedpipe-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processenvironment-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processthreads-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processthreads-l1-1-1.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-profile-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-rtlsupport-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-string-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-synch-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-synch-l1-2-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-sysinfo-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-timezone-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-util-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-conio-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-convert-l1-1-0.dll
-25.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-environment-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-filesystem-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-heap-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-locale-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-math-l1-1-0.dll
-29.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-multibyte-l1-1-0.dll
-29.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-process-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-runtime-l1-1-0.dll
-25.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-stdio-l1-1-0.dll
-25.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-string-l1-1-0.dll
-25.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-time-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-utility-l1-1-0.dll
-21.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\base_library.zip
-1.2 MB
-zip
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\cerrar_listener.bat
-118 Byte
-bat
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe
-5.5 MB
-exe
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx
-8.2 KB
-crx
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt
-2.6 KB
-txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libcrypto-3.dll
-5 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libffi-8.dll
-38.8 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libopusfile-0.dll
-45.5 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libssl-3.dll
-774.3 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libtiff-5.dll
-422.5 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt
-295 Byte
-txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pyexpat.pyd
-198 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python313.dll
-5.8 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\select.pyd
-31.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\sqlite3.dll
-1.5 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl86t.dll
-1.8 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tk86t.dll
-1.5 MB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\ucrtbase.dll
-992.8 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\unicodedata.pyd
-694.5 KB
-pyd
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140.dll
-117.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140_1.dll
-48.6 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version
-4 Byte
+<?xml version="1.0" encoding="UTF-8"?>
 
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt
-23.2 KB
-txt
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll
-106 KB
-dll
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tcl_data
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tk_data
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\certifi
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pygame
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Pythonwin
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pywin32_system32
-N/A
-[Folder]
-C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\setuptools
-N/A
-[Folder]
-[Licence_Begin]
-1362
-{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil Arial;}{\f1\fnil\fcharset0 Arial;}}
-{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
-\pard\f0\fs20 MIT License\par
-\par
-Copyright (c) 2024 \f1 Edouard Sandoval\f0\par
-\par
-Permission is hereby granted, free of charge, to any person obtaining a copy\par
-of this software and associated documentation files (the "Software"), to deal\par
-in the Software without restriction, including without limitation the rights\par
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\par
-copies of the Software, and to permit persons to whom the Software is\par
-furnished to do so, subject to the following conditions:\par
-\par
-The above copyright notice and this permission notice shall be included in all\par
-copies or substantial portions of the Software.\par
-\par
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\par
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\par
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\par
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\par
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\par
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\par
-SOFTWARE.\par
-}
- [Licence_End]
-[Registry]
-HKEY_CURRENT_USER
-SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-Acelerador de descargas
-<InstallPath>\Download Manager.exe
-1
-[Variables]
-[SCs]
-Desktop
-Acelerador de descargas
-<InstallPath>\Download Manager.exe
-
-<InstallPath>\descargas.ico
-0
-Startmenu
-Acelerador de descargas
-<InstallPath>\Download Manager.exe
-
-<InstallPath>\descargas.ico
-0
-[IFP_End]
-[Serials]
-[Serials_End]
-[Commands]
-Execute Application
-<InstallPath>\listener.exe
-
--hide
+<InstallForgeProject>
+  <Metadata productVersion="1.6.1" projectFileVersion="2.0"/>
+  <ProductInformation>
+    <Name>Acelerador de descargas</Name>
+    <Version>3.15.1</Version>
+    <CompanyName>Edouard Sandoval</CompanyName>
+    <WebURI>https://github.com/Tecrato</WebURI>
+  </ProductInformation>
+  <InstallerConfiguration>
+    <Prerequisites>
+      <OperatingSystem check="true">
+        <WindowsXP>false</WindowsXP>
+        <WindowsServer2003>false</WindowsServer2003>
+        <WindowsVista>false</WindowsVista>
+        <WindowsServer2008>false</WindowsServer2008>
+        <Windows7>false</Windows7>
+        <Windows8>false</Windows8>
+        <Windows10>true</Windows10>
+        <WindowsServer2016>false</WindowsServer2016>
+        <WindowsServer2019>false</WindowsServer2019>
+        <WindowsServer2022>false</WindowsServer2022>
+        <Windows11>true</Windows11>
+        <WindowsServer2025>false</WindowsServer2025>
+      </OperatingSystem>
+    </Prerequisites>
+    <UserInterface>
+      <WizardImage filePath="&lt;main&gt;"/>
+      <HeaderImage filePath="&lt;main&gt;"/>
+      <Label isEnabled="true"/>
+      <VisualStyle isEnabled="true"/>
+    </UserInterface>
+    <InstallationFiles defaultInstallationPath="&lt;ProgramFiles&gt;\&lt;Company&gt;\&lt;AppName&gt;\" isDefaultInstallationPathAlterable ="true">
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Assets</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\certifi</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\cryptography</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\markupsafe</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pygame</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Pythonwin</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pywin32_system32</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\setuptools</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl8</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\win32</InstallationFile>
+      <InstallationFile size="70.5 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_asyncio.pyd</InstallationFile>
+      <InstallationFile size="84.2 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_bz2.pyd</InstallationFile>
+      <InstallationFile size="176 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_cffi_backend.cp313-win_amd64.pyd</InstallationFile>
+      <InstallationFile size="131.2 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ctypes.pyd</InstallationFile>
+      <InstallationFile size="273.7 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_decimal.pyd</InstallationFile>
+      <InstallationFile size="64 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_hashlib.pyd</InstallationFile>
+      <InstallationFile size="155.5 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_lzma.pyd</InstallationFile>
+      <InstallationFile size="36.9 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_multiprocessing.pyd</InstallationFile>
+      <InstallationFile size="56.4 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_overlapped.pyd</InstallationFile>
+      <InstallationFile size="34 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_queue.pyd</InstallationFile>
+      <InstallationFile size="83 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_socket.pyd</InstallationFile>
+      <InstallationFile size="126.5 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_sqlite3.pyd</InstallationFile>
+      <InstallationFile size="178.9 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_ssl.pyd</InstallationFile>
+      <InstallationFile size="66.7 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tkinter.pyd</InstallationFile>
+      <InstallationFile size="27.4 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_uuid.pyd</InstallationFile>
+      <InstallationFile size="39.4 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_wmi.pyd</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-console-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-datetime-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-debug-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-errorhandling-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="25.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l1-2-0.dll</InstallationFile>
+      <InstallationFile size="18.3 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-file-l2-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-handle-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-heap-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-interlocked-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-libraryloader-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-localization-l1-2-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-memory-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-namedpipe-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processenvironment-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processthreads-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-processthreads-l1-1-1.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-profile-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-rtlsupport-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-string-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-synch-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-synch-l1-2-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-sysinfo-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-timezone-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-core-util-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-conio-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="25.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-convert-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-environment-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-filesystem-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-heap-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-locale-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="29.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-math-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="29.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-multibyte-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-process-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="25.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-runtime-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="25.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-stdio-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="25.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-string-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-time-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="21.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\api-ms-win-crt-utility-l1-1-0.dll</InstallationFile>
+      <InstallationFile size="1.2 MB" type="zip">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\base_library.zip</InstallationFile>
+      <InstallationFile size="118 Byte" type="bat">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\cerrar_listener.bat</InstallationFile>
+      <InstallationFile size="5.6 MB" type="exe">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\Download Manager.exe</InstallationFile>
+      <InstallationFile size="8.2 KB" type="crx">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\extencion.crx</InstallationFile>
+      <InstallationFile size="2.6 KB" type="txt">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\instrucciones.txt</InstallationFile>
+      <InstallationFile size="5 MB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libcrypto-3.dll</InstallationFile>
+      <InstallationFile size="38.8 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libffi-8.dll</InstallationFile>
+      <InstallationFile size="45.5 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libopusfile-0.dll</InstallationFile>
+      <InstallationFile size="774.3 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libssl-3.dll</InstallationFile>
+      <InstallationFile size="422.5 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\libtiff-5.dll</InstallationFile>
+      <InstallationFile size="295 Byte" type="txt">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\paginas_no_soportadas.txt</InstallationFile>
+      <InstallationFile size="198 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\pyexpat.pyd</InstallationFile>
+      <InstallationFile size="70.7 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python3.dll</InstallationFile>
+      <InstallationFile size="5.8 MB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\python313.dll</InstallationFile>
+      <InstallationFile size="31.5 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\select.pyd</InstallationFile>
+      <InstallationFile size="1.5 MB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\sqlite3.dll</InstallationFile>
+      <InstallationFile size="1.8 MB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tcl86t.dll</InstallationFile>
+      <InstallationFile size="1.5 MB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\tk86t.dll</InstallationFile>
+      <InstallationFile size="992.8 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\ucrtbase.dll</InstallationFile>
+      <InstallationFile size="694.5 KB" type="pyd">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\unicodedata.pyd</InstallationFile>
+      <InstallationFile size="117.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140.dll</InstallationFile>
+      <InstallationFile size="48.6 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\VCRUNTIME140_1.dll</InstallationFile>
+      <InstallationFile size="6 Byte" type="">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version</InstallationFile>
+      <InstallationFile size="25.3 KB" type="txt">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\version.txt</InstallationFile>
+      <InstallationFile size="106 KB" type="dll">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\zlib1.dll</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tcl_data</InstallationFile>
+      <InstallationFile size="N/A" type="[Folder]">C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\dist\Download Manager\_tk_data</InstallationFile>
+    </InstallationFiles>
+    <Languages>
+      <Language>English</Language>
+      <Language>Español</Language>
+    </Languages>
+    <Variables/>
+    <Commands>
+      <Command type="Execute Application" command="&lt;InstallPath&gt;\listener.exe" commandLineArguments="" options="-hide"/>
+    </Commands>
+    <Registry>
+      <Entry rootKey="HKEY_CURRENT_USER" subKey="SOFTWARE\Microsoft\Windows\CurrentVersion\Run" valueName="Acelerador de descargas" valueData="&lt;InstallPath&gt;\Download Manager.exe" isRemoveWhenUninstalling="true"/>
+    </Registry>
+    <Shortcuts defaultPath="&lt;Company&gt;\&lt;AppName&gt;\" isDefaultPathAlterable="true" isCreateStartmenuShortcutsForAllUsers="true" isCreateDesktopShortcutsForAllUsers="true">
+      <Shortcut destination="Desktop" name="Acelerador de descargas" targetFile="&lt;InstallPath&gt;\Download Manager.exe" commandLineArguments="" iconFilePath="&lt;InstallPath&gt;\descargas.ico" iconIndex="0"/>
+      <Shortcut destination="Startmenu" name="Acelerador de descargas" targetFile="&lt;InstallPath&gt;\Download Manager.exe" commandLineArguments="" iconFilePath="&lt;InstallPath&gt;\descargas.ico" iconIndex="0"/>
+    </Shortcuts>
+    <Serials isDialogEnabled="false" count="1000" mask ="#####-#####-#####-#####"/>
+    <SplashScreen isDialogEnabled="true" delayTime="2">
+      <Image filePath="C:\Users\Edouard\Documents\curso de programacion\Python\API&apos;s\Acelerador-de-descargas\dist\Download Manager\Assets\img\descargas.png"/>
+      <Sound isEnabled="false" filePath=""/>
+    </SplashScreen>
+    <License isDialogEnabled="true">
+      <Data>e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcbm91aWNvbXBhdFxkZWZsYW5nMzA4MntcZm9udHRibHtcZjBcZm5pbCBBcmlhbDt9e1xmMVxmbmlsXGZjaGFyc2V0MCBBcmlhbDt9fQ0Ke1wqXGdlbmVyYXRvciBSaWNoZWQyMCAxMC4wLjE5MDQxfVx2aWV3a2luZDRcdWMxIA0KXHBhcmRcZjBcZnMyMCBNSVQgTGljZW5zZVxwYXINClxwYXINCkNvcHlyaWdodCAoYykgMjAyXGYxXGxhbmc4MjAyIDZcZjBcbGFuZzMwODIgIFxmMSBFZG91YXJkIFNhbmRvdmFsXGYwXHBhcg0KXHBhcg0KUGVybWlzc2lvbiBpcyBoZXJlYnkgZ3JhbnRlZCwgZnJlZSBvZiBjaGFyZ2UsIHRvIGFueSBwZXJzb24gb2J0YWluaW5nIGEgY29weVxwYXINCm9mIHRoaXMgc29mdHdhcmUgYW5kIGFzc29jaWF0ZWQgZG9jdW1lbnRhdGlvbiBmaWxlcyAodGhlICJTb2Z0d2FyZSIpLCB0byBkZWFsXHBhcg0KaW4gdGhlIFNvZnR3YXJlIHdpdGhvdXQgcmVzdHJpY3Rpb24sIGluY2x1ZGluZyB3aXRob3V0IGxpbWl0YXRpb24gdGhlIHJpZ2h0c1xwYXINCnRvIHVzZSwgY29weSwgbW9kaWZ5LCBtZXJnZSwgcHVibGlzaCwgZGlzdHJpYnV0ZSwgc3VibGljZW5zZSwgYW5kL29yIHNlbGxccGFyDQpjb3BpZXMgb2YgdGhlIFNvZnR3YXJlLCBhbmQgdG8gcGVybWl0IHBlcnNvbnMgdG8gd2hvbSB0aGUgU29mdHdhcmUgaXNccGFyDQpmdXJuaXNoZWQgdG8gZG8gc28sIHN1YmplY3QgdG8gdGhlIGZvbGxvd2luZyBjb25kaXRpb25zOlxwYXINClxwYXINClRoZSBhYm92ZSBjb3B5cmlnaHQgbm90aWNlIGFuZCB0aGlzIHBlcm1pc3Npb24gbm90aWNlIHNoYWxsIGJlIGluY2x1ZGVkIGluIGFsbFxwYXINCmNvcGllcyBvciBzdWJzdGFudGlhbCBwb3J0aW9ucyBvZiB0aGUgU29mdHdhcmUuXHBhcg0KXHBhcg0KVEhFIFNPRlRXQVJFIElTIFBST1ZJREVEICJBUyBJUyIsIFdJVEhPVVQgV0FSUkFOVFkgT0YgQU5ZIEtJTkQsIEVYUFJFU1MgT1JccGFyDQpJTVBMSUVELCBJTkNMVURJTkcgQlVUIE5PVCBMSU1JVEVEIFRPIFRIRSBXQVJSQU5USUVTIE9GIE1FUkNIQU5UQUJJTElUWSxccGFyDQpGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRSBBTkQgTk9OSU5GUklOR0VNRU5ULiBJTiBOTyBFVkVOVCBTSEFMTCBUSEVccGFyDQpBVVRIT1JTIE9SIENPUFlSSUdIVCBIT0xERVJTIEJFIExJQUJMRSBGT1IgQU5ZIENMQUlNLCBEQU1BR0VTIE9SIE9USEVSXHBhcg0KTElBQklMSVRZLCBXSEVUSEVSIElOIEFOIEFDVElPTiBPRiBDT05UUkFDVCwgVE9SVCBPUiBPVEhFUldJU0UsIEFSSVNJTkcgRlJPTSxccGFyDQpPVVQgT0YgT1IgSU4gQ09OTkVDVElPTiBXSVRIIFRIRSBTT0ZUV0FSRSBPUiBUSEUgVVNFIE9SIE9USEVSIERFQUxJTkdTIElOIFRIRVxwYXINClNPRlRXQVJFLlxwYXINCn0NCgA=</Data>
+    </License>
+    <Finish isRebootMachineEnabled="false">
+      <Program executableFilePath="&lt;InstallPath&gt;\Download Manager.exe" isLaunchEnabled="true" arguments=""/>
+    </Finish>
+  </InstallerConfiguration>
+  <UninstallerConfiguration isPackaged="true">
+    <UninstallerExecutableFileName>Uninstall</UninstallerExecutableFileName>
+    <OpenWebURIAfterUninstallation isEnabled="true">https://github.com/Tecrato</OpenWebURIAfterUninstallation>
+    <CustomDisplayIcon isEnabled="true" iconFilePath="&lt;InstallPath&gt;\descargas.ico"/>
+  </UninstallerConfiguration>
+  <VisualUpdateConfiguration isPackaged="false">
+    <ProductName>&lt;AppName&gt;</ProductName>
+    <ProductVersion>&lt;AppVersion&gt;</ProductVersion>
+    <Language>0</Language>
+    <UpdateScriptURIs>
+      <MainURI>http://</MainURI>
+      <FirstMirrorURI>http://</FirstMirrorURI>
+      <SecondMirrorURI>http://</SecondMirrorURI>
+    </UpdateScriptURIs>
+    <updateExecutableFileName>Update</updateExecutableFileName>
+    <proEditionLicenseKey/>
+    <Program executableFilePath="" isLaunchEnabled="false" isTerminationEnabled="false"/>
+  </VisualUpdateConfiguration>
+  <BuildConfiguration>
+    <SetupFilePath>D:\Programs\Acelerador de descargas.exe</SetupFilePath>
+    <SetupIconPath>C:\Users\Edouard\Documents\curso de programacion\Python\API's\Acelerador-de-descargas\Assets\img\descargas.ico</SetupIconPath>
+    <UninstallerIconPath>C:\Program Files (x86)\solicus\InstallForge\icons\modern.ico</UninstallerIconPath>
+    <Compression method="0" level="2"/>
+    <CodeSigning isEnabled="false" signToolCommandLine="/n &quot;Subject&quot; /tr http://timestamp.digicert.com /td sha256 /fd sha256 &quot;&lt;ExecutableFilePath&gt;&quot;"/>
+  </BuildConfiguration>
+</InstallForgeProject>
