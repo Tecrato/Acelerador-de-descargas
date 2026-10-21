@@ -1,7 +1,7 @@
 # Errores:
  - Reiniciar la descarga si cambia el ETag
  - Cuando se cierra y se vuelve a abrir la interfaz, no empieza la actualinacion en tiempo real de la descarga actual.
-
+ - hy carpetas en el cache que no se estan usando y que aun tienen los archivos temporales, hacer algoritmo para buscar cada carpeta y compararla con el estado actual en la db, si es completo o en espera o 0% borrar la carpeta.
 
 
 # Cambios:
