@@ -131,7 +131,7 @@ class Downloads_manager(Base_class):
             colums_witdh=[0, .065, .47, .551, .67, .79, .86],
             padding_left= 10,
             border_color=(100,100,100),
-            smothscroll=True if not self.low_detail_mode else False
+            smoothscroll=True if not self.low_detail_mode else False
             )
         self.btn_main_reload_list = uti_pag.Button(
             '', 13, self.config.font_symbols, self.list_main_descargas.topright, 11,'topright', 'black', 'darkgrey', 
@@ -258,7 +258,7 @@ class Downloads_manager(Base_class):
             (self.ventana_rect.w*.3,self.ventana_rect.h*.7), (self.ventana_rect.w*.80,self.ventana_rect.centery),
             self.extenciones.copy(), 16, 10, (40,40,40),dire='center', header=True, text_header=self.txts['extenciones'], background_color=(20,20,20), 
             font=self.config.font_mononoki, 
-            border_width = 3,smothscroll=True if not self.low_detail_mode else False
+            border_width = 3,smoothscroll=True if not self.low_detail_mode else False
         )
         self.btn_config_añair_extencion: uti_pag.Button = uti_pag.Button(
             self.txts['añadir'], 16, self.config.font_mononoki, (self.list_config_extenciones.right, self.list_config_extenciones.top), 
@@ -811,8 +811,8 @@ class Downloads_manager(Base_class):
     def func_toggle_ldm(self):
         self.low_detail_mode = not self.low_detail_mode
         self.btn_config_LDM.text = ''if self.low_detail_mode else ''
-        self.list_main_descargas.smothscroll = not self.low_detail_mode
-        # self.list_config_extenciones.smothscroll = not self.low_detail_mode
+        self.list_main_descargas.smoothscroll = not self.low_detail_mode
+        # self.list_config_extenciones.smoothscroll = not self.low_detail_mode
         self.save_conf('ldm',self.low_detail_mode)
     def func_toggle_enfoques(self):
         self.enfoques = not self.enfoques

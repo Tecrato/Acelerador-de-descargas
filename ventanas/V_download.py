@@ -197,11 +197,11 @@ class Downloader(Base_class):
         self.list_textos_hilos = uti_pag.Multi_list(
             (330, self.ventana_rect.h - 70), (self.ventana_rect.centerx+20, 50), 2, None, 12, separation=15, colums_witdh=[0,.7], 
             padding_left=10, border_color=(20,20,20), header=False, fonts=[self.config.font_mononoki, self.config.font_mononoki], background_color=(20,20,20),
-            smothscroll=True
+            smoothscroll=True
         )
 
         #   Barra de progreso
-        self.barra_progreso = uti_pag.Barra_de_progreso((20, self.ventana_rect.bottom - 30), (310, 20), 'horizontal', smoth=True)
+        self.barra_progreso = uti_pag.Barra_de_progreso((20, self.ventana_rect.bottom - 30), (310, 20), 'horizontal', smooth=True)
         self.barra_progreso.volumen = .0
 
         

@@ -5,7 +5,7 @@ DICT_CONFIG_DEFAULT = {
     'hilos': 8,  # Número de hilos para la descarga
     'enfoques': True,  # Permitira al programa venir al frente por encima de las demás aplicaciones en ciertos momentos.
     'detener_5min': True,  # Detener la descarga después de 5 minutos de no haber descargado nada.
-    'ldm': False,  # Desactiva el smothscroll de la lista de descargas y algún otro efecto en la aplicacion ´para que consuma menos CPU.
+    'ldm': False,  # Desactiva el smoothscroll de la lista de descargas y algún otro efecto en la aplicacion ´para que consuma menos CPU.
     'idioma': 'español',  # Idioma de la interfaz gráfica, opciones: 'español', 'inglés'.
     'save_dir': user_downloads_path().joinpath('./Edouard').as_posix(), # Directorio por defecto donde se guardarán los archivos descargados. Puedes cambiarlo a cualquier ruta que desees.
     'apagar al finalizar cola': False, # Si se establece en True, el sistema se apagará automáticamente una vez que se haya procesado toda la cola de descargas.
@@ -74,6 +74,7 @@ class Config:
 
         self.icon = ICON
         self.noframe = False
+        self.debug = True
 
         for key, value in kwargs.items():
             setattr(self, key, value)
