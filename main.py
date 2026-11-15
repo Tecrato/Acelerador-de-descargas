@@ -314,7 +314,11 @@ def read_item(id: int):
 
 @app.route("/descargas/get_all", methods=["GET"])
 def read_items():
-    return jsonify({'cola':cola,'lista':get_db().buscar_descargas()}), 200, {'Access-Control-Allow-Origin':'*'}
+    try:
+        return jsonify({'cola':cola,'lista':get_db().buscar_descargas()}), 200, {'Access-Control-Allow-Origin':'*'}
+    except Exception as e:
+        uti.debug_print(e, priority=4)
+        return jsonify({'cola': cola, 'lista':tuple()}), 500, {'Access-Control-Allow-Origin':'*'} 
 
 @app.route("/descargas/update/url/<int:id>", methods=["GET"])
 def update_url(id:int):

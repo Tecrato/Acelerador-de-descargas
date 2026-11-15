@@ -1,9 +1,9 @@
-import sqlite3, time
+import sqlite3, time, threading
 
 class Data_Base:
     def __init__(self,path) -> None:
         self.path = path
-        self.DB = sqlite3.connect(path)
+        self.__local = threading.local()
         self.cursor = self.DB.cursor()
 
         try:
@@ -65,7 +65,19 @@ class Data_Base:
 
 
             self.DB.commit()
-        
+
+    @property
+    def DB(self):
+        db = getattr(self.__local, "db", None)
+
+        if db is None:
+            db = sqlite3.connect(self.path, timeout=5)
+            db.execute("PRAGMA journal_mode=WAL")      # persistente en el archivo
+            db.execute("PRAGMA synchronous=NORMAL")    # mucho menos fsync
+            db.execute("PRAGMA busy_timeout=5000")
+            self.__local.db = db
+        return db
+    
 
     def buscar_descargas(self):
         self.cursor.execute('SELECT * FROM descargas')
